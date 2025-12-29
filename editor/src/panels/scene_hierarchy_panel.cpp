@@ -34,7 +34,7 @@ namespace star::editor {
             | ImGuiTreeNodeFlags_OpenOnArrow
             | ImGuiTreeNodeFlags_OpenOnDoubleClick;
 
-        ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
+        ImGui::SetNextItemOpen(true, ImGuiCond_Once);
         auto opened = ImGui::TreeNodeEx(std::format("active_{}", scene_name).c_str(), flags, scene_name.c_str());
 
         if (opened) {

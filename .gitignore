@@ -36,3 +36,5 @@ Thumbs.db
 
 # Git-specific files
 *.orig
+
+.vs/

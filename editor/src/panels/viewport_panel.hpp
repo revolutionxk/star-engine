@@ -1,5 +1,6 @@
 #pragma once
 
+#include "star/app/imgui_component.hpp"
 #include "editor_panel.hpp"
 #include <bgfx/bgfx.h>
 
@@ -22,7 +23,7 @@ namespace star::editor
 
     private:
         bgfx::ViewId _view_id;
-        bgfx::TextureHandle _render_texture;
+        ImguiTextureData _render_texture = BGFX_INVALID_HANDLE;
         bgfx::FrameBufferHandle _framebuffer;
         bool _texture_initialized = false;
         uint32_t _viewport_width = 0;

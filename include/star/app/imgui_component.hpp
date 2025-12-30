@@ -4,6 +4,7 @@
 #include "star/app/app_component.hpp"
 #include <bgfx/bgfx.h>
 #include <memory>
+#include <imgui.h>
 
 struct ImGuiContext;
 struct ImDrawData;
@@ -11,6 +12,25 @@ struct ImDrawData;
 namespace star {
     class App;
     class ImGuiComponentImpl;
+
+    struct ImguiTextureData
+    {
+        bgfx::TextureHandle handle;
+        bool alpha_blend;
+        uint8_t mip;
+
+        ImguiTextureData(const bgfx::TextureHandle& handle);
+
+        ImguiTextureData(const ImguiTextureData&) = default;
+
+        ImguiTextureData(ImTextureID id);
+
+        operator ImTextureID() const;
+
+        operator bgfx::TextureHandle() const;
+
+        operator bgfx::TextureHandle& ();
+    };
 
     class STAR_EXPORT IImguiRenderer {
     public:

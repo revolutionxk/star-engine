@@ -38,6 +38,16 @@ namespace star
         return v.id;
     }
 
+    ImguiTextureData::operator bgfx::TextureHandle() const
+    {
+        return handle;
+	}
+
+    ImguiTextureData::operator bgfx::TextureHandle& ()
+    {
+		return handle;
+    }
+    
     ImguiRenderPass::ImguiRenderPass(IImguiRenderer &renderer, ImGuiContext *imgui)
         : _renderer{renderer},
           _imgui{imgui},

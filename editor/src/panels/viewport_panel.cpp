@@ -7,7 +7,6 @@ namespace star::editor
     ViewportPanel::ViewportPanel(EditorContext &context)
         : EditorPanel("Viewport", context), _view_id(0)
     {
-        _render_texture = BGFX_INVALID_HANDLE;
         _framebuffer = BGFX_INVALID_HANDLE;
     }
 
@@ -65,14 +64,19 @@ namespace star::editor
                     bgfx::TextureFormat::RGBA8,
                     BGFX_TEXTURE_RT | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT);
 
-                _framebuffer = bgfx::createFrameBuffer(1, &_render_texture, true);
+                _framebuffer = bgfx::createFrameBuffer(1, &_render_texture.handle, true);
 
                 _texture_initialized = true;
             }
 
+            if (bgfx::isValid(_framebuffer))
+            {
+                bgfx::setViewFrameBuffer(_view_id, _framebuffer);
+            }
+
             if (bgfx::isValid(_render_texture))
             {
-                ImGui::Image(_render_texture.idx, viewport_size);
+                ImGui::Image(static_cast<ImTextureID>(_render_texture), viewport_size);
             }
         }
 

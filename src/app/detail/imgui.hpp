@@ -45,21 +45,6 @@ namespace star
         }
     };
 
-    struct ImguiTextureData
-    {
-        bgfx::TextureHandle handle;
-        bool alpha_blend;
-        uint8_t mip;
-
-        explicit ImguiTextureData(const bgfx::TextureHandle &handle);
-
-        ImguiTextureData(const ImguiTextureData &) = default;
-
-        explicit ImguiTextureData(ImTextureID id);
-
-        explicit operator ImTextureID() const;
-    };
-
     class ImguiRenderPass
     {
     public:

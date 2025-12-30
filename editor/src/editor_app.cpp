@@ -29,12 +29,6 @@ namespace star::editor {
         _app.get_window().set_title("Star Engine Editor");
         _app.get_input().get_keyboard().add_listener(*this);
 
-        if (_show_debug) {
-            _app.set_debug_flag(BGFX_DEBUG_TEXT);
-        }
-
-        _app.set_debug_flag(BGFX_DEBUG_STATS, _show_stats);
-
         const auto &imgui = _app.add_component<ImGuiComponent>(*this);
         ImGui::SetCurrentContext(imgui.get_context());
 
@@ -60,6 +54,7 @@ namespace star::editor {
 
     void EditorApp::update(const float delta_time) {
         if (_context->is_viewport_focused()) {
+
         }
     }
 
@@ -73,42 +68,6 @@ namespace star::editor {
     }
 
     bgfx::ViewId EditorApp::render_reset(const bgfx::ViewId viewId) {
-        ViewportPanel *viewport_panel = nullptr;
-        for (const auto &panel: _panels) {
-            if (panel->get_name() == "Viewport") {
-                viewport_panel = dynamic_cast<ViewportPanel *>(panel.get());
-                break;
-            }
-        }
-
-        if (viewport_panel && bgfx::isValid(viewport_panel->get_framebuffer())) {
-            if (_editor_camera_entity != entt::null) {
-                const Camera *camera = _active_scene->get_component<Camera>(_editor_camera_entity);
-
-                const auto camera_view_id = viewId;
-
-                bgfx::setViewName(camera_view_id, "Editor Viewport");
-                bgfx::setViewFrameBuffer(camera_view_id, viewport_panel->get_framebuffer());
-                bgfx::setViewRect(camera_view_id, 0, 0,
-                                  static_cast<uint16_t>(viewport_panel->get_width()),
-                                  static_cast<uint16_t>(viewport_panel->get_height()));
-                bgfx::setViewClear(camera_view_id,
-                                   BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH,
-                                   0x303030ff, 1.0f, 0);
-
-                const auto &transform = _active_scene->get_component<Transform>(_editor_camera_entity);
-                const glm::mat4 view = camera->get_view_matrix();
-                const glm::mat4 proj = camera->get_projection_matrix();
-                bgfx::setViewTransform(camera_view_id, &view[0][0], &proj[0][0]);
-
-                viewport_panel->set_view_id(camera_view_id);
-
-                camera->render();
-
-                return camera_view_id + 1;
-            }
-        }
-
         return viewId;
     }
 
@@ -201,9 +160,9 @@ namespace star::editor {
         Mesh cube_mesh = Mesh::create_cube(1.0f);
         cube_renderer.set_mesh(std::move(cube_mesh));
 
-        // const auto cube_material = std::make_shared<UnlitMaterial>();
-        // cube_material->set_color(glm::vec4(0.2f, 0.5f, 1.0f, 1.0f));
-        // cube_renderer.set_material(cube_material);
+        const auto cube_material = std::make_shared<UnlitMaterial>();
+        cube_material->set_color(glm::vec4(0.2f, 0.5f, 1.0f, 1.0f));
+        cube_renderer.set_material(cube_material);
 
         const auto sphere_entity = _active_scene->create_entity();
         auto &sphere_transform = _active_scene->add_component<Transform>(sphere_entity);
@@ -213,9 +172,12 @@ namespace star::editor {
         Mesh sphere_mesh = Mesh::create_sphere(0.5f, 32);
         sphere_renderer.set_mesh(std::move(sphere_mesh));
 
-        const auto sphere_material = std::make_shared<UnlitMaterial>();
-        sphere_material->set_color(glm::vec4(1.0f, 0.3f, 0.3f, 1.0f));
-        sphere_renderer.set_material(sphere_material);
+        const auto std_material = std::make_shared<StandardMaterial>();
+        std_material->set_base_color(glm::vec4(1.0f, 0.3f, 0.3f, 1.0f));
+        std_material->set_metallic(0.7f);
+        std_material->set_roughness(0.2f);
+        std_material->set_emissive(glm::vec3(0.0f, 0.0f, 0.0f));
+        sphere_renderer.set_material(std_material);
 
         const Entity plane_entity = _active_scene->create_entity();
         auto &plane_transform = _active_scene->add_component<Transform>(plane_entity);
@@ -268,16 +230,15 @@ namespace star::editor {
                     }
                 }
                 ImGui::Separator();
-                ImGui::MenuItem("Show Stats", nullptr, &_show_stats);
-                ImGui::MenuItem("Show Demo Window", nullptr, &_show_demo_window);
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Help")) {
-                if (ImGui::MenuItem("About")) {
-                    // TODO: Show about dialog
-                    spdlog::info("Star Engine Editor v0.1.0");
+                if (ImGui::MenuItem("Show Stats", nullptr, &_show_stats))
+                {
+                    _app.set_debug_flag(BGFX_DEBUG_STATS, _show_stats);
                 }
+                if (ImGui::MenuItem("Show Debug Text", nullptr, &_show_debug))
+                {
+                    _app.set_debug_flag(BGFX_DEBUG_TEXT, _show_debug);
+                }
+                ImGui::MenuItem("Show Demo Window", nullptr, &_show_demo_window);
                 ImGui::EndMenu();
             }
 

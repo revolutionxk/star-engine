@@ -71,7 +71,7 @@ namespace star {
 
         void render();
 
-        void update(float delta_time) const;
+        void update(float delta_time);
 
         bgfx::ViewId render_reset(bgfx::ViewId view_id);
 

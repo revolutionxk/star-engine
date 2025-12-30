@@ -25,9 +25,9 @@ namespace star {
             component->init(_scene, app);
         }
 
-        auto &cams = _registry.storage<Camera>();
-        for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr) {
-            itr->get_impl()->init(_scene, app);
+        auto &cameras = _registry.storage<Camera>();
+        for (auto camera = cameras.rbegin(), last = cameras.rend(); camera != last; ++camera) {
+            camera->init(_scene, app);
         }
 
         _registry.on_construct<Camera>().connect<&SceneImpl::on_camera_constructed>(*this);
@@ -36,15 +36,15 @@ namespace star {
 
     void SceneImpl::on_camera_constructed(EntityRegistry &registry, const Entity entity) const {
         if (_app) {
-            const auto &cam = registry.get<Camera>(entity);
-            cam.get_impl()->init(_scene, *_app);
+            auto &camera = registry.get<Camera>(entity);
+            camera.init(_scene, *_app);
         }
     }
 
     void SceneImpl::on_camera_destroyed(EntityRegistry &registry, const Entity entity) const {
         if (_app) {
-            const auto &cam = registry.get<Camera>(entity);
-            cam.get_impl()->shutdown();
+            auto &camera = registry.get<Camera>(entity);
+            camera.shutdown();
         }
     }
 
@@ -61,20 +61,20 @@ namespace star {
     }
 
     void SceneImpl::render() {
-        auto &cams = _registry.storage<Camera>();
-        for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr) {
-            itr->get_impl()->render();
+        auto &cameras = _registry.storage<Camera>();
+        for (auto & camera : std::ranges::reverse_view(cameras)) {
+            camera.render();
         }
     }
 
-    void SceneImpl::update(const float delta_time) const {
+    void SceneImpl::update(const float delta_time) {
         if (_paused) {
             return;
         }
 
-        for (const auto &camera: _registry.view<Camera>()) {
-            auto &cam = _registry.get<Camera>(camera);
-            cam.get_impl()->update(delta_time);
+        for (auto &entity: _registry.view<Camera>()) {
+            auto& camera = _registry.get<Camera>(entity);
+            camera.update(delta_time);
         }
 
         for (const auto &component: _components) {
@@ -86,7 +86,7 @@ namespace star {
         }
     }
 
-    bgfx::ViewId SceneImpl::render_reset(bgfx::ViewId view_id) {
+    bgfx::ViewId SceneImpl::render_reset(const bgfx::ViewId view_id) {
         _view_id = view_id;
 
         for (auto &component: _components) {

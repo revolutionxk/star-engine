@@ -28,10 +28,23 @@ namespace star::editor {
 
         ImGui::Separator();
 
-         for (const auto entity: scene->get_registry().view<Entity>()) {
-            std::string name = "Entity " + std::to_string(static_cast<uint32_t>(entity));
-			draw_entity_node(entity, name);
-		 }
+        const auto& scene_name = scene->get_name();
+
+        ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanAvailWidth
+            | ImGuiTreeNodeFlags_OpenOnArrow
+            | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+
+        ImGui::SetNextItemOpen(true, ImGuiCond_FirstUseEver);
+        auto opened = ImGui::TreeNodeEx(std::format("active_{}", scene_name).c_str(), flags, scene_name.c_str());
+
+        if (opened) {
+            for (const auto entity : scene->get_registry().view<Entity>()) {
+                std::string name = "Entity " + std::to_string(static_cast<uint32_t>(entity));
+                draw_entity_node(entity, name);
+            }
+
+            ImGui::TreePop();
+        }
 
         if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
             get_context().clear_selection();

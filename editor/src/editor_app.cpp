@@ -247,7 +247,7 @@ namespace star::editor {
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit", "Alt+F4")) {
-                    //_app.quit();
+                    _app.request_quit();
                 }
                 ImGui::EndMenu();
             }
@@ -359,7 +359,7 @@ namespace star::editor {
         spdlog::info("Creating new scene");
 
         if (_active_scene) {
-            //_active_scene->clear();
+            _active_scene->clear();
         }
 
         setup_editor_camera();

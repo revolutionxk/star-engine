@@ -108,6 +108,10 @@ namespace star {
         _name = name;
     }
 
+    void SceneImpl::clear() {
+        _registry.clear();
+    }
+
     const std::string &SceneImpl::get_name() const {
         return _name;
     }
@@ -269,6 +273,10 @@ namespace star {
 
     void Scene::set_delegate(ISceneDelegate *delegate) {
         _impl->set_delegate(delegate);
+    }
+
+    void Scene::clear() {
+        _impl->clear();
     }
 
     EntityRegistry &Scene::get_registry() {

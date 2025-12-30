@@ -81,6 +81,8 @@ namespace star {
 
         void set_name(const std::string &name);
 
+        void clear();
+
         const std::string &get_name() const;
 
         void add_scene_component(std::unique_ptr<ISceneComponent> &&component);
@@ -174,6 +176,8 @@ namespace star {
         bool is_valid_entity(Entity entity) const;
 
         void set_delegate(ISceneDelegate *delegate);
+
+        void clear();
 
         EntityRegistry &get_registry();
 

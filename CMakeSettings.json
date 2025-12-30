@@ -1,0 +1,30 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-Debug-MSVC",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "inheritEnvironments": [ "msvc_x64_x64" ]
+    },
+    {
+      "name": "x64-Release-MSVC",
+      "generator": "Ninja",
+      "configurationType": "RelWithDebInfo",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "inheritEnvironments": [ "msvc_x64_x64" ]
+    },
+    {
+      "name": "x64-Release-Clang",
+      "generator": "Ninja",
+      "configurationType": "RelWithDebInfo",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "inheritEnvironments": [ "clang_cl_x64_x64" ],
+      "enableClangTidyCodeAnalysis": true,
+      "clangTidyChecks": "clang-analyzer-*"
+    }
+  ]
+}

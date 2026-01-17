@@ -15,6 +15,7 @@ namespace star::editor {
         void draw_camera_component();
         void draw_light_component();
         void draw_mesh_renderer_component();
+        void draw_material_component();
         void draw_add_component_menu();
     };
 }

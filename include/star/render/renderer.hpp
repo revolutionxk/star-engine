@@ -3,10 +3,14 @@
 #include "star/export.hpp"
 #include "star/render/render_fwd.hpp"
 #include "star/scene/camera.hpp"
+
 #include <bgfx/bgfx.h>
 #include <string>
+#include "star/render/render_pipeline.hpp"
 
 #include "star/utils/memory/optional_ref.hpp"
+#include <memory>
+#include <optional>
 
 namespace star {
     class App;
@@ -79,5 +83,10 @@ namespace star {
         bool _visible{true};
         bool _debug_enabled{false};
         std::optional<bgfx::ViewId> _view_id;
+        std::unique_ptr<RenderPipeline> _pipeline;
+    public:
+        RenderPipeline* get_pipeline() { return _pipeline.get(); }
+        const RenderPipeline* get_pipeline() const { return _pipeline.get(); }
+        void set_pipeline(std::unique_ptr<RenderPipeline> pipeline) { _pipeline = std::move(pipeline); }
     };
 }

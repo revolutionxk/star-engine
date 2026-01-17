@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 
 #include "shader.hpp"
+#include "star/app/app_component.hpp"
 
 namespace star {
     class Shader;
@@ -148,4 +149,27 @@ namespace star {
         float _roughness{0.5f};
         glm::vec3 _emissive{0.0f};
     };
+
+    class STAR_EXPORT MaterialComponent : public ITypeAppComponent<MaterialComponent> {
+    public:
+        MaterialComponent();
+        ~MaterialComponent() override;
+        MaterialComponent(const MaterialComponent&) = delete;
+        MaterialComponent& operator=(const MaterialComponent&) = delete;
+        MaterialComponent(MaterialComponent&&) noexcept;
+        MaterialComponent& operator=(MaterialComponent&&) noexcept;
+
+        void set_material(std::shared_ptr<Material> material);
+        std::shared_ptr<Material> get_material() const;
+
+        void init(App& app) override;
+        void shutdown() override;
+        void update(float delta_time) override;
+        void render() override;
+        bgfx::ViewId render_reset(bgfx::ViewId view_id) override;
+
+    private:
+        std::shared_ptr<Material> _material;
+    };
+
 } // namespace star

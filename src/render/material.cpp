@@ -55,27 +55,48 @@ namespace star {
 
     bool Material::set_uniform(const std::string &name, const glm::vec4 &value) {
         const ShaderUniform *uniform = _shader.get_uniform(name);
-        if (!uniform || uniform->type != bgfx::UniformType::Vec4) {
+        if (!uniform) {
+            spdlog::error("Material::set_uniform - Uniform '{}' not found in shader!", name);
             return false;
         }
-
+        if (uniform->type != bgfx::UniformType::Vec4) {
+            spdlog::error("Material::set_uniform - Uniform '{}' type mismatch (expected Vec4)", name);
+            return false;
+        }
+        if (!bgfx::isValid(uniform->handle)) {
+            spdlog::error("Material::set_uniform - Uniform '{}' handle is invalid!", name);
+            return false;
+        }
         bgfx::setUniform(uniform->handle, &value);
         return true;
     }
 
     bool Material::set_uniform(const std::string &name, const glm::mat4 &value) {
-        ShaderUniform *uniform = _shader.get_uniform(name);
-        if (!uniform || uniform->type != bgfx::UniformType::Mat4) {
+        const ShaderUniform *uniform = _shader.get_uniform(name);
+        if (!uniform) {
+            spdlog::error("Material::set_uniform - Uniform '{}' not found in shader!", name);
             return false;
         }
-
+        if (uniform->type != bgfx::UniformType::Mat4) {
+            spdlog::error("Material::set_uniform - Uniform '{}' type mismatch (expected Mat4)", name);
+            return false;
+        }
+        if (!bgfx::isValid(uniform->handle)) {
+            spdlog::error("Material::set_uniform - Uniform '{}' handle is invalid!", name);
+            return false;
+        }
         bgfx::setUniform(uniform->handle, &value);
         return true;
     }
 
     bool Material::set_uniform(const std::string &name, const float *data, uint16_t count) {
-        ShaderUniform *uniform = _shader.get_uniform(name);
+        const ShaderUniform *uniform = _shader.get_uniform(name);
         if (!uniform) {
+            spdlog::error("Material::set_uniform - Uniform '{}' not found in shader!", name);
+            return false;
+        }
+        if (!bgfx::isValid(uniform->handle)) {
+            spdlog::error("Material::set_uniform - Uniform '{}' handle is invalid!", name);
             return false;
         }
 
@@ -223,7 +244,6 @@ namespace star {
 
     void UnlitMaterial::set_color(const glm::vec4 &color) {
         _color = color;
-        set_uniform("u_color", _color);
     }
 
     glm::vec4 UnlitMaterial::get_color() const {
@@ -271,5 +291,38 @@ namespace star {
 
     glm::vec3 StandardMaterial::get_emissive() const {
         return _emissive;
+    }
+
+    MaterialComponent::MaterialComponent() = default;
+    MaterialComponent::~MaterialComponent() = default;
+    MaterialComponent::MaterialComponent(MaterialComponent&&) noexcept = default;
+    MaterialComponent& MaterialComponent::operator=(MaterialComponent&&) noexcept = default;
+
+    void MaterialComponent::set_material(std::shared_ptr<Material> material) {
+        _material = std::move(material);
+    }
+
+    std::shared_ptr<Material> MaterialComponent::get_material() const {
+        return _material;
+    }
+
+    void MaterialComponent::init(App& app) {
+        IAppComponent::init(app);
+    }
+
+    void MaterialComponent::shutdown() {
+        _material.reset();
+    }
+
+    void MaterialComponent::update(float /*delta_time*/) {
+
+    }
+
+    void MaterialComponent::render() {
+
+    }
+
+    bgfx::ViewId MaterialComponent::render_reset(bgfx::ViewId view_id) {
+        return view_id;
     }
 }

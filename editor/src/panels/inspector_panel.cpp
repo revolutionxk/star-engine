@@ -62,6 +62,7 @@ namespace star::editor {
         draw_camera_component();
         draw_light_component();
         draw_mesh_renderer_component();
+        draw_material_component();
     }
 
     void InspectorPanel::draw_transform_component() {
@@ -169,6 +170,56 @@ namespace star::editor {
         }
     }
 
+    void InspectorPanel::draw_material_component() {
+        auto selected = get_context().get_selected_entity();
+        if (!selected.has_value()) return;
+
+        auto *scene = get_context().get_app()->get_active_scene();
+        if (!scene) return;
+
+        Entity entity = selected.value();
+        auto *material_component = scene->get_component<MaterialComponent>(entity);
+        if (!material_component) return;
+
+        if (ImGui::CollapsingHeader("Material Component", ImGuiTreeNodeFlags_DefaultOpen)) {
+            auto material = material_component->get_material();
+            if (!material) {
+                ImGui::Text("No material assigned.");
+                return;
+            }
+
+            if (material->get_type() == MaterialType::Unlit) {
+                if (auto *unlit = dynamic_cast<UnlitMaterial*>(material.get())) {
+                    if (glm::vec4 color = unlit->get_color(); ImGui::ColorEdit4("Color", glm::value_ptr(color))) {
+                        unlit->set_color(color);
+                    }
+                }
+            }
+
+            if (material->get_type() == MaterialType::Standard) {
+                auto *standard = dynamic_cast<StandardMaterial*>(material.get());
+                if (standard) {
+                    glm::vec4 base_color = standard->get_base_color();
+                    if (ImGui::ColorEdit4("Base Color", glm::value_ptr(base_color))) {
+                        standard->set_base_color(base_color);
+                    }
+                    float metallic = standard->get_metallic();
+                    if (ImGui::DragFloat("Metallic", &metallic, 0.01f, 0.0f, 1.0f)) {
+                        standard->set_metallic(metallic);
+                    }
+                    float roughness = standard->get_roughness();
+                    if (ImGui::DragFloat("Roughness", &roughness, 0.01f, 0.0f, 1.0f)) {
+                        standard->set_roughness(roughness);
+                    }
+                    glm::vec3 emissive = standard->get_emissive();
+                    if (ImGui::ColorEdit3("Emissive", glm::value_ptr(emissive))) {
+                        standard->set_emissive(emissive);
+                    }
+                }
+            }
+        }
+    }
+
     void InspectorPanel::draw_add_component_menu() {
         if (ImGui::BeginPopup("AddComponent")) {
             auto selected = get_context().get_selected_entity();
@@ -206,6 +257,13 @@ namespace star::editor {
             if (!scene->has_component<MeshRenderer>(entity)) {
                 if (ImGui::MenuItem("Mesh Renderer")) {
                     scene->add_component<MeshRenderer>(entity);
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+
+            if (!scene->has_component<MaterialComponent>(entity)) {
+                if (ImGui::MenuItem("Material")) {
+                    scene->add_component<MaterialComponent>(entity);
                     ImGui::CloseCurrentPopup();
                 }
             }

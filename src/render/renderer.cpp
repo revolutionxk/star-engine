@@ -8,36 +8,48 @@ namespace star {
 
     Renderer::~Renderer() = default;
 
+
     void Renderer::init(Scene &scene, App &app) {
         _scene = &scene;
         _app = &app;
-
+        if (_pipeline) {
+            _pipeline->init(scene, app);
+        }
         spdlog::debug("Initialized renderer: {}", get_renderer_name());
     }
 
     void Renderer::shutdown() {
         spdlog::debug("Shutting down renderer: {}", get_renderer_name());
-
+        if (_pipeline) {
+            _pipeline->shutdown();
+            _pipeline.reset();
+        }
         _camera.reset();
         _scene.reset();
         _app.reset();
     }
 
     void Renderer::update(float delta_time) {
+        if (_pipeline) {
+            _pipeline->update(delta_time);
+        }
     }
 
     bgfx::ViewId Renderer::render_reset(bgfx::ViewId view_id) {
         if (!_visible) {
             return view_id;
         }
-
         _view_id = view_id;
+
         return view_id + 1;
     }
 
     void Renderer::render(bgfx::ViewId view_id, bgfx::Encoder *encoder) {
         if (!_visible || !_scene) {
             return;
+        }
+        if (_pipeline) {
+            _pipeline->render(view_id, encoder);
         }
     }
 

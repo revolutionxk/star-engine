@@ -143,33 +143,45 @@ namespace star {
 
         glm::vec3 get_emissive() const;
 
+        void update_material_params();
+
     private:
         glm::vec4 _base_color{1.0f, 1.0f, 1.0f, 1.0f};
         float _metallic{0.0f};
         float _roughness{0.5f};
         glm::vec3 _emissive{0.0f};
+        bool _material_params_dirty{true};
     };
 
     class STAR_EXPORT MaterialComponent : public ITypeAppComponent<MaterialComponent> {
     public:
         MaterialComponent();
+
         ~MaterialComponent() override;
-        MaterialComponent(const MaterialComponent&) = delete;
-        MaterialComponent& operator=(const MaterialComponent&) = delete;
-        MaterialComponent(MaterialComponent&&) noexcept;
-        MaterialComponent& operator=(MaterialComponent&&) noexcept;
+
+        MaterialComponent(const MaterialComponent &) = delete;
+
+        MaterialComponent &operator=(const MaterialComponent &) = delete;
+
+        MaterialComponent(MaterialComponent &&) noexcept;
+
+        MaterialComponent &operator=(MaterialComponent &&) noexcept;
 
         void set_material(std::shared_ptr<Material> material);
+
         std::shared_ptr<Material> get_material() const;
 
-        void init(App& app) override;
+        void init(App &app) override;
+
         void shutdown() override;
+
         void update(float delta_time) override;
+
         void render() override;
+
         bgfx::ViewId render_reset(bgfx::ViewId view_id) override;
 
     private:
         std::shared_ptr<Material> _material;
     };
-
 } // namespace star

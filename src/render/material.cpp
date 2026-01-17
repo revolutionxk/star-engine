@@ -155,6 +155,10 @@ namespace star {
             return;
         }
 
+        if (auto *standard = const_cast<StandardMaterial *>(dynamic_cast<const StandardMaterial *>(this))) {
+            standard->update_material_params();
+        }
+
         encoder->setState(_state);
 
         for (const auto &sampler: _shader._samplers | std::views::values) {
@@ -251,6 +255,7 @@ namespace star {
     }
 
     StandardMaterial::StandardMaterial() {
+        _shader.load(k_material_vs, k_material_fs);
     }
 
     StandardMaterial::~StandardMaterial() = default;
@@ -264,24 +269,30 @@ namespace star {
         return _base_color;
     }
 
-    void StandardMaterial::set_metallic(float value) {
+    void StandardMaterial::set_metallic(const float value) {
         _metallic = glm::clamp(value, 0.0f, 1.0f);
-        glm::vec4 params(_metallic, _roughness, 0.0f, 0.0f);
-        set_uniform("u_materialParams", params);
+        _material_params_dirty = true;
     }
 
     float StandardMaterial::get_metallic() const {
         return _metallic;
     }
 
-    void StandardMaterial::set_roughness(float value) {
+    void StandardMaterial::set_roughness(const float value) {
         _roughness = glm::clamp(value, 0.0f, 1.0f);
-        glm::vec4 params(_metallic, _roughness, 0.0f, 0.0f);
-        set_uniform("u_materialParams", params);
+        _material_params_dirty = true;
     }
 
     float StandardMaterial::get_roughness() const {
         return _roughness;
+    }
+
+    void StandardMaterial::update_material_params() {
+        if (_material_params_dirty) {
+            const glm::vec4 params(_metallic, _roughness, 0.0f, 0.0f);
+            set_uniform("u_materialParams", params);
+            _material_params_dirty = false;
+        }
     }
 
     void StandardMaterial::set_emissive(const glm::vec3 &value) {
@@ -294,9 +305,12 @@ namespace star {
     }
 
     MaterialComponent::MaterialComponent() = default;
+
     MaterialComponent::~MaterialComponent() = default;
-    MaterialComponent::MaterialComponent(MaterialComponent&&) noexcept = default;
-    MaterialComponent& MaterialComponent::operator=(MaterialComponent&&) noexcept = default;
+
+    MaterialComponent::MaterialComponent(MaterialComponent &&) noexcept = default;
+
+    MaterialComponent &MaterialComponent::operator=(MaterialComponent &&) noexcept = default;
 
     void MaterialComponent::set_material(std::shared_ptr<Material> material) {
         _material = std::move(material);
@@ -306,7 +320,7 @@ namespace star {
         return _material;
     }
 
-    void MaterialComponent::init(App& app) {
+    void MaterialComponent::init(App &app) {
         IAppComponent::init(app);
     }
 
@@ -315,11 +329,9 @@ namespace star {
     }
 
     void MaterialComponent::update(float /*delta_time*/) {
-
     }
 
     void MaterialComponent::render() {
-
     }
 
     bgfx::ViewId MaterialComponent::render_reset(bgfx::ViewId view_id) {

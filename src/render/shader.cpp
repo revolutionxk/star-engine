@@ -120,6 +120,7 @@ namespace star {
         _uniforms.emplace("u_baseColor", ShaderUniform("u_baseColor", bgfx::UniformType::Vec4));
         _uniforms.emplace("u_emissive", ShaderUniform("u_emissive", bgfx::UniformType::Vec4));
         _uniforms.emplace("u_materialParams", ShaderUniform("u_materialParams", bgfx::UniformType::Vec4));
+        _uniforms.emplace("u_camPos", ShaderUniform("u_camPos", bgfx::UniformType::Vec4));
 
         _samplers.emplace("s_texColor", TextureSampler("s_texColor", 0));
         _samplers.emplace("s_texNormal", TextureSampler("s_texNormal", 1));

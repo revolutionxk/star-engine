@@ -13,7 +13,7 @@ namespace star {
     using f32 = float;
     using f64 = double;
     using byte = u8;
-}
+} // namespace star
 
 namespace star {
     using Vector2 = glm::vec2;
@@ -25,6 +25,6 @@ namespace star {
     using Quaternion = glm::quat;
     using Color3 = glm::vec3;
     using Color4 = glm::vec4;
-}
+} // namespace star
 
 using namespace star;

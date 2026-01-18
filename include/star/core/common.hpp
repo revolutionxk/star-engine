@@ -3,6 +3,7 @@
 // clang-format off
 
 #include "platform.hpp"
+#include "export.hpp"
 
 #include <cinttypes>
 #include <cstddef>
@@ -87,6 +88,7 @@
 #include "types.hpp"
 #include "version.hpp"
 #include "assert.hpp"
+#include "memory/optional_ref.hpp"
 
 using namespace std::literals;
 using namespace std::chrono_literals;

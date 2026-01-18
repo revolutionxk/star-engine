@@ -1,0 +1,5 @@
+#pragma once
+
+#define STAR_VERSION_MAJOR 0
+#define STAR_VERSION_MINOR 1
+#define STAR_VERSION_PATCH 0

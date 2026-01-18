@@ -1,32 +1,8 @@
-#ifndef ENGINE_COMMON_HPP
-#define ENGINE_COMMON_HPP
+#pragma once
 
 // clang-format off
 
-#ifdef _WIN32
-    #define NOMINMAX
-    // Try to include the system sdkddkver.h first, fallback to our custom one
-    #if __has_include(<sdkddkver.h>)
-        #include <sdkddkver.h>
-    #else
-        #include "sdkddkver.h"
-    #endif
-    #include <winsock2.h>
-    #include <windows.h>
-    #define STAR_PLATFORM_WINDOWS
-#elif defined(__APPLE__)
-    #include <TargetConditionals.h>
-    #define STAR_PLATFORM_APPLE
-    #if TARGET_OS_IPHONE
-        #define STAR_PLATFORM_IOS
-    #elif TARGET_OS_MAC
-        #define STAR_PLATFORM_MACOS
-    #endif
-#elif defined(__linux__)
-    #define STAR_PLATFORM_LINUX
-#elif defined(__ANDROID__)
-    #define STAR_PLATFORM_ANDROID
-#endif
+#include "platform.hpp"
 
 #include <cinttypes>
 #include <cstddef>
@@ -79,6 +55,21 @@
 #include <regex>
 #include <ranges>
 
+#ifdef STAR_PLATFORM_APPLE
+#include <TargetConditionals.h>
+#endif
+
+#ifdef STAR_PLATFORM_WINDOWS
+#define NOMINMAX
+#if __has_include(<sdkddkver.h>)
+#include <sdkddkver.h>
+#else
+#include "sdkddkver.h"
+#endif
+#include <winsock2.h>
+#include <windows.h>
+#endif
+
 // BGFX
 #include <bgfx/bgfx.h>
 #include <bgfx/embedded_shader.h>
@@ -90,35 +81,14 @@
 // SDL3
 #include <SDL3/SDL.h>
 
+// Logging
 #include <spdlog/spdlog.h>
 
-namespace star {
-    using i8 = int8_t;
-    using i16 = int16_t;
-    using i32 = int32_t;
-    using i64 = int64_t;
-    using u8 = uint8_t;
-    using u16 = uint16_t;
-    using u32 = uint32_t;
-    using u64 = uint64_t;
-    using f32 = float;
-    using f64 = double;
-    using byte = u8;
-}
+#include "types.hpp"
+#include "version.hpp"
+#include "assert.hpp"
 
-using namespace star;
-
-#define STAR_VERSION_MAJOR 0
-#define STAR_VERSION_MINOR 1
-#define STAR_VERSION_PATCH 0
-
-#if defined(_DEBUG) || defined(DEBUG)
-    #define STAR_DEBUG
-    #define STAR_ASSERT(x, msg) assert((x) && (msg))
-#else
-    #define STAR_ASSERT(x, msg) ((void)0)
-#endif
+using namespace std::literals;
+using namespace std::chrono_literals;
 
 // clang-format on
-
-#endif

@@ -1,5 +1,5 @@
 #pragma once
-#include <glm/glm.hpp>
+#include <cstdint>
 
 namespace star {
     using i8 = int8_t;
@@ -13,18 +13,6 @@ namespace star {
     using f32 = float;
     using f64 = double;
     using byte = u8;
-} // namespace star
-
-namespace star {
-    using Vector2 = glm::vec2;
-    using Vector3 = glm::vec3;
-    using Vector4 = glm::vec4;
-    using Matrix2 = glm::mat2;
-    using Matrix3 = glm::mat3;
-    using Matrix4 = glm::mat4;
-    using Quaternion = glm::quat;
-    using Color3 = glm::vec3;
-    using Color4 = glm::vec4;
 } // namespace star
 
 using namespace star;

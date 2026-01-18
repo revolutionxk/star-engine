@@ -62,6 +62,8 @@
 
 #ifdef STAR_PLATFORM_WINDOWS
 #define NOMINMAX
+#undef far
+#undef near
 #if __has_include(<sdkddkver.h>)
 #include <sdkddkver.h>
 #else
@@ -84,11 +86,14 @@
 
 // Logging
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
 
 #include "types.hpp"
 #include "version.hpp"
+#include "logger.hpp"
 #include "assert.hpp"
 #include "memory/optional_ref.hpp"
+#include "star/math/math.hpp"
 
 using namespace std::literals;
 using namespace std::chrono_literals;

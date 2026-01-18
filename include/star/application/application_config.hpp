@@ -1,12 +1,18 @@
 #pragma once
+#include "star/platform/window.hpp"
 
 namespace star::application {
     struct ApplicationConfig {
-        std::string title{"Star Engine"};
-        int width = 1024;
-        int height = 768;
-        bool vsync = true;
-        bool resizable = true;
-        bool fullscreen = false;
+        const char* title = "Star Engine";
+        i32 width = 1280;
+        i32 height = 720;
+
+        platform::WindowConfig window{
+            .title = title,
+            .width = width,
+            .height = height,
+            .resizable = true,
+            .fullscreen = false,
+        };
     };
 } // namespace star::application

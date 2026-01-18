@@ -1,6 +1,4 @@
 #pragma once
-#include <memory>
-
 #include "application_config.hpp"
 #include "layer_stack.hpp"
 #include "star/platform/sdl/sdl_window.hpp"
@@ -39,6 +37,7 @@ namespace star::application {
       private:
         ApplicationConfig m_config;
         std::unique_ptr<Window> m_window;
+
         LayerStack m_layer_stack;
         bool m_running = false;
 

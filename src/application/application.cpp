@@ -1,19 +1,28 @@
 #include "star/application/application.hpp"
 
-#include <utility>
-
-#include "star/core/assert.hpp"
-
 namespace star::application {
     Application* Application::s_instance = nullptr;
 
     Application::Application(ApplicationConfig config) : m_config(std::move(config)) {
-        STAR_ASSERT(!s_instance, "Application already exists!");
+        Logger::initialize(LogLevel::Debug, LogLevel::Trace, "logs/star_engine.log");
+
+        STAR_CORE_ASSERT(!s_instance, "Application already exists!");
+
         s_instance = this;
+
+        m_window = Window::create_platform_window();
+        m_window->create(m_config.window);
+
+        STAR_CORE_INFO("Application created: {}", m_config.title);
     }
 
     Application::~Application() {
+        STAR_CORE_INFO("Application destructor called");
+
+        m_window->destroy();
+
         shutdown();
+        Logger::shutdown();
         s_instance = nullptr;
     }
 
@@ -29,6 +38,8 @@ namespace star::application {
             for (const auto& layer : m_layer_stack) {
                 layer->update(delta_time);
             }
+
+            m_window->pool_events();
 
             on_update(delta_time);
 

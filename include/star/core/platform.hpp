@@ -14,3 +14,7 @@
 #elif defined(__ANDROID__)
     #define STAR_PLATFORM_ANDROID
 #endif
+
+#if !defined(STAR_USE_SDL) && !defined(STAR_USE_GLFW) && !defined(STAR_USE_WIN32)
+    #error "No windowing system defined! Define STAR_USE_SDL in CMake."
+#endif

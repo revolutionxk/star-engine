@@ -1,7 +1,7 @@
 #include "star/platform/window.hpp"
 
+#include "sdl/sdl_window.hpp"
 #include "star/core/common.hpp"
-#include "star/platform/sdl/sdl_window.hpp"
 
 namespace star::platform {
     bool Window::create(const VideoMode& video_mode) {

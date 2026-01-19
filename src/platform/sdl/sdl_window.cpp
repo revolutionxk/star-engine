@@ -1,4 +1,4 @@
-#include "star/platform/sdl/sdl_window.hpp"
+#include "sdl_window.hpp"
 
 namespace star::platform::sdl {
     SDLWindow::SDLWindow() {

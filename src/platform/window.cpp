@@ -4,6 +4,11 @@
 #include "star/platform/sdl/sdl_window.hpp"
 
 namespace star::platform {
+    bool Window::create(const WindowConfig& config) {
+        m_opened = true;
+        return true;
+    }
+
     std::unique_ptr<Window> Window::create_platform_window() {
 #if defined(STAR_USE_SDL)
         return std::make_unique<sdl::SDLWindow>();

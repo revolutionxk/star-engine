@@ -3,7 +3,7 @@
 namespace star::application {
     Application* Application::s_instance = nullptr;
 
-    Application::Application(ApplicationConfig config) : m_config(std::move(config)) {
+    Application::Application(const ApplicationConfig& config) : m_config(config) {
         Logger::initialize(LogLevel::Debug, LogLevel::Trace, "logs/star_engine.log");
 
         STAR_CORE_ASSERT(!s_instance, "Application already exists!");
@@ -13,15 +13,14 @@ namespace star::application {
         m_window = Window::create_platform_window();
         m_window->create(m_config.window);
 
-        STAR_CORE_INFO("Application created: {}", m_config.title);
+        STAR_LOG_INFO(LogCategory::Application, "Application created: {}", m_config.title);
     }
 
     Application::~Application() {
-        STAR_CORE_INFO("Application destructor called");
-
-        m_window->destroy();
+        STAR_LOG_INFO(LogCategory::Application, "Shutting down application");
 
         shutdown();
+
         Logger::shutdown();
         s_instance = nullptr;
     }
@@ -34,7 +33,12 @@ namespace star::application {
         m_running = true;
 
         while (m_running) {
-            f32 delta_time = 0.016f;
+            constexpr f32 delta_time = 0.016f;
+
+            if (!m_window->is_opened()) {
+                shutdown();
+            }
+
             for (const auto& layer : m_layer_stack) {
                 layer->update(delta_time);
             }
@@ -43,7 +47,7 @@ namespace star::application {
 
             on_update(delta_time);
 
-            for (auto& layer : m_layer_stack) {
+            for (const auto& layer : m_layer_stack) {
                 layer->render();
             }
         }
@@ -54,6 +58,7 @@ namespace star::application {
     void Application::shutdown() {
         on_shutdown();
 
+        m_window->destroy();
         m_running = false;
     }
 

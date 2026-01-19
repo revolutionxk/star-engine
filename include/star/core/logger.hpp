@@ -22,6 +22,7 @@ namespace star {
 
     enum class LogCategory {
         Core,
+        Application,
         Platform,
         Rendering,
         Physics,
@@ -74,6 +75,8 @@ namespace star {
         switch (category) {
             case LogCategory::Core:
                 return "CORE";
+            case LogCategory::Application:
+                return "APPLICATION";
             case LogCategory::Platform:
                 return "PLATFORM";
             case LogCategory::Rendering:

@@ -8,7 +8,7 @@ namespace star::application {
 
     class STAR_EXPORT Application {
       public:
-        explicit Application(ApplicationConfig config);
+        explicit Application(const ApplicationConfig& config);
         virtual ~Application();
 
         i32 run();

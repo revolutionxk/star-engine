@@ -1,18 +1,19 @@
 #pragma once
+#include "command_line_args.hpp"
 #include "star/platform/window.hpp"
 
 namespace star::application {
-    struct ApplicationConfig {
-        const char* title = "Star Engine";
-        i32 width = 1280;
-        i32 height = 720;
+    struct STAR_EXPORT ApplicationConfig {
+        std::string title{"Star Engine"};
 
-        platform::WindowConfig window{
-            .title = title,
-            .width = width,
-            .height = height,
-            .resizable = true,
-            .fullscreen = false,
-        };
+        platform::VideoMode main_window;
+
+        CommandLineArgs command_line_args;
+
+        std::string log_file = "logs/star_engine.log";
+
+        f32 fixed_timestep = 0.016f;
+        u32 max_fps = 0;
+        bool allow_multiple_windows = true;
     };
 } // namespace star::application

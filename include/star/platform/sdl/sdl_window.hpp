@@ -9,7 +9,7 @@ namespace star::platform::sdl {
         SDLWindow();
         ~SDLWindow() override;
 
-        bool create(const WindowConfig& config) override;
+        bool create(const VideoMode& video_mode) override;
         void destroy() override;
 
         void pool_events() override;

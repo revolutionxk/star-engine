@@ -12,24 +12,35 @@ namespace star::platform::sdl {
         SDL_Quit();
     }
 
-    bool SDLWindow::create(const WindowConfig& config) {
+    bool SDLWindow::create(const VideoMode& video_mode) {
         auto flags = SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
-        if (config.resizable) {
+        if (video_mode.resizable) {
             flags |= SDL_WINDOW_RESIZABLE;
         }
 
-        m_window = SDL_CreateWindow(config.title.c_str(), config.width, config.height, flags);
+        switch (video_mode.mode) {
+            case WindowMode::Fullscreen:
+                flags |= SDL_WINDOW_FULLSCREEN;
+                break;
+            case WindowMode::Borderless:
+                flags |= SDL_WINDOW_BORDERLESS;
+                break;
+            case WindowMode::Windowed:
+            default:
+                break;
+        }
+
+        m_window = SDL_CreateWindow("", video_mode.size.x, video_mode.size.y, flags);
 
         if (!m_window) {
             STAR_LOG_ERROR(LogCategory::Platform, "Failed to create SDL window: {}", SDL_GetError());
             return false;
         }
 
-        STAR_LOG_INFO(LogCategory::Platform, "SDL window created: {} ({}x{})", config.title, config.width,
-                      config.height);
+        STAR_LOG_INFO(LogCategory::Platform, "SDL window created: {}x{}", video_mode.size.x, video_mode.size.y);
 
-        return Super::create(config);
+        return Super::create(video_mode);
     }
 
     void SDLWindow::destroy() {

@@ -4,7 +4,8 @@
 #include "star/platform/sdl/sdl_window.hpp"
 
 namespace star::platform {
-    bool Window::create(const WindowConfig& config) {
+    bool Window::create(const VideoMode& video_mode) {
+        m_video_mode = video_mode;
         m_opened = true;
         return true;
     }

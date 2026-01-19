@@ -1,19 +1,12 @@
 #pragma once
+#include "window_config.hpp"
 
 namespace star::platform {
-    struct WindowConfig {
-        std::string title = "Star Engine";
-        int width = 800;
-        int height = 600;
-        bool resizable = true;
-        bool fullscreen = false;
-    };
-
     class Window {
       public:
         virtual ~Window() = default;
 
-        virtual bool create(const WindowConfig& config);
+        virtual bool create(const VideoMode& video_mode);
         virtual void destroy() = 0;
         virtual void pool_events() = 0;
 
@@ -30,5 +23,6 @@ namespace star::platform {
 
       protected:
         bool m_opened = true;
+        VideoMode m_video_mode;
     };
 } // namespace star::platform

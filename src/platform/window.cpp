@@ -10,7 +10,7 @@ namespace star::platform {
         return true;
     }
 
-    std::unique_ptr<Window> Window::create_platform_window() {
+    std::unique_ptr<Window> Window::create() {
 #if defined(STAR_USE_SDL)
         return std::make_unique<sdl::SDLWindow>();
 #else

@@ -2,7 +2,7 @@
 
 namespace star::application {
     WindowId WindowManager::create_window(const platform::VideoMode& video_mode, bool is_main) {
-        auto window = platform::Window::create_platform_window();
+        auto window = platform::Window::create();
         if (!window) {
             STAR_LOG_ERROR(LogCategory::Application, "Failed to create platform window");
             return INVALID_WINDOW_ID;

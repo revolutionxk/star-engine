@@ -19,7 +19,7 @@ namespace star::platform {
         virtual void set_title(const std::string& title) const = 0;
         virtual void set_size(int width, int height) = 0;
 
-        static std::unique_ptr<Window> create_platform_window();
+        static std::unique_ptr<Window> create();
 
       protected:
         bool m_opened = true;

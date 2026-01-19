@@ -13,7 +13,7 @@ message(STATUS "Fetching packages...")
 include(scripts/bgfx.cmake)
 include(scripts/sdl3.cmake)
 include(scripts/spdlog.cmake)
-include(scripts/entt.cmake)
+include(scripts/flecs.cmake)
 include(scripts/freetype.cmake)
 include(scripts/imgui.cmake)
 
@@ -103,7 +103,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${imgui_SOURCE_DIR}"
         "${imgui_SOURCE_DIR}/misc/freetype"
         "${freetype_SOURCE_DIR}/include"
-        "${entt_SOURCE_DIR}/src"
+        "${flecs_SOURCE_DIR}/include"
         "${CMAKE_BINARY_DIR}/include/generated/shaders"
 )
 
@@ -117,6 +117,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         shaders
         imgui
         freetype
+        flecs::flecs_static
         ${CMAKE_DL_LIBS}
 )
 

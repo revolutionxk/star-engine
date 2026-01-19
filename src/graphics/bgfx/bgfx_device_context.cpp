@@ -1,9 +1,9 @@
 #include "bgfx_device_context.hpp"
 
 namespace star::graphics {
-    BGFXDeviceContext::~BGFXDeviceContext() {}
+    BGFXDeviceContext::BGFXDeviceContext(void* native_window_handle) : DeviceContext(native_window_handle) {}
 
-    void BGFXDeviceContext::initialize() {}
+    BGFXDeviceContext::~BGFXDeviceContext() {}
 
     void BGFXDeviceContext::begin_frame() {}
 

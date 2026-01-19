@@ -4,10 +4,9 @@
 namespace star::graphics {
     class BGFXDeviceContext : public DeviceContext {
       public:
-        BGFXDeviceContext() = default;
+        explicit BGFXDeviceContext(void* native_window_handle);
         ~BGFXDeviceContext() override;
 
-        void initialize() override;
         void begin_frame() override;
         void present() override;
         void end_frame() override;

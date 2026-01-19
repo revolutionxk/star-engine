@@ -12,7 +12,7 @@ namespace star::graphics {
 
       public:
         BGFXDevice() = default;
-        ~BGFXDevice() override = default;
+        ~BGFXDevice() override;
 
         std::unique_ptr<DeviceContext> create_context() override;
 
@@ -22,7 +22,7 @@ namespace star::graphics {
 
         DeviceCaps caps() const override;
 
-        void initialize(GraphicsDeviceConfig& device) override;
+        bool initialize(GraphicsDeviceConfig& device) override;
         void shutdown() override;
     };
 } // namespace star::graphics

@@ -7,17 +7,25 @@
 #include "star/platform/window.hpp"
 
 namespace star::graphics {
-    std::unique_ptr<DeviceContext> BGFXDevice::create_context() {
-        return std::make_unique<BGFXDeviceContext>();
+    BGFXDevice::~BGFXDevice() {
+        if (!m_initialized) {
+            return;
+        }
+
+        shutdown();
     }
 
-    void BGFXDevice::initialize(GraphicsDeviceConfig& device) {
+    std::unique_ptr<DeviceContext> BGFXDevice::create_context() {
+        return std::make_unique<BGFXDeviceContext>(m_config.platform.native_window_handle);
+    }
+
+    bool BGFXDevice::initialize(GraphicsDeviceConfig& device) {
         bgfx::Init init;
         bgfx::PlatformData platform_data{};
 
         if (device.platform.native_window_handle == nullptr) {
             STAR_LOG_ERROR(LogCategory::Graphics, "No window available for BGFX initialization");
-            return;
+            return false;
         }
 
         platform_data.nwh = device.platform.native_window_handle;
@@ -35,7 +43,7 @@ namespace star::graphics {
 
         if (!bgfx::init(init)) {
             STAR_LOG_ERROR(LogCategory::Graphics, "Failed to initialize bgfx");
-            return;
+            return false;
         }
 
         constexpr auto clear_hex = static_cast<uint32_t>(0x443355FF);
@@ -48,11 +56,19 @@ namespace star::graphics {
 
         bgfx::setViewRect(0, 0, 0, init.resolution.width, init.resolution.height);
 
+        m_initialized = true;
+
         const auto caps = bgfx::getCaps();
         STAR_LOG_INFO(LogCategory::Graphics, "Graphics API: {}", bgfx::getRendererName(caps->rendererType));
+
+        return true;
     }
 
-    void BGFXDevice::shutdown() {}
+    void BGFXDevice::shutdown() {
+        bgfx::shutdown();
+
+        m_initialized = false;
+    }
 
     DeviceCaps BGFXDevice::caps() const {
         const auto caps = bgfx::getCaps();

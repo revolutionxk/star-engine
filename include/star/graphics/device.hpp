@@ -28,16 +28,21 @@ namespace star::graphics {
       public:
         virtual ~Device() = default;
 
-        virtual void initialize(GraphicsDeviceConfig& device) = 0;
+        virtual bool initialize(GraphicsDeviceConfig& device) = 0;
         virtual void shutdown() = 0;
         virtual std::string name() const = 0;
         virtual DeviceCaps caps() const = 0;
 
         virtual std::unique_ptr<DeviceContext> create_context() = 0;
 
+        bool is_initialized() const {
+            return m_initialized;
+        }
+
         static std::unique_ptr<Device> create(GraphicsAPI api = GraphicsAPI::Auto);
 
-      private:
-        GraphicsDeviceConfig config;
+      protected:
+        bool m_initialized = false;
+        GraphicsDeviceConfig m_config;
     };
 } // namespace star::graphics

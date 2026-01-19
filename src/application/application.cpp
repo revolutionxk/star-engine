@@ -49,8 +49,13 @@ namespace star::application {
             .api = m_config.graphics_api, .platform = platform_data, .window_size = size};
 
         m_device = graphics::Device::create(m_config.graphics_api);
-        if (m_device->initialize(device_config); !m_device) {
-            STAR_LOG_ERROR(LogCategory::Application, "Failed to initialize graphics device");
+        if (!m_device) {
+            STAR_LOG_ERROR(LogCategory::Application, "Failed to create graphics device");
+            return;
+        }
+
+        if (!m_device->initialize(device_config)) {
+            STAR_LOG_ERROR(LogCategory::Application, "Graphics device initialization failed");
             return;
         }
 

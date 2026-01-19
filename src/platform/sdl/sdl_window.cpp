@@ -71,7 +71,39 @@ namespace star::platform::sdl {
     }
 
     void* SDLWindow::handle() const {
-        return m_window;
+        if (!m_window) {
+            return nullptr;
+        }
+        const auto hwnd = static_cast<HWND>(
+            SDL_GetPointerProperty(SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+
+        return hwnd;
+    }
+
+    void* SDLWindow::display_handle() const {
+        if (!m_window) {
+            return nullptr;
+        }
+
+#ifdef STAR_PLATFORM_LINUX
+        if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) {
+            const auto xdisplay =
+                SDL_GetPointerProperty(SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr);
+            return xdisplay;
+        }
+
+        if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0) {
+            const auto display = static_cast<struct wl_display*>(SDL_GetPointerProperty(
+                SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr));
+            return display;
+        }
+#endif
+
+        return nullptr;
+    }
+
+    PlatformData SDLWindow::platform_data() {
+        return {handle(), display_handle()};
     }
 
     Vector2 SDLWindow::size() const {

@@ -1,5 +1,7 @@
 #include "star/application/application.hpp"
 
+#include "star/graphics/device.hpp"
+
 namespace star::application {
 
     Application* Application::s_instance = nullptr;
@@ -33,9 +35,32 @@ namespace star::application {
             return;
         }
 
-        if (const auto* main_window = m_window_manager.get_main_window()) {
-            main_window->set_title(m_config.title);
+        auto* main_window = m_window_manager.get_main_window();
+        if (!main_window) {
+            STAR_ASSERT(false, "Main window is null after creation");
+            return;
         }
+        main_window->set_title(m_config.title);
+
+        const auto size = main_window->size();
+        const auto platform_data = main_window->platform_data();
+
+        graphics::GraphicsDeviceConfig device_config{
+            .api = m_config.graphics_api, .platform = platform_data, .window_size = size};
+
+        m_device = graphics::Device::create(m_config.graphics_api);
+        if (m_device->initialize(device_config); !m_device) {
+            STAR_LOG_ERROR(LogCategory::Application, "Failed to initialize graphics device");
+            return;
+        }
+
+        auto context = m_device->create_context();
+        if (!context) {
+            STAR_LOG_ERROR(LogCategory::Application, "Failed to create device context for main window");
+            return;
+        }
+
+        main_window->set_device_context(std::move(context));
 
         STAR_LOG_INFO(LogCategory::Application, "Application created: {}", m_config.title);
     }

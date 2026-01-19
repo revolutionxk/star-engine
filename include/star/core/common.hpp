@@ -73,17 +73,6 @@
 #include <windows.h>
 #endif
 
-// BGFX
-#include <bgfx/bgfx.h>
-#include <bgfx/embedded_shader.h>
-#include <bgfx/platform.h>
-#include <bx/bx.h>
-#include <bx/math.h>
-#include <bx/timer.h>
-
-// SDL3
-#include <SDL3/SDL.h>
-
 // Logging
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>

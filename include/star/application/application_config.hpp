@@ -1,5 +1,6 @@
 #pragma once
 #include "command_line_args.hpp"
+#include "star/graphics/device.hpp"
 #include "star/platform/window.hpp"
 
 namespace star::application {
@@ -7,6 +8,7 @@ namespace star::application {
         std::string title{"Star Engine"};
 
         platform::VideoMode main_window;
+        graphics::GraphicsAPI graphics_api = graphics::GraphicsAPI::Auto;
 
         CommandLineArgs command_line_args;
 

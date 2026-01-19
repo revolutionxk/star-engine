@@ -32,6 +32,7 @@ namespace star {
         Network,
         Editor,
         Game,
+        Graphics,
     };
 
     class LogScope {

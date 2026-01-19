@@ -1,8 +1,12 @@
 #pragma once
+
 #include "application_config.hpp"
 #include "layer_stack.hpp"
-#include "star/platform/sdl/sdl_window.hpp"
 #include "window_manager.hpp"
+
+namespace star::graphics {
+    class Device;
+}
 
 namespace star::application {
     class CommandLineArgs;
@@ -45,6 +49,10 @@ namespace star::application {
             return m_config.command_line_args;
         }
 
+        graphics::Device& device() const {
+            return *m_device;
+        }
+
         static Application& instance() {
             return *s_instance;
         }
@@ -70,6 +78,7 @@ namespace star::application {
       private:
         WindowManager m_window_manager;
         LayerStack m_layer_stack;
+        std::unique_ptr<graphics::Device> m_device;
         bool m_running = false;
 
         static Application* s_instance;

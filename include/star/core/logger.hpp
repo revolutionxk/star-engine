@@ -35,7 +35,7 @@ namespace star {
         Graphics,
     };
 
-    class LogScope {
+    class STAR_EXPORT LogScope {
       public:
         explicit LogScope(std::string_view name);
         ~LogScope();
@@ -49,7 +49,7 @@ namespace star {
         std::string m_name;
     };
 
-    class Logger {
+    class STAR_EXPORT Logger {
       public:
         static void initialize(LogLevel console_level = LogLevel::Info, LogLevel file_level = LogLevel::Trace,
                                std::string_view log_file_path = "logs/star_engine.log");
@@ -96,6 +96,8 @@ namespace star {
                 return "EDITOR";
             case LogCategory::Game:
                 return "GAME";
+            case LogCategory::Graphics:
+                return "GRAPHICS";
             default:
                 return "UNKNOWN";
         }

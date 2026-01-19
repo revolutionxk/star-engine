@@ -38,7 +38,7 @@ namespace star {
         s_client_logger->flush_on(spdlog::level::err);
         spdlog::register_logger(s_client_logger);
 
-        for (int i = 0; i <= static_cast<int>(LogCategory::Game); ++i) {
+        for (int i = 0; i <= static_cast<int>(LogCategory::Graphics); ++i) {
             auto category = static_cast<LogCategory>(i);
             auto category_logger =
                 std::make_shared<spdlog::logger>(log_category_to_string(category), sinks.begin(), sinks.end());
@@ -70,7 +70,12 @@ namespace star {
     }
 
     std::shared_ptr<spdlog::logger>& Logger::get_category_logger(LogCategory category) {
-        return s_category_loggers[category];
+        auto it = s_category_loggers.find(category);
+        if (it == s_category_loggers.end()) {
+            STAR_CORE_ERROR("Logger for category '{}' not found, using core logger", log_category_to_string(category));
+            return s_core_logger;
+        }
+        return it->second;
     }
 
     void Logger::set_core_level(LogLevel level) {

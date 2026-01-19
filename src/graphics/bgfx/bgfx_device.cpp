@@ -47,7 +47,24 @@ namespace star::graphics {
         bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, clear_hex, 1.0f, 0);
 
         bgfx::setViewRect(0, 0, 0, init.resolution.width, init.resolution.height);
+
+        const auto caps = bgfx::getCaps();
+        STAR_LOG_INFO(LogCategory::Graphics, "Graphics API: {}", bgfx::getRendererName(caps->rendererType));
     }
 
     void BGFXDevice::shutdown() {}
+
+    DeviceCaps BGFXDevice::caps() const {
+        const auto caps = bgfx::getCaps();
+
+        DeviceCaps device_caps{
+            .renderer_name = bgfx::getRendererName(caps->rendererType),
+            .vendor_name = caps->vendorId == BGFX_PCI_ID_NONE ? "Unknown" : std::to_string(caps->vendorId),
+            .max_texture_size = static_cast<int>(caps->limits.maxTextureSize),
+            .max_texture_units = static_cast<int>(caps->limits.maxTextureSamplers),
+            .supports_compute_shaders = (caps->supported & BGFX_CAPS_COMPUTE) != 0,
+        };
+
+        return device_caps;
+    }
 } // namespace star::graphics

@@ -16,6 +16,12 @@ namespace star::graphics {
 
         std::unique_ptr<DeviceContext> create_context() override;
 
+        std::string name() const override {
+            return "BGFX";
+        }
+
+        DeviceCaps caps() const override;
+
         void initialize(GraphicsDeviceConfig& device) override;
         void shutdown() override;
     };

@@ -2,6 +2,7 @@
 
 #include "application_config.hpp"
 #include "layer_stack.hpp"
+#include "star/resources/resource_manager.hpp"
 #include "window_manager.hpp"
 
 namespace star::graphics {
@@ -79,6 +80,8 @@ namespace star::application {
         WindowManager m_window_manager;
         LayerStack m_layer_stack;
         std::unique_ptr<graphics::Device> m_device;
+        std::unique_ptr<resources::ResourceManager> m_resource_manager;
+
         bool m_running = false;
 
         static Application* s_instance;

@@ -1,8 +1,18 @@
 #pragma once
+#include "resource_handle.hpp"
 #include "star/platform/platform_data.hpp"
 
 namespace star::graphics {
+    struct BufferDescriptor;
+    struct ShaderDescriptor;
+    struct TextureDescriptor;
+
+    struct Buffer;
+    struct Shader;
+    struct Texture;
+
     class DeviceContext;
+
     enum class GraphicsAPI {
         Auto,
         BGFX,
@@ -34,6 +44,14 @@ namespace star::graphics {
         virtual DeviceCaps caps() const = 0;
 
         virtual std::unique_ptr<DeviceContext> create_context() = 0;
+
+        virtual ResourceHandle<Buffer> create_buffer(BufferDescriptor& buffer_descriptor) = 0;
+        virtual ResourceHandle<Texture> create_texture(TextureDescriptor& buffer_descriptor) = 0;
+        virtual ResourceHandle<Shader> create_shader(ShaderDescriptor& buffer_descriptor) = 0;
+
+        virtual void destroy_buffer(ResourceHandle<Buffer> handle) = 0;
+        virtual void destroy_texture(ResourceHandle<Texture> handle) = 0;
+        virtual void destroy_shader(ResourceHandle<Shader> handle) = 0;
 
         bool is_initialized() const {
             return m_initialized;

@@ -67,6 +67,8 @@ namespace star::application {
 
         main_window->set_device_context(std::move(context));
 
+        m_resource_manager = std::make_unique<resources::ResourceManager>(*m_device);
+
         STAR_LOG_INFO(LogCategory::Application, "Application created: {}", m_config.title);
     }
 

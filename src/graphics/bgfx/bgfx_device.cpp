@@ -63,7 +63,7 @@ namespace star::graphics {
         init.resolution.width = static_cast<u32>(size.x);
         init.resolution.height = static_cast<u32>(size.y);
         init.debug = false;
-        init.resolution.reset = 0;
+        init.resolution.reset = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X4;
 
         if (!bgfx::init(init)) {
             STAR_LOG_ERROR(LogCategory::Graphics, "Failed to initialize bgfx");
@@ -81,6 +81,7 @@ namespace star::graphics {
         bgfx::setViewRect(0, 0, 0, init.resolution.width, init.resolution.height);
 
         m_initialized = true;
+        m_config = device;
 
         const auto caps = bgfx::getCaps();
         STAR_LOG_INFO(LogCategory::Graphics, "Graphics API: {}", bgfx::getRendererName(caps->rendererType));

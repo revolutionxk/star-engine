@@ -32,6 +32,7 @@ namespace star {
         Network,
         Editor,
         Game,
+        Scene,
         Graphics,
     };
 
@@ -96,6 +97,8 @@ namespace star {
                 return "EDITOR";
             case LogCategory::Game:
                 return "GAME";
+            case LogCategory::Scene:
+                return "SCENE";
             case LogCategory::Graphics:
                 return "GRAPHICS";
             default:

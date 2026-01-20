@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 
+#include "quaternion.hpp"
 #include "vector3.hpp"
 #include "vector4.hpp"
 
@@ -77,6 +78,33 @@ namespace star::math {
         Vector3T<T> transform_direction(const Vector3T<T>& dir) const {
             return {m[0] * dir.x + m[4] * dir.y + m[8] * dir.z, m[1] * dir.x + m[5] * dir.y + m[9] * dir.z,
                     m[2] * dir.x + m[6] * dir.y + m[10] * dir.z};
+        }
+
+        static Matrix4T from_quaternion(const QuaternionT<T>& q) {
+            Matrix4T result;
+            T xx = q.x * q.x;
+            T yy = q.y * q.y;
+            T zz = q.z * q.z;
+            T xy = q.x * q.y;
+            T xz = q.x * q.z;
+            T yz = q.y * q.z;
+            T wx = q.w * q.x;
+            T wy = q.w * q.y;
+            T wz = q.w * q.z;
+
+            result(0, 0) = T(1) - T(2) * (yy + zz);
+            result(0, 1) = T(2) * (xy - wz);
+            result(0, 2) = T(2) * (xz + wy);
+
+            result(1, 0) = T(2) * (xy + wz);
+            result(1, 1) = T(1) - T(2) * (xx + zz);
+            result(1, 2) = T(2) * (yz - wx);
+
+            result(2, 0) = T(2) * (xz - wy);
+            result(2, 1) = T(2) * (yz + wx);
+            result(2, 2) = T(1) - T(2) * (xx + yy);
+
+            return result;
         }
 
         static Matrix4T translate(const Vector3T<T>& translation) {
@@ -209,13 +237,80 @@ namespace star::math {
         }
 
         [[nodiscard]] T determinant() const {
-            // TODO: Implement full determinant calculation
-            return T(1); // Placeholder
+            T a0 = m[0] * m[5] - m[1] * m[4];
+            T a1 = m[0] * m[6] - m[2] * m[4];
+            T a2 = m[0] * m[7] - m[3] * m[4];
+            T a3 = m[1] * m[6] - m[2] * m[5];
+            T a4 = m[1] * m[7] - m[3] * m[5];
+            T a5 = m[2] * m[7] - m[3] * m[6];
+            T b0 = m[8] * m[13] - m[9] * m[12];
+            T b1 = m[8] * m[14] - m[10] * m[12];
+            T b2 = m[8] * m[15] - m[11] * m[12];
+            T b3 = m[9] * m[14] - m[10] * m[13];
+            T b4 = m[9] * m[15] - m[11] * m[13];
+            T b5 = m[10] * m[15] - m[11] * m[14];
+
+            return a0 * b5 - a1 * b4 + a2 * b3 + a3 * b2 - a4 * b1 + a5 * b0;
         }
 
         [[nodiscard]] Matrix4T inversed() const {
-            // TODO: Implement full matrix inversion
-            return identity(); // Placeholder
+            Matrix4T result;
+
+            T a0 = m[0] * m[5] - m[1] * m[4];
+            T a1 = m[0] * m[6] - m[2] * m[4];
+            T a2 = m[0] * m[7] - m[3] * m[4];
+            T a3 = m[1] * m[6] - m[2] * m[5];
+            T a4 = m[1] * m[7] - m[3] * m[5];
+            T a5 = m[2] * m[7] - m[3] * m[6];
+            T b0 = m[8] * m[13] - m[9] * m[12];
+            T b1 = m[8] * m[14] - m[10] * m[12];
+            T b2 = m[8] * m[15] - m[11] * m[12];
+            T b3 = m[9] * m[14] - m[10] * m[13];
+            T b4 = m[9] * m[15] - m[11] * m[13];
+            T b5 = m[10] * m[15] - m[11] * m[14];
+
+            T det = a0 * b5 - a1 * b4 + a2 * b3 + a3 * b2 - a4 * b1 + a5 * b0;
+
+            if (std::abs(det) < T(1e-8)) {
+                return identity();
+            }
+
+            Matrix4T inv;
+            inv.m[0] = m[5] * b5 - m[6] * b4 + m[7] * b3;
+            inv.m[1] = -m[1] * b5 + m[2] * b4 - m[3] * b3;
+            inv.m[2] = m[13] * a5 - m[14] * a4 + m[15] * a3;
+            inv.m[3] = -m[9] * a5 + m[10] * a4 - m[11] * a3;
+            inv.m[4] = -m[4] * b5 + m[6] * b2 - m[7] * b1;
+            inv.m[5] = m[0] * b5 - m[2] * b2 + m[3] * b1;
+            inv.m[6] = -m[12] * a5 + m[14] * a2 - m[15] * a1;
+            inv.m[7] = m[8] * a5 - m[10] * a2 + m[11] * a1;
+            inv.m[8] = m[4] * b4 - m[5] * b2 + m[7] * b0;
+            inv.m[9] = -m[0] * b4 + m[1] * b2 - m[3] * b0;
+            inv.m[10] = m[12] * a4 - m[13] * a2 + m[15] * a0;
+            inv.m[11] = -m[8] * a4 + m[9] * a2 - m[11] * a0;
+            inv.m[12] = -m[4] * b3 + m[5] * b1 - m[6] * b0;
+            inv.m[13] = m[0] * b3 - m[1] * b1 + m[2] * b0;
+            inv.m[14] = -m[12] * a3 + m[13] * a1 - m[14] * a0;
+            inv.m[15] = m[8] * a3 - m[9] * a1 + m[10] * a0;
+
+            T inv_det = T(1) / det;
+            for (int i = 0; i < 16; ++i) {
+                result.m[i] = inv.m[i] * inv_det;
+            }
+
+            return result;
+        }
+
+        static Matrix4T inverse(const Matrix4T& mat) {
+            return mat.inversed();
+        }
+
+        [[nodiscard]] const T* data() const {
+            return m;
+        }
+
+        [[nodiscard]] T* data() {
+            return m;
         }
     };
 
@@ -233,6 +328,7 @@ namespace star::math {
         }
 
         // TODO: Add full 3x3 matrix operations
+        // ;( I'M TOO LAZY, MAYBE I'LL DO IT LATER
     };
 
     using Matrix3 = Matrix3T<f32>;

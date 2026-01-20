@@ -3,10 +3,19 @@
 #include "application_config.hpp"
 #include "layer_stack.hpp"
 #include "star/resources/resource_manager.hpp"
+#include "star/platform/time/clock.hpp"
 #include "window_manager.hpp"
+
+namespace star::scene {
+    class SceneManager;
+}
 
 namespace star::graphics {
     class Device;
+}
+
+namespace star::systems {
+    class RenderSystem;
 }
 
 namespace star::application {
@@ -54,6 +63,18 @@ namespace star::application {
             return *m_device;
         }
 
+        resources::ResourceManager& resource_manager() const {
+            return *m_resource_manager;
+        }
+
+        scene::SceneManager& scene_manager() const {
+            return *m_scene_manager;
+        }
+
+        systems::RenderSystem& render_system() const {
+            return *m_render_system;
+        }
+
         static Application& instance() {
             return *s_instance;
         }
@@ -81,7 +102,10 @@ namespace star::application {
         LayerStack m_layer_stack;
         std::unique_ptr<graphics::Device> m_device;
         std::unique_ptr<resources::ResourceManager> m_resource_manager;
+        std::unique_ptr<scene::SceneManager> m_scene_manager;
+        std::unique_ptr<systems::RenderSystem> m_render_system;
 
+        platform::FrameTimer m_frame_timer;
         bool m_running = false;
 
         static Application* s_instance;

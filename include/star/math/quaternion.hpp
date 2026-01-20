@@ -159,15 +159,15 @@ namespace star::math {
             return {pitch, yaw, roll};
         }
 
-        [[nodiscard]] Matrix4T<T> to_matrix() const {
-            T xx = x * x, yy = y * y, zz = z * z;
-            T xy = x * y, xz = x * z, yz = y * z;
-            T wx = w * x, wy = w * y, wz = w * z;
-
-            return Matrix4T<T>(T(1) - T(2) * (yy + zz), T(2) * (xy + wz), T(2) * (xz - wy), 0, T(2) * (xy - wz),
-                               T(1) - T(2) * (xx + zz), T(2) * (yz + wx), 0, T(2) * (xz + wy), T(2) * (yz - wx),
-                               T(1) - T(2) * (xx + yy), 0, 0, 0, 0, 1);
-        }
+        // [[nodiscard]] Matrix4T<T> to_rotation_matrix() const {
+        //     T xx = x * x, yy = y * y, zz = z * z;
+        //     T xy = x * y, xz = x * z, yz = y * z;
+        //     T wx = w * x, wy = w * y, wz = w * z;
+        //
+        //     return Matrix4T<T>(T(1) - T(2) * (yy + zz), T(2) * (xy + wz), T(2) * (xz - wy), 0, T(2) * (xy - wz),
+        //                        T(1) - T(2) * (xx + zz), T(2) * (yz + wx), 0, T(2) * (xz + wy), T(2) * (yz - wx),
+        //                        T(1) - T(2) * (xx + yy), 0, 0, 0, 0, 1);
+        // }
 
         [[nodiscard]] bool is_normalized() const {
             return approximately(length_squared(), T(1));

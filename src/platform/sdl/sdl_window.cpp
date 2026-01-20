@@ -64,6 +64,40 @@ namespace star::platform::sdl {
                 case SDL_EVENT_QUIT:
                     m_opened = false;
                     break;
+
+                case SDL_EVENT_WINDOW_RESIZED:
+                case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
+                    const auto new_size = size();
+                    STAR_LOG_DEBUG(LogCategory::Platform, "Window resized to {}x{}", static_cast<u32>(new_size.x),
+                                   static_cast<u32>(new_size.y));
+
+                    if (m_device_context) {
+                        m_device_context->resize(static_cast<u32>(new_size.x), static_cast<u32>(new_size.y));
+                    }
+                    break;
+                }
+
+                case SDL_EVENT_WINDOW_MINIMIZED:
+                    STAR_LOG_DEBUG(LogCategory::Platform, "Window minimized");
+                    break;
+
+                case SDL_EVENT_WINDOW_MAXIMIZED:
+                    STAR_LOG_DEBUG(LogCategory::Platform, "Window maximized");
+                    break;
+
+                case SDL_EVENT_WINDOW_FOCUS_GAINED:
+                    STAR_LOG_TRACE(LogCategory::Platform, "Window gained focus");
+                    break;
+
+                case SDL_EVENT_WINDOW_FOCUS_LOST:
+                    STAR_LOG_TRACE(LogCategory::Platform, "Window lost focus");
+                    break;
+
+                case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                    STAR_LOG_INFO(LogCategory::Platform, "Window close requested");
+                    m_opened = false;
+                    break;
+
                 default:
                     break;
             }
@@ -130,5 +164,9 @@ namespace star::platform::sdl {
         }
 
         SDL_SetWindowSize(m_window, width, height);
+
+        if (m_device_context) {
+            m_device_context->resize(static_cast<u32>(width), static_cast<u32>(height));
+        }
     }
 } // namespace star::platform::sdl

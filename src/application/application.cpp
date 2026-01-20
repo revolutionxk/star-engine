@@ -1,6 +1,8 @@
 #include "star/application/application.hpp"
 
 #include "star/graphics/device.hpp"
+#include "star/scene/scene_manager.hpp"
+#include "star/systems/render_system.hpp"
 
 namespace star::application {
 
@@ -65,9 +67,17 @@ namespace star::application {
             return;
         }
 
+        context->resize(static_cast<u32>(size.x), static_cast<u32>(size.y));
+
         main_window->set_device_context(std::move(context));
 
         m_resource_manager = std::make_unique<resources::ResourceManager>(*m_device);
+
+        m_scene_manager = std::make_unique<scene::SceneManager>();
+        m_scene_manager->create_scene("MainScene");
+
+        m_render_system = std::make_unique<systems::RenderSystem>(*m_device);
+        m_render_system->set_resource_manager(m_resource_manager.get());
 
         STAR_LOG_INFO(LogCategory::Application, "Application created: {}", m_config.title);
     }
@@ -91,8 +101,12 @@ namespace star::application {
 
         STAR_LOG_INFO(LogCategory::Application, "Entering main loop");
 
+        if (m_config.max_fps > 0) {
+            m_frame_timer.set_target_fps(m_config.max_fps);
+        }
+
         while (m_running) {
-            const f32 delta_time = m_config.fixed_timestep;
+            const f32 delta_time = m_config.fixed_timestep > 0.0f ? m_config.fixed_timestep : m_frame_timer.tick();
 
             if (!m_window_manager.has_open_windows()) {
                 STAR_LOG_INFO(LogCategory::Application, "All windows closed, shutting down");
@@ -106,6 +120,37 @@ namespace star::application {
 
             m_window_manager.poll_events();
             on_update(delta_time);
+
+            if (m_scene_manager) {
+                m_scene_manager->update(delta_time);
+            }
+
+            for (const auto window_id : m_window_manager.get_all_window_ids()) {
+                auto* win = m_window_manager.get_window(window_id);
+                if (!win || !win->is_opened() || !win->device_context()) {
+                    continue;
+                }
+
+                const auto win_size = win->size();
+
+                if (win_size.x <= 0.0f || win_size.y <= 0.0f) {
+                    continue;
+                }
+
+                auto* context = win->device_context();
+
+                context->begin_frame();
+
+                if (m_scene_manager && m_render_system) {
+                    m_render_system->set_viewport_size(static_cast<u32>(win_size.x), static_cast<u32>(win_size.y));
+
+                    if (auto* scene = m_scene_manager->get_active_scene()) {
+                        m_render_system->render(*scene, *context);
+                    }
+                }
+
+                context->end_frame();
+            }
 
             for (const auto& layer : m_layer_stack) {
                 layer->render();
@@ -126,6 +171,10 @@ namespace star::application {
         STAR_LOG_INFO(LogCategory::Application, "Application shutdown requested");
 
         on_shutdown();
+
+        if (m_scene_manager) {
+            m_scene_manager->destroy_all_scenes();
+        }
 
         m_window_manager.destroy_all();
         m_running = false;

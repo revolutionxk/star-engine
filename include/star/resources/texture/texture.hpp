@@ -37,7 +37,7 @@ namespace star::resources {
 
     struct Texture : Resource {
         std::vector<u8> data{};
-        ResourceHandle<Texture> handle{};
+        ResourceHandle<graphics::Texture> handle{};
         TextureDescriptor desc{};
 
         u32 mipmap_count() const {

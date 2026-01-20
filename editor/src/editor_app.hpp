@@ -10,7 +10,6 @@ namespace star::editor {
         ~EditorApp() override = default;
 
       protected:
-        bool on_configure(ApplicationConfig& config);
         bool on_initialize() override;
         void on_shutdown() override;
         void on_update(f32 delta_time) override;

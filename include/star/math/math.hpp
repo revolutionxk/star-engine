@@ -1,5 +1,6 @@
 #pragma once
 
+#include "aabb.hpp"
 #include "common.hpp"
 #include "matrix.hpp"
 #include "quaternion.hpp"
@@ -8,6 +9,8 @@
 #include "vector4.hpp"
 
 namespace star {
+    using math::AABB;
+    using math::AABBd;
     using math::approximately;
     using math::clamp;
     using math::Color3;

@@ -1,343 +1,137 @@
 #include "star/scene/scene.hpp"
-#include "star/scene/entity_registry.hpp"
-#include "star/app/app.hpp"
-#include <algorithm>
-#include <spdlog/spdlog.h>
 
-#include "star/scene/camera.hpp"
-#include "star/scene/transform.hpp"
-#include "star/render/renderer_components.hpp"
+#include "star/core/common.hpp"
+#include "star/rendering/components/material.hpp"
+#include "star/rendering/components/mesh_renderer.hpp"
+#include "star/scene/components/camera.hpp"
+#include "star/scene/components/transform.hpp"
 
-namespace star {
-    SceneImpl::SceneImpl(Scene &scene)
-        : _scene(scene)
-          , _name("Scene") {
+namespace star::scene {
+    Scene::Scene(const std::string& name) : m_name(name) {
+        STAR_LOG_INFO(LogCategory::Scene, "Creating scene '{}'", m_name);
+
+        register_components();
+        register_systems();
     }
 
-    SceneImpl::~SceneImpl() {
+    Scene::~Scene() {
         shutdown();
     }
 
-    void SceneImpl::init(App &app) {
-        _app = &app;
+    void Scene::register_components() {
+        m_world.component<Transform>("Transform");
+        m_world.component<Camera>("Camera");
 
-        for (auto &component: _components) {
-            component->init(_scene, app);
-        }
+        m_world.component<components::MeshRenderer>("MeshRenderer");
+        m_world.component<components::Material>("Material");
 
-        auto &cameras = _registry.storage<Camera>();
-        for (auto camera = cameras.rbegin(), last = cameras.rend(); camera != last; ++camera) {
-            camera->init(_scene, app);
-        }
-
-        _registry.on_construct<Camera>().connect<&SceneImpl::on_camera_constructed>(*this);
-        _registry.on_destroy<Camera>().connect<&SceneImpl::on_camera_destroyed>(*this);
+        STAR_LOG_DEBUG(LogCategory::Scene, "Scene '{}': Components registered", m_name);
     }
 
-    void SceneImpl::on_camera_constructed(EntityRegistry &registry, const Entity entity) const {
-        if (_app) {
-            auto &camera = registry.get<Camera>(entity);
-            camera.init(_scene, *_app);
-        }
+    void Scene::register_systems() {
+        m_world.system<Transform>("TransformPropagation")
+            .kind(flecs::OnUpdate)
+            .each([](const flecs::entity e, Transform& transform) {
+                const auto parent = e.parent();
+                if (!parent) {
+                    return;
+                }
+
+                const auto& parent_transform = parent.get<Transform>();
+            });
+
+        STAR_LOG_DEBUG(LogCategory::Scene, "Scene '{}': Systems registered", m_name);
     }
 
-    void SceneImpl::on_camera_destroyed(EntityRegistry &registry, const Entity entity) const {
-        if (_app) {
-            auto &camera = registry.get<Camera>(entity);
-            camera.shutdown();
-        }
-    }
-
-    void SceneImpl::shutdown() {
-        if (!_app) {
+    void Scene::ready() {
+        if (m_is_ready) {
+            STAR_LOG_WARN(LogCategory::Scene, "Scene '{}' is already ready", m_name);
             return;
         }
 
-        for (auto it = _components.rbegin(); it != _components.rend(); ++it) {
-            (*it)->shutdown();
+        STAR_LOG_INFO(LogCategory::Scene, "Scene '{}': Calling ready on all nodes", m_name);
+
+        for (const auto& node : m_nodes) {
+            node->on_ready();
         }
 
-        _app = nullptr;
+        m_is_ready = true;
     }
 
-    void SceneImpl::render() {
-        auto &cameras = _registry.storage<Camera>();
-        for (auto & camera : std::ranges::reverse_view(cameras)) {
-            camera.render();
-        }
-    }
-
-    void SceneImpl::update(const float delta_time) {
-        if (_paused) {
+    void Scene::update(const float dt) const {
+        if (!m_active)
             return;
+
+        for (const auto& node : m_nodes) {
+            node->on_update(dt);
         }
 
-        for (auto &entity: _registry.view<Camera>()) {
-            auto& camera = _registry.get<Camera>(entity);
-            camera.update(delta_time);
+        m_world.progress(dt);
+    }
+
+    void Scene::shutdown() {
+        if (!m_is_ready)
+            return;
+
+        STAR_LOG_INFO(LogCategory::Scene, "Shutting down scene '{}'", m_name);
+
+        for (const auto& node : m_nodes) {
+            node->on_exit();
         }
 
-        for (const auto &component: _components) {
-            component->update(delta_time);
+        m_nodes.clear();
+        m_root_nodes.clear();
+
+        m_is_ready = false;
+    }
+
+    Node* Scene::find_node(const std::string& path) const {
+        if (path.empty())
+            return nullptr;
+
+        if (path.find('/') == std::string::npos) {
+            return find_node_by_name(path);
+        }
+        Node* current = nullptr;
+        size_t start = 0;
+        size_t end = path.find('/');
+
+        const std::string first_name = path.substr(0, end);
+        for (Node* root : m_root_nodes) {
+            if (root->name() == first_name) {
+                current = root;
+                break;
+            }
         }
 
-        if (_delegate) {
-            _delegate->on_scene_updated(delta_time);
-        }
-    }
+        if (!current)
+            return nullptr;
 
-    bgfx::ViewId SceneImpl::render_reset(const bgfx::ViewId view_id) {
-        _view_id = view_id;
+        start = end + 1;
+        while (start < path.length()) {
+            end = path.find('/', start);
+            if (end == std::string::npos) {
+                end = path.length();
+            }
 
-        for (auto &component: _components) {
-            _view_id = component->render_reset(_view_id);
-        }
+            std::string child_name = path.substr(start, end - start);
+            current = current->find_child(child_name);
 
-        return _view_id;
-    }
+            if (!current)
+                return nullptr;
 
-    void SceneImpl::set_paused(bool paused) {
-        _paused = paused;
-    }
-
-    bool SceneImpl::is_paused() const {
-        return _paused;
-    }
-
-    void SceneImpl::set_name(const std::string &name) {
-        _name = name;
-    }
-
-    void SceneImpl::clear() {
-        _registry.clear();
-    }
-
-    const std::string &SceneImpl::get_name() const {
-        return _name;
-    }
-
-    void SceneImpl::add_scene_component(std::unique_ptr<ISceneComponent> &&component) {
-        if (const auto type_hash = component->get_scene_component_type()) {
-            remove_scene_component(type_hash);
+            start = end + 1;
         }
 
-        if (_app) {
-            component->init(_scene, *_app);
-        }
-
-        _components.push_back(std::move(component));
+        return current;
     }
 
-    ISceneComponent *SceneImpl::get_scene_component(size_t type_hash) {
-        for (auto &component: _components) {
-            if (component->get_scene_component_type() == type_hash) {
-                return component.get();
+    Node* Scene::find_node_by_name(const std::string& name) const {
+        for (auto& node : m_nodes) {
+            if (node->name() == name) {
+                return node.get();
             }
         }
         return nullptr;
     }
-
-    bool SceneImpl::remove_scene_component(size_t type_hash) {
-        auto it = std::find_if(_components.begin(), _components.end(),
-                               [type_hash](const auto &component) {
-                                   return component->get_scene_component_type() == type_hash;
-                               });
-
-        if (it != _components.end()) {
-            if (_app) {
-                (*it)->shutdown();
-            }
-            _components.erase(it);
-            return true;
-        }
-
-        return false;
-    }
-
-    Entity SceneImpl::create_entity() {
-        const Entity entity = _registry.create();
-
-        if (_delegate) {
-            _delegate->on_entity_created(entity);
-        }
-
-        return entity;
-    }
-
-    void SceneImpl::destroy_entity(Entity entity) {
-        if (_registry.valid(entity)) {
-            if (_delegate) {
-                _delegate->on_entity_destroyed(entity);
-            }
-
-            _registry.destroy(entity);
-        }
-    }
-
-    bool SceneImpl::is_valid_entity(Entity entity) const {
-        return _registry.valid(entity);
-    }
-
-    void SceneImpl::set_delegate(ISceneDelegate *delegate) {
-        _delegate = delegate;
-    }
-
-    ISceneDelegate *SceneImpl::get_delegate() const {
-        return _delegate;
-    }
-
-    EntityRegistry &SceneImpl::get_registry() {
-        return _registry;
-    }
-
-    const EntityRegistry &SceneImpl::get_registry() const {
-        return _registry;
-    }
-
-    void SceneImpl::set_view_id(bgfx::ViewId view_id) {
-        _view_id = view_id;
-    }
-
-    bgfx::ViewId SceneImpl::get_view_id() const {
-        return _view_id;
-    }
-
-    std::string SceneImpl::to_string() const {
-        return "Scene(" + _name + ")";
-    }
-
-    Scene::Scene() : _impl(std::make_unique<SceneImpl>(*this)) {
-    }
-
-    Scene::~Scene() = default;
-
-    void Scene::init(App &app) const {
-        _impl->init(app);
-    }
-
-    void Scene::shutdown() {
-        _impl->shutdown();
-    }
-
-    void Scene::render() const {
-        _impl->render();
-    }
-
-    void Scene::update(const float delta_time) const {
-        _impl->update(delta_time);
-    }
-
-    bgfx::ViewId Scene::render_reset(bgfx::ViewId view_id) {
-        return _impl->render_reset(view_id);
-    }
-
-    void Scene::set_paused(bool paused) const {
-        _impl->set_paused(paused);
-    }
-
-    bool Scene::is_paused() const {
-        return _impl->is_paused();
-    }
-
-    void Scene::set_name(const std::string &name) {
-        _impl->set_name(name);
-    }
-
-    const std::string &Scene::get_name() const {
-        return _impl->get_name();
-    }
-
-    void Scene::add_scene_component_impl(std::unique_ptr<ISceneComponent> &&component) {
-        _impl->add_scene_component(std::move(component));
-    }
-
-    ISceneComponent *Scene::get_scene_component_impl(size_t type_hash) {
-        return _impl->get_scene_component(type_hash);
-    }
-
-    bool Scene::remove_scene_component_impl(size_t type_hash) {
-        return _impl->remove_scene_component(type_hash);
-    }
-
-    Entity Scene::create_entity() {
-        return _impl->create_entity();
-    }
-
-    void Scene::destroy_entity(const Entity entity) {
-        _impl->destroy_entity(entity);
-    }
-
-    bool Scene::is_valid_entity(const Entity entity) const {
-        return _impl->is_valid_entity(entity);
-    }
-
-    void Scene::set_delegate(ISceneDelegate *delegate) {
-        _impl->set_delegate(delegate);
-    }
-
-    void Scene::clear() {
-        _impl->clear();
-    }
-
-    EntityRegistry &Scene::get_registry() {
-        return _impl->get_registry();
-    }
-
-    ISceneDelegate *Scene::get_delegate() const {
-        return _impl->get_delegate();
-    }
-
-    SceneAppComponent::SceneAppComponent()
-        : _scene(std::make_unique<Scene>()) {
-    }
-
-    SceneAppComponent::~SceneAppComponent() = default;
-
-    void SceneAppComponent::init(App &app) {
-        _app = &app;
-        _scene->init(app);
-        _scene->set_delegate(this);
-    }
-
-    void SceneAppComponent::render() {
-        _scene->render();
-    }
-
-    void SceneAppComponent::update(float delta_time) {
-        if (_auto_update) {
-            _scene->update(delta_time);
-        }
-    }
-
-    void SceneAppComponent::shutdown() {
-        if (_scene) {
-            _scene->set_delegate(nullptr);
-            _scene->shutdown();
-        }
-        _app = nullptr;
-    }
-
-    Scene *SceneAppComponent::get_scene() {
-        return _scene.get();
-    }
-
-    const Scene *SceneAppComponent::get_scene() const {
-        return _scene.get();
-    }
-
-    void SceneAppComponent::set_auto_update(bool enabled) {
-        _auto_update = enabled;
-    }
-
-    bool SceneAppComponent::get_auto_update() const {
-        return _auto_update;
-    }
-
-    void SceneAppComponent::set_auto_render_reset(bool enabled) {
-        _auto_render_reset = enabled;
-    }
-
-    bool SceneAppComponent::get_auto_render_reset() const {
-        return _auto_render_reset;
-    }
-}
+} // namespace star::scene

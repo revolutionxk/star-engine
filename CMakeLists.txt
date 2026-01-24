@@ -13,8 +13,7 @@ message(STATUS "Fetching packages...")
 include(scripts/bgfx.cmake)
 include(scripts/sdl3.cmake)
 include(scripts/spdlog.cmake)
-include(scripts/glm.cmake)
-include(scripts/entt.cmake)
+include(scripts/flecs.cmake)
 include(scripts/freetype.cmake)
 include(scripts/imgui.cmake)
 
@@ -53,6 +52,8 @@ add_library(${PROJECT_NAME} ${ENGINE_SRC_FILES} ${INCLUDE_FILES})
 # Set compiler options
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 26)
+
+target_compile_definitions(${PROJECT_NAME} PUBLIC STAR_USE_SDL STAR_GRAPHICS_API_BGFX)
 
 # Source grouping
 source_group(TREE "${SRC_DIR}" PREFIX "src" FILES ${ENGINE_SRC_FILES})
@@ -98,12 +99,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${BIMG_INCLUDE_DIR}"
         "${BX_INCLUDE_DIR}"
         "${SDL3_INCLUDE_DIR}"
-        "${glm_SOURCE_DIR}"
         "${spdlog_SOURCE_DIR}"
         "${imgui_SOURCE_DIR}"
         "${imgui_SOURCE_DIR}/misc/freetype"
         "${freetype_SOURCE_DIR}/include"
-        "${entt_SOURCE_DIR}/src"
+        "${flecs_SOURCE_DIR}/include"
         "${CMAKE_BINARY_DIR}/include/generated/shaders"
 )
 
@@ -114,10 +114,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         bx
         SDL3::SDL3
         spdlog::spdlog
-        glm::glm
         shaders
         imgui
         freetype
+        flecs::flecs_static
         ${CMAKE_DL_LIBS}
 )
 

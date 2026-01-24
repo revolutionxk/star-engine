@@ -2,12 +2,15 @@
 
 #include <imgui.h>
 
+#include "../panels/console_panel.hpp"
+#include "../panels/hierarchy_panel.hpp"
+#include "../panels/inspector_panel.hpp"
+#include "../panels/metrics_panel.hpp"
+#include "../panels/scene_panel.hpp"
+#include "../theme/editor_theme.hpp"
 #include "star/application/application.hpp"
 #include "star/graphics/device.hpp"
-#include "star/graphics/texture.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
-#include "star/rendering/viewport.hpp"
-#include "star/scene/scene_manager.hpp"
 
 namespace star::editor {
     EditorUILayer::EditorUILayer(EditorWindow* editor_window)
@@ -15,6 +18,8 @@ namespace star::editor {
 
     bool EditorUILayer::initialize() {
         STAR_LOG_INFO(LogCategory::Editor, "Initializing editor UI layer");
+
+        EditorTheme::apply_theme();
 
         auto& device = m_editor_window->device();
         m_viewport = std::make_unique<rendering::Viewport>(device);
@@ -25,23 +30,35 @@ namespace star::editor {
         const auto scene = render_system.get_render_pass<rendering::SceneRenderPass>();
         scene->set_viewport(m_viewport.get());
 
+        initialize_panels();
+
         return true;
+    }
+
+    void EditorUILayer::initialize_panels() {
+        auto* hierarchy = m_panel_manager.register_panel<HierarchyPanel>(m_editor_window);
+        auto* inspector = m_panel_manager.register_panel<InspectorPanel>();
+        auto* scene = m_panel_manager.register_panel<ScenePanel>();
+        auto* console = m_panel_manager.register_panel<ConsolePanel>();
+        m_panel_manager.register_panel<MetricsPanel>();
+
+        scene->set_viewport(m_viewport.get());
     }
 
     void EditorUILayer::shutdown() {
         STAR_LOG_INFO(LogCategory::Editor, "Shutting down editor UI layer");
+        m_panel_manager.shutdown();
         m_viewport.reset();
+    }
+
+    void EditorUILayer::update(const f32 dt) {
+        m_panel_manager.update_all(dt);
     }
 
     void EditorUILayer::on_imgui_render() {
         setup_dockspace();
-
         render_main_menu_bar();
-        render_hierarchy_panel();
-        render_inspector_panel();
-        render_metrics_panel();
-        render_scene_viewport_panel();
-        render_console_panel();
+        m_panel_manager.render_all();
     }
 
     void EditorUILayer::setup_dockspace() {
@@ -103,11 +120,16 @@ namespace star::editor {
             }
 
             if (ImGui::BeginMenu("View")) {
-                ImGui::MenuItem("Hierarchy", nullptr, nullptr);
-                ImGui::MenuItem("Inspector", nullptr, nullptr);
-                ImGui::MenuItem("Scene", nullptr, nullptr);
-                ImGui::MenuItem("Console", nullptr, nullptr);
-                ImGui::MenuItem("Metrics", nullptr, nullptr);
+                for (auto* panel : m_panel_manager.get_all_panels()) {
+                    bool is_open = panel->is_open();
+                    if (ImGui::MenuItem(panel->name().c_str(), nullptr, &is_open)) {
+                        panel->set_open(is_open);
+                    }
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Reset Layout")) {
+                    STAR_LOG_INFO(LogCategory::Editor, "Reset layout requested");
+                }
                 ImGui::EndMenu();
             }
 
@@ -122,102 +144,4 @@ namespace star::editor {
         }
     }
 
-    void EditorUILayer::render_hierarchy_panel() {
-        ImGui::Begin("Hierarchy");
-
-        ImGui::Text("Scene Entities");
-        ImGui::Separator();
-
-        ImGui::TextDisabled("(No camera connected to scene)");
-
-        if (ImGui::BeginPopupContextWindow()) {
-            if (ImGui::MenuItem("Create Empty Entity")) {
-                STAR_LOG_INFO(LogCategory::Editor, "Create entity requested");
-            }
-            ImGui::EndPopup();
-        }
-
-        ImGui::End();
-    }
-
-    void EditorUILayer::render_inspector_panel() const {
-        ImGui::Begin("Inspector");
-
-        if (m_selected_entity && m_selected_entity.is_alive()) {
-            ImGui::Text("Entity: %s", m_selected_entity.name().c_str());
-            ImGui::Separator();
-            ImGui::Text("Component inspector coming soon");
-        } else {
-            ImGui::TextDisabled("No entity selected");
-        }
-
-        ImGui::End();
-    }
-
-    void EditorUILayer::render_metrics_panel() {
-        ImGui::Begin("Metrics");
-
-        ImGui::Text("Performance");
-        ImGui::Separator();
-
-        const ImGuiIO& io = ImGui::GetIO();
-        ImGui::Text("FPS: %.1f", io.Framerate);
-        ImGui::Text("Frame Time: %.3f ms", 1000.0f / io.Framerate);
-
-        ImGui::Spacing();
-        ImGui::Text("Window");
-        ImGui::Separator();
-
-        ImGui::End();
-    }
-
-    void EditorUILayer::render_scene_viewport_panel() {
-        if (!m_viewport) {
-            return;
-        }
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::Begin("Scene");
-
-        m_viewport_focused = ImGui::IsWindowFocused();
-        m_viewport_hovered = ImGui::IsWindowHovered();
-
-        const ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
-        if (viewport_panel_size.x > 0 && viewport_panel_size.y > 0) {
-            const u32 new_width = static_cast<u32>(viewport_panel_size.x);
-            const u32 new_height = static_cast<u32>(viewport_panel_size.y);
-
-            if (new_width != m_viewport->width() || new_height != m_viewport->height()) {
-                m_viewport->resize(new_width, new_height);
-                STAR_LOG_INFO(LogCategory::Editor, "Viewport resized: {}x{}", new_width, new_height);
-            }
-        }
-
-        if (m_viewport->is_framebuffer_enabled()) {
-            if (const auto color_texture = m_viewport->get_color_texture(); color_texture.is_valid()) {
-                const ImTextureID texture_id = color_texture.id;
-
-                ImGui::Image(texture_id, viewport_panel_size, ImVec2(0, 1), ImVec2(1, 0));
-            } else {
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Viewport texture not available");
-            }
-        } else {
-            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Scene Viewport (%ux%u)", m_viewport->width(),
-                               m_viewport->height());
-        }
-
-        ImGui::End();
-        ImGui::PopStyleVar();
-    }
-
-    void EditorUILayer::render_console_panel() {
-        ImGui::Begin("Console");
-
-        ImGui::Text("Console Output");
-        ImGui::Separator();
-
-        ImGui::TextWrapped("Editor console - logs will appear here");
-
-        ImGui::End();
-    }
 } // namespace star::editor

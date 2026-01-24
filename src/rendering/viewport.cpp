@@ -1,5 +1,7 @@
 #include "star/rendering/viewport.hpp"
 
+#include <bgfx/bgfx.h>
+
 #include "star/core/common.hpp"
 #include "star/graphics/device.hpp"
 #include "star/graphics/device_context.hpp"
@@ -40,6 +42,8 @@ namespace star::rendering {
         }
 
         context.set_view_rect(view_id, 0, 0, static_cast<u16>(m_width), static_cast<u16>(m_height));
+        context.set_view_clear(view_id, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
+        
         if (m_framebuffer_enabled && m_render_target && m_render_target->is_valid()) {
             context.set_view_framebuffer(view_id, m_render_target->framebuffer());
         } else {

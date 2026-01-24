@@ -11,6 +11,10 @@ namespace star::scene {
       public:
         SceneManager() = default;
         ~SceneManager() = default;
+        SceneManager(const SceneManager&) = delete;
+        SceneManager& operator=(const SceneManager&) = delete;
+        SceneManager(SceneManager&&) noexcept = default;
+        SceneManager& operator=(SceneManager&&) noexcept = default;
 
         Scene* create_scene(const std::string& name);
         Scene* get_scene(const std::string& name);

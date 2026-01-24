@@ -53,7 +53,7 @@ namespace star::systems {
 
         const auto& world = scene.world();
 
-        world.each([&](flecs::entity e, const scene::Camera& camera, const scene::Transform& transform) {
+        world.each([&](flecs::entity, const scene::Camera& camera, const scene::Transform& transform) {
             if (!camera.is_primary) {
                 return;
             }
@@ -65,7 +65,7 @@ namespace star::systems {
         });
     }
 
-    void RenderSystem::collect_renderables(scene::Scene& scene, rendering::Viewport* viewport) {
+    void RenderSystem::collect_renderables(scene::Scene& scene, const rendering::Viewport* viewport) {
         if (!viewport) {
             return;
         }

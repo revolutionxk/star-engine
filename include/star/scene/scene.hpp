@@ -8,7 +8,7 @@
 #include "node.hpp"
 
 namespace star::scene {
-    class Scene {
+    class STAR_EXPORT Scene {
       public:
         explicit Scene(const std::string& name);
         ~Scene();

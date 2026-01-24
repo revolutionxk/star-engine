@@ -10,6 +10,11 @@ namespace star::scene {
         Node(flecs::world& world, const std::string& name);
         virtual ~Node() = default;
 
+        Node(const Node&) = delete;
+        Node& operator=(const Node&) = delete;
+        Node(Node&&) noexcept = default;
+        Node& operator=(Node&&) noexcept = delete;
+
         virtual void on_ready() {}
 
         virtual void on_update(float dt) {}
@@ -32,8 +37,8 @@ namespace star::scene {
         template<typename T>
         T* find_child_by_type();
 
-        flecs::entity entity() const {
-            return m_entity;
+        std::optional<const flecs::entity*> entity() const {
+            return &m_entity;
         }
 
         const std::string& name() const {
@@ -56,7 +61,7 @@ namespace star::scene {
 
       protected:
         flecs::world& m_world;
-        flecs::entity m_entity;
+        flecs::entity m_entity{};
         std::string m_name;
 
         Node* m_parent{nullptr};

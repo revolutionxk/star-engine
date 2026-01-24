@@ -6,6 +6,7 @@
 #include "star/rendering/components/material.hpp"
 #include "star/rendering/components/mesh_renderer.hpp"
 #include "star/rendering/render_queue.hpp"
+#include "star/rendering/viewport.hpp"
 #include "star/resources/resource_manager.hpp"
 #include "star/resources/shader/shader.hpp"
 #include "star/scene/components/camera.hpp"
@@ -15,10 +16,6 @@
 namespace star::systems {
     RenderSystem::RenderSystem(graphics::Device& device) : m_device(device) {
         STAR_LOG_INFO(LogCategory::Rendering, "RenderSystem initialized");
-
-        m_view_matrix = Matrix4::identity();
-        m_projection_matrix = Matrix4::identity();
-        m_camera_position = Vector3{0.0f, 0.0f, 0.0f};
     }
 
     RenderSystem::~RenderSystem() {
@@ -27,34 +24,32 @@ namespace star::systems {
 
     void RenderSystem::update(f32 delta_time) {}
 
-    void RenderSystem::render(scene::Scene& scene, graphics::DeviceContext& context, const u32 view_id) {
+    void RenderSystem::render(scene::Scene& scene, graphics::DeviceContext& context, const u32 view_id,
+                              rendering::Viewport* viewport) {
         if (!scene.is_active()) {
-            return;
-        }
-
-        if (m_viewport_width == 0 || m_viewport_height == 0) {
-            STAR_LOG_WARN(LogCategory::Rendering, "Invalid viewport size: {}x{}", m_viewport_width, m_viewport_height);
             return;
         }
 
         m_render_queue.clear();
 
-        setup_camera(scene);
+        setup_camera(scene, viewport);
 
-        if (!m_has_camera) {
+        if (const bool has_camera = viewport ? viewport->has_camera() : false; !has_camera) {
             STAR_LOG_WARN(LogCategory::Rendering, "No active camera found in scene '{}'", scene.name());
             return;
         }
 
-        collect_renderables(scene);
+        collect_renderables(scene, viewport);
 
         m_render_queue.sort();
 
-        execute_render_queue(context, view_id);
+        execute_render_queue(context, view_id, viewport);
     }
 
-    void RenderSystem::setup_camera(scene::Scene& scene) {
-        m_has_camera = false;
+    void RenderSystem::setup_camera(scene::Scene& scene, rendering::Viewport* viewport) {
+        if (!viewport) {
+            return;
+        }
 
         const auto& world = scene.world();
 
@@ -63,23 +58,22 @@ namespace star::systems {
                 return;
             }
 
-            m_has_camera = true;
-            m_camera_position = transform.position;
-
-            const auto transform_matrix = transform.to_matrix();
-            m_view_matrix = Matrix4::inverse(transform_matrix);
-
-            const f32 aspect_ratio = static_cast<f32>(m_viewport_width) / static_cast<f32>(m_viewport_height);
-
-            m_projection_matrix = Matrix4::perspective(camera.fov_y, aspect_ratio, camera.near_plane, camera.far_plane);
+            viewport->set_camera(camera, transform);
 
             STAR_LOG_TRACE(LogCategory::Rendering, "Camera setup: pos({}, {}, {})", transform.position.x,
                            transform.position.y, transform.position.z);
         });
     }
 
-    void RenderSystem::collect_renderables(scene::Scene& scene) {
+    void RenderSystem::collect_renderables(scene::Scene& scene, rendering::Viewport* viewport) {
+        if (!viewport) {
+            return;
+        }
+
         const auto& world = scene.world();
+        const auto& view_matrix = viewport->view_matrix();
+        const auto& projection_matrix = viewport->projection_matrix();
+        const auto& camera_position = viewport->camera_position();
 
         world.each([&](const flecs::entity e, const components::MeshRenderer& mesh_renderer,
                        const scene::Transform& transform) {
@@ -93,13 +87,13 @@ namespace star::systems {
 
             rendering::DrawCall draw_call;
             draw_call.model_matrix = transform.to_matrix();
-            draw_call.mvp_matrix = m_projection_matrix * m_view_matrix * draw_call.model_matrix;
+            draw_call.mvp_matrix = projection_matrix * view_matrix * draw_call.model_matrix;
             draw_call.mesh = mesh_renderer.mesh;
             draw_call.material = mesh_renderer.material;
             draw_call.layer = mesh_renderer.layer;
 
             const Vector3 object_position = transform.position;
-            const Vector3 delta = object_position - m_camera_position;
+            const Vector3 delta = object_position - camera_position;
             draw_call.distance_to_camera = delta.length();
 
             draw_call.is_transparent = false;
@@ -116,9 +110,11 @@ namespace star::systems {
         //                m_render_queue.command_count(), scene.name());
     }
 
-    void RenderSystem::execute_render_queue(graphics::DeviceContext& context, const u32 view_id) {
-        context.set_view_rect(view_id, 0, 0, static_cast<u16>(m_viewport_width), static_cast<u16>(m_viewport_height));
-        context.set_view_transform(view_id, m_view_matrix, m_projection_matrix);
+    void RenderSystem::execute_render_queue(graphics::DeviceContext& context, const u32 view_id,
+                                            const rendering::Viewport* viewport) const {
+        if (viewport) {
+            viewport->bind(context, view_id);
+        }
 
         if (!m_resource_manager) {
             STAR_LOG_WARN(LogCategory::Rendering, "ResourceManager not set, cannot render");

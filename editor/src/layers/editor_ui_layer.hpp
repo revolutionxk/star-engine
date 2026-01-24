@@ -1,13 +1,19 @@
 #pragma once
 
+#include <memory>
+
 #include "editor_window.hpp"
 #include "flecs.h"
 #include "star/application/layer.hpp"
 
+namespace star::rendering {
+    class Viewport;
+}
+
 namespace star::editor {
     class EditorUILayer : public application::Layer {
       public:
-        EditorUILayer(EditorWindow* editor_window);
+        explicit EditorUILayer(EditorWindow* editor_window);
         ~EditorUILayer() override = default;
 
         bool initialize() override;
@@ -26,9 +32,8 @@ namespace star::editor {
       private:
         EditorWindow* m_editor_window;
         flecs::entity m_selected_entity;
+        std::unique_ptr<rendering::Viewport> m_viewport;
         bool m_viewport_focused{false};
         bool m_viewport_hovered{false};
-        u32 m_viewport_width{1280};
-        u32 m_viewport_height{720};
     };
 } // namespace star::editor

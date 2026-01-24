@@ -38,7 +38,7 @@ namespace star::rendering {
         void pre_render(f32 delta_time) override;
         void render(graphics::DeviceContext& context, u32 view_id) override;
         void post_render(f32 delta_time) override;
-        void reset(u32 width, u32 height) override;
+        u32 reset(u32 width, u32 height) override;
 
         using ImGuiCallback = std::function<void()>;
 

@@ -64,7 +64,7 @@ namespace star::rendering {
         }
 
         context->begin_frame();
-        u32 view_id = 1;
+        u32 view_id = 0;
         for (const auto& pass : m_render_passes) {
             if (pass->is_enabled()) {
                 pass->render(*m_device.context(), view_id++);
@@ -138,7 +138,10 @@ namespace star::rendering {
 
         for (const auto& pass : m_render_passes) {
             if (pass) {
-                pass->reset(width, height);
+                const auto view_id = pass->reset(width, height);
+                const auto context = m_device.context();
+                context->set_view_clear(view_id, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
+                context->set_view_rect(view_id, 0, 0, width, height);
             }
         }
 

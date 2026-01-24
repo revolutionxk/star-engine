@@ -116,14 +116,16 @@ namespace star::rendering {
         ImGui::SetCurrentContext(m_context);
     }
 
-    void ImGuiRenderPass::reset(const u32 width, const u32 height) {
+    u32 ImGuiRenderPass::reset(const u32 width, const u32 height) {
         if (!m_initialized) {
-            return;
+            return Super::reset(width, height);
         }
 
         if (m_renderer) {
             m_renderer->reset(width, height);
         }
+
+        return Super::reset(width, height);
     }
 
     void ImGuiRenderPass::setup_style() {

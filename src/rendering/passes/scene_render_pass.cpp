@@ -1,6 +1,7 @@
 #include "star/rendering/passes/scene_render_pass.hpp"
 
 #include "star/graphics/device_context.hpp"
+#include "star/rendering/viewport.hpp"
 #include "star/scene/scene.hpp"
 #include "star/systems/render_system.hpp"
 
@@ -15,13 +16,19 @@ namespace star::rendering {
             return;
         }
 
-        m_render_system.render(*m_scene, context, view_id);
+        m_render_system.render(*m_scene, context, view_id, m_viewport);
+
+        Super::render(context, view_id);
     }
 
     void SceneRenderPass::post_render(f32 delta_time) {}
 
-    void SceneRenderPass::reset(const u32 width, const u32 height) {
-        m_render_system.set_viewport_size(width, height);
+    u32 SceneRenderPass::reset(const u32 width, const u32 height) {
+        if (m_viewport) {
+            m_viewport->resize(width, height);
+        }
+
+        return Super::reset(width, height);
     }
 
 } // namespace star::rendering

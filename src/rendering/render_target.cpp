@@ -8,13 +8,13 @@ namespace star::rendering {
     }
 
     bool RenderTarget::create(graphics::Device* device, const u32 width, const u32 height,
-                              const graphics::TextureDescriptor::Format color_format, const bool has_depth) {
+                              const graphics::TextureFormat color_format, const bool has_depth) {
         return create_mrt(device, width, height, &color_format, 1, has_depth);
     }
 
     bool RenderTarget::create_mrt(graphics::Device* device, const u32 width, const u32 height,
-                                  const graphics::TextureDescriptor::Format* color_formats,
-                                  const u32 num_color_attachments, const bool has_depth) {
+                                  const graphics::TextureFormat* color_formats, const u32 num_color_attachments,
+                                  const bool has_depth) {
         if (!device) {
             STAR_LOG_ERROR(LogCategory::Graphics, "RenderTarget: Device is null");
             return false;
@@ -68,7 +68,7 @@ namespace star::rendering {
             graphics::TextureDescriptor depth_desc{.width = width,
                                                    .height = height,
                                                    .mip_levels = 1,
-                                                   .format = graphics::TextureDescriptor::Format::Depth24Stencil8,
+                                                   .format = graphics::TextureFormat::D24S8,
                                                    .initial_data = nullptr,
                                                    .size_in_bytes = 0};
 

@@ -15,12 +15,10 @@ namespace star::rendering {
         ~RenderTarget();
 
         bool create(graphics::Device* device, u32 width, u32 height,
-                    graphics::TextureDescriptor::Format color_format = graphics::TextureDescriptor::Format::RGBA8,
-                    bool has_depth = true);
+                    graphics::TextureFormat color_format = graphics::TextureFormat::RGBA8, bool has_depth = true);
 
-        bool create_mrt(graphics::Device* device, u32 width, u32 height,
-                        const graphics::TextureDescriptor::Format* color_formats, u32 num_color_attachments,
-                        bool has_depth = true);
+        bool create_mrt(graphics::Device* device, u32 width, u32 height, const graphics::TextureFormat* color_formats,
+                        u32 num_color_attachments, bool has_depth = true);
 
         void destroy();
 
@@ -63,7 +61,7 @@ namespace star::rendering {
         std::vector<graphics::ResourceHandle<graphics::Texture>> m_color_textures;
         graphics::ResourceHandle<graphics::Texture> m_depth_texture{0, 0};
 
-        std::vector<graphics::TextureDescriptor::Format> m_color_formats;
+        std::vector<graphics::TextureFormat> m_color_formats;
         bool m_has_depth{false};
         u32 m_width{0};
         u32 m_height{0};

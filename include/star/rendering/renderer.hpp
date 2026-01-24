@@ -46,7 +46,11 @@ namespace star::rendering {
         virtual u8 get_priority() const = 0;
 
         virtual void pre_render(f32 delta_time) = 0;
-        virtual void render(graphics::DeviceContext& context, u32 view_id) = 0;
+
+        virtual void render(graphics::DeviceContext& context, const u32 view_id) {
+            m_view_id = view_id;
+        }
+
         virtual void post_render(f32 delta_time) = 0;
 
         /**
@@ -55,7 +59,9 @@ namespace star::rendering {
          * @param width New width for the render pass (0 means keep current)
          * @param height New height for the render pass (0 means keep current)
          */
-        virtual void reset(u32 width = 0, u32 height = 0) {}
+        virtual u32 reset(u32 width = 0, u32 height = 0) {
+            return m_view_id;
+        }
 
         [[nodiscard]] virtual bool is_enabled() const {
             return m_enabled;
@@ -70,6 +76,7 @@ namespace star::rendering {
 
       private:
         bool m_enabled = true;
+        u32 m_view_id = 0;
     };
 
     class Renderer {

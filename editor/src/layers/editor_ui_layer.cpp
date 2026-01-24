@@ -3,6 +3,10 @@
 #include <imgui.h>
 
 #include "star/application/application.hpp"
+#include "star/graphics/device.hpp"
+#include "star/graphics/texture.hpp"
+#include "star/rendering/passes/scene_render_pass.hpp"
+#include "star/rendering/viewport.hpp"
 #include "star/scene/scene_manager.hpp"
 
 namespace star::editor {
@@ -11,11 +15,22 @@ namespace star::editor {
 
     bool EditorUILayer::initialize() {
         STAR_LOG_INFO(LogCategory::Editor, "Initializing editor UI layer");
+
+        auto& device = m_editor_window->device();
+        m_viewport = std::make_unique<rendering::Viewport>(device);
+        m_viewport->set_framebuffer_enabled(true);
+        m_viewport->resize(1280, 720);
+
+        const auto& render_system = m_editor_window->renderer();
+        const auto scene = render_system.get_render_pass<rendering::SceneRenderPass>();
+        scene->set_viewport(m_viewport.get());
+
         return true;
     }
 
     void EditorUILayer::shutdown() {
         STAR_LOG_INFO(LogCategory::Editor, "Shutting down editor UI layer");
+        m_viewport.reset();
     }
 
     void EditorUILayer::on_imgui_render() {
@@ -157,25 +172,39 @@ namespace star::editor {
     }
 
     void EditorUILayer::render_scene_viewport_panel() {
+        if (!m_viewport) {
+            return;
+        }
+
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("Scene");
 
         m_viewport_focused = ImGui::IsWindowFocused();
         m_viewport_hovered = ImGui::IsWindowHovered();
 
-        ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
+        const ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
         if (viewport_panel_size.x > 0 && viewport_panel_size.y > 0) {
             const u32 new_width = static_cast<u32>(viewport_panel_size.x);
             const u32 new_height = static_cast<u32>(viewport_panel_size.y);
 
-            if (new_width != m_viewport_width || new_height != m_viewport_height) {
-                m_viewport_width = new_width;
-                m_viewport_height = new_height;
-                STAR_LOG_INFO(LogCategory::Editor, "Viewport resized: {}x{}", m_viewport_width, m_viewport_height);
+            if (new_width != m_viewport->width() || new_height != m_viewport->height()) {
+                m_viewport->resize(new_width, new_height);
+                STAR_LOG_INFO(LogCategory::Editor, "Viewport resized: {}x{}", new_width, new_height);
             }
         }
-        ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Scene Viewport (%ux%u)", m_viewport_width,
-                           m_viewport_height);
+
+        if (m_viewport->is_framebuffer_enabled()) {
+            if (const auto color_texture = m_viewport->get_color_texture(); color_texture.is_valid()) {
+                const ImTextureID texture_id = color_texture.id;
+
+                ImGui::Image(texture_id, viewport_panel_size, ImVec2(0, 1), ImVec2(1, 0));
+            } else {
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Viewport texture not available");
+            }
+        } else {
+            ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "Scene Viewport (%ux%u)", m_viewport->width(),
+                               m_viewport->height());
+        }
 
         ImGui::End();
         ImGui::PopStyleVar();

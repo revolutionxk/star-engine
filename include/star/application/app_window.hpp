@@ -80,7 +80,7 @@ namespace star::application {
 
         [[nodiscard]] Vector2 size() const;
 
-        void on_window_resize(u32 width, u32 height);
+        void on_window_resize(u32 width, u32 height) const;
 
       protected:
         virtual bool on_initialize() {

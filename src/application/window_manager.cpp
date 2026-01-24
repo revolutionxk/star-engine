@@ -1,15 +1,16 @@
 #include "star/application/window_manager.hpp"
 
 namespace star::application {
-    WindowId WindowManager::create_window(const platform::VideoMode& video_mode, bool is_main) {
+
+    WindowId WindowManager::create_window(const platform::WindowConfiguration& config) {
         auto window = platform::Window::create();
         if (!window) {
             STAR_LOG_ERROR(LogCategory::Application, "Failed to create platform window");
             return INVALID_WINDOW_ID;
         }
 
-        if (!window->create(video_mode)) {
-            STAR_LOG_ERROR(LogCategory::Application, "Failed to initialize window");
+        if (!window->create(config)) {
+            STAR_LOG_ERROR(LogCategory::Application, "Failed to create window with title: {}", config.title);
             return INVALID_WINDOW_ID;
         }
 
@@ -17,22 +18,31 @@ namespace star::application {
 
         WindowData data;
         data.window = std::move(window);
-        data.is_main = is_main;
+        data.is_main = config.is_main;
 
         m_windows[window_id] = std::move(data);
 
-        if (is_main || m_main_window_id == INVALID_WINDOW_ID) {
+        if (config.is_main || m_main_window_id == INVALID_WINDOW_ID) {
             m_main_window_id = window_id;
             m_windows[window_id].is_main = true;
         }
 
-        STAR_LOG_INFO(LogCategory::Application, "Window created with ID: {} (Main: {})", window_id, is_main);
+        STAR_LOG_INFO(LogCategory::Application, "Window created with ID: {} (Main: {})", window_id, config.is_main);
 
         return window_id;
     }
 
+    WindowId WindowManager::create_window(const platform::VideoMode& video_mode, const bool is_main) {
+        const platform::WindowConfiguration config{
+            .video_mode = video_mode,
+            .is_main = is_main,
+        };
+
+        return create_window(config);
+    }
+
     bool WindowManager::destroy_window(WindowId window_id) {
-        auto it = m_windows.find(window_id);
+        const auto it = m_windows.find(window_id);
         if (it == m_windows.end()) {
             STAR_LOG_WARN(LogCategory::Application, "Attempted to destroy non-existent window: {}", window_id);
             return false;
@@ -98,6 +108,17 @@ namespace star::application {
         }
 
         return ids;
+    }
+
+    std::vector<platform::Window*> WindowManager::get_all_windows() const {
+        std::vector<platform::Window*> windows;
+        windows.reserve(m_windows.size());
+
+        for (const auto& [window, is_main] : m_windows | std::views::values) {
+            windows.push_back(window.get());
+        }
+
+        return windows;
     }
 
     bool WindowManager::has_open_windows() const {

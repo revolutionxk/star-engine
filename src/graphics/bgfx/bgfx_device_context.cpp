@@ -4,7 +4,8 @@
 #include "star/core/common.hpp"
 
 namespace star::graphics {
-    BGFXDeviceContext::BGFXDeviceContext(void* native_window_handle) : DeviceContext(native_window_handle) {}
+    BGFXDeviceContext::BGFXDeviceContext(Device* device, void* native_window_handle)
+        : DeviceContext(device, native_window_handle) {}
 
     BGFXDeviceContext::~BGFXDeviceContext() {}
 
@@ -54,6 +55,19 @@ namespace star::graphics {
 
     void BGFXDeviceContext::set_view_transform(const u32 view_id, const Matrix4& view, const Matrix4& projection) {
         bgfx::setViewTransform(static_cast<bgfx::ViewId>(view_id), view.data(), projection.data());
+    }
+
+    void BGFXDeviceContext::set_view_framebuffer(const u32 view_id, const ResourceHandle<Framebuffer> handle) {
+        if (!handle.is_valid()) {
+            bgfx::setViewFrameBuffer(static_cast<bgfx::ViewId>(view_id), BGFX_INVALID_HANDLE);
+            return;
+        }
+
+        if (const bgfx::FrameBufferHandle fb{static_cast<u16>(handle.id)}; bgfx::isValid(fb)) {
+            bgfx::setViewFrameBuffer(static_cast<bgfx::ViewId>(view_id), fb);
+        } else {
+            STAR_LOG_WARN(LogCategory::Graphics, "Invalid framebuffer handle for view {}", view_id);
+        }
     }
 
     void BGFXDeviceContext::set_vertex_buffer(const u8 stream, const ResourceHandle<Buffer> handle) {

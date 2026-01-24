@@ -25,7 +25,7 @@ namespace star::systems {
             m_resource_manager = resource_manager;
         }
 
-        void render(scene::Scene& scene, graphics::DeviceContext& context);
+        void render(scene::Scene& scene, graphics::DeviceContext& context, u32 view_id);
         void update(f32 delta_time);
 
         const rendering::RenderQueue& render_queue() const {
@@ -40,7 +40,7 @@ namespace star::systems {
       private:
         void collect_renderables(scene::Scene& scene);
         void setup_camera(scene::Scene& scene);
-        void execute_render_queue(graphics::DeviceContext& context);
+        void execute_render_queue(graphics::DeviceContext& context, u32 view_id);
 
         graphics::Device& m_device;
         resources::ResourceManager* m_resource_manager{nullptr};

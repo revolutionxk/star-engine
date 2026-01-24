@@ -5,9 +5,6 @@
 
 namespace star::application {
     struct STAR_EXPORT ApplicationConfig {
-        std::string title{"Star Engine"};
-
-        platform::VideoMode main_window;
         graphics::GraphicsAPI graphics_api = graphics::GraphicsAPI::Auto;
 
         CommandLineArgs command_line_args;

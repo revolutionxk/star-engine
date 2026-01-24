@@ -13,10 +13,8 @@ namespace star::graphics {
         using Super = DeviceContext;
 
       public:
-        BGFXDevice() = default;
+        explicit BGFXDevice(const GraphicsDeviceConfig& config);
         ~BGFXDevice() override;
-
-        std::unique_ptr<DeviceContext> create_context() override;
 
         std::string name() const override {
             return "BGFX";
@@ -24,15 +22,16 @@ namespace star::graphics {
 
         DeviceCaps caps() const override;
 
+        DeviceContext* context() override;
+
         ResourceHandle<Buffer> create_buffer(BufferDescriptor& buffer_descriptor) override;
         ResourceHandle<Texture> create_texture(TextureDescriptor& texture_descriptor) override;
         ResourceHandle<Shader> create_shader(ShaderDescriptor& shader_descriptor) override;
+        ResourceHandle<Framebuffer> create_framebuffer(FramebufferDescriptor& framebuffer_descriptor) override;
 
         void destroy_buffer(ResourceHandle<Buffer> handle) override;
         void destroy_texture(ResourceHandle<Texture> handle) override;
         void destroy_shader(ResourceHandle<Shader> handle) override;
-
-        bool initialize(GraphicsDeviceConfig& device) override;
-        void shutdown() override;
+        void destroy_framebuffer(ResourceHandle<Framebuffer> handle) override;
     };
 } // namespace star::graphics

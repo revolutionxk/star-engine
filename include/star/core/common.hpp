@@ -44,6 +44,9 @@
 #include <functional>
 #include <utility>
 #include <type_traits>
+#include <typeindex>
+#include <stdexcept>
+#include <memory>
 #include <initializer_list>
 #include <tuple>
 #include <string>

@@ -47,6 +47,8 @@ namespace star::application {
             return m_layers.rend();
         }
 
+        void clear();
+
       private:
         std::vector<std::unique_ptr<Layer>> m_layers;
         u32 m_layer_insert_index = 0;

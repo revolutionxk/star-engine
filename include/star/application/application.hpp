@@ -1,10 +1,13 @@
 #pragma once
 
+#include "app_window.hpp"
 #include "application_config.hpp"
+#include "application_context.hpp"
+#include "game_loop.hpp"
 #include "layer_stack.hpp"
+#include "star/rendering/renderer.hpp"
 #include "star/resources/resource_manager.hpp"
-#include "star/platform/time/clock.hpp"
-#include "window_manager.hpp"
+#include "star/systems/render_system.hpp"
 
 namespace star::scene {
     class SceneManager;
@@ -14,13 +17,13 @@ namespace star::graphics {
     class Device;
 }
 
-namespace star::systems {
-    class RenderSystem;
-}
+namespace star::platform {
+    class Window;
+} // namespace star::platform
 
 namespace star::application {
     class CommandLineArgs;
-    using namespace star::platform;
+    class WindowManager;
 
     class STAR_EXPORT Application {
       public:
@@ -28,51 +31,53 @@ namespace star::application {
         virtual ~Application();
 
         i32 run();
-
         void shutdown();
 
-        void push_layer(std::unique_ptr<Layer> layer);
+        template<typename T, typename... Args>
+        T* create_window(Args&&... args) {
+            static_assert(std::is_base_of_v<AppWindow, T>, "T must derive from AppWindow");
+            auto window = std::make_unique<T>(std::forward<Args>(args)...);
+            T* ptr = window.get();
 
-        void push_overlay(std::unique_ptr<Layer> overlay);
+            if (!window->initialize()) {
+                STAR_LOG_ERROR(LogCategory::Application, "Failed to initialize window");
+                return nullptr;
+            }
 
-        Window& main_window() const {
-            return *m_window_manager.get_main_window();
+            m_app_windows.push_back(std::move(window));
+            STAR_LOG_INFO(LogCategory::Application, "Window created: {}", ptr->title());
+            return ptr;
         }
 
-        WindowManager& window_manager() {
-            return m_window_manager;
-        }
+        [[nodiscard]] platform::Window& main_window() const;
+        [[nodiscard]] WindowManager& window_manager() const;
 
-        const WindowManager& window_manager() const {
-            return m_window_manager;
-        }
-
-        ApplicationConfig& config() {
+        [[nodiscard]] ApplicationConfig& config() {
             return m_config;
         }
 
-        const ApplicationConfig& config() const {
+        [[nodiscard]] const ApplicationConfig& config() const {
             return m_config;
         }
 
-        const CommandLineArgs& command_line_args() const {
+        [[nodiscard]] const CommandLineArgs& command_line_args() const {
             return m_config.command_line_args;
         }
 
-        graphics::Device& device() const {
-            return *m_device;
+        [[nodiscard]] ApplicationContext& context() {
+            return m_context;
         }
 
-        resources::ResourceManager& resource_manager() const {
-            return *m_resource_manager;
+        [[nodiscard]] const ApplicationContext& context() const {
+            return m_context;
         }
 
-        scene::SceneManager& scene_manager() const {
-            return *m_scene_manager;
+        [[nodiscard]] GameLoop& game_loop() {
+            return *m_game_loop;
         }
 
-        systems::RenderSystem& render_system() const {
-            return *m_render_system;
+        [[nodiscard]] const GameLoop& game_loop() const {
+            return *m_game_loop;
         }
 
         static Application& instance() {
@@ -94,20 +99,23 @@ namespace star::application {
 
         virtual void on_post_update(f32 delta_time) {}
 
+      private:
+        bool initialize_subsystems();
+        void shutdown_subsystems();
+        void update_frame(f32 delta_time);
+        void render_frame() const;
+
       protected:
         ApplicationConfig m_config;
 
       private:
-        WindowManager m_window_manager;
-        LayerStack m_layer_stack;
-        std::unique_ptr<graphics::Device> m_device;
-        std::unique_ptr<resources::ResourceManager> m_resource_manager;
-        std::unique_ptr<scene::SceneManager> m_scene_manager;
-        std::unique_ptr<systems::RenderSystem> m_render_system;
+        ApplicationContext m_context;
 
-        platform::FrameTimer m_frame_timer;
+        std::unique_ptr<WindowManager> m_window_manager;
+        std::vector<std::unique_ptr<AppWindow>> m_app_windows;
+        std::unique_ptr<GameLoop> m_game_loop;
+
         bool m_running = false;
-
         static Application* s_instance;
     };
 } // namespace star::application

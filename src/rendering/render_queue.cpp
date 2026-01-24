@@ -14,16 +14,16 @@ namespace star::rendering {
         clear();
     }
 
-    void RenderQueue::submit(const RenderCommand& command) {
-        if (command.is_transparent) {
-            m_transparent_commands.push_back(command);
+    void RenderQueue::submit(const DrawCall& draw_call) {
+        if (draw_call.is_transparent) {
+            m_transparent_commands.push_back(draw_call);
         } else {
-            m_opaque_commands.push_back(command);
+            m_opaque_commands.push_back(draw_call);
         }
     }
 
     void RenderQueue::sort() {
-        std::ranges::sort(m_opaque_commands, [](const RenderCommand& a, const RenderCommand& b) {
+        std::ranges::sort(m_opaque_commands, [](const DrawCall& a, const DrawCall& b) {
             if (a.layer != b.layer) {
                 return a.layer < b.layer;
             }
@@ -35,7 +35,7 @@ namespace star::rendering {
             return a.distance_to_camera < b.distance_to_camera;
         });
 
-        std::ranges::sort(m_transparent_commands, [](const RenderCommand& a, const RenderCommand& b) {
+        std::ranges::sort(m_transparent_commands, [](const DrawCall& a, const DrawCall& b) {
             if (a.layer != b.layer) {
                 return a.layer < b.layer;
             }
@@ -52,18 +52,18 @@ namespace star::rendering {
         m_transparent_commands.clear();
     }
 
-    u64 RenderQueue::calculate_sort_key(const RenderCommand& command) {
+    u64 RenderQueue::calculate_sort_key(const DrawCall& draw_call) {
         u64 key = 0;
 
-        key |= static_cast<u64>(command.layer) << 56;
+        key |= static_cast<u64>(draw_call.layer) << 56;
 
-        const u32 material_hash = command.material.id & 0xFFFFFF;
+        const u32 material_hash = draw_call.material.id & 0xFFFFFF;
         key |= static_cast<u64>(material_hash) << 32;
 
         u32 distance_bits;
-        std::memcpy(&distance_bits, &command.distance_to_camera, sizeof(u32));
+        std::memcpy(&distance_bits, &draw_call.distance_to_camera, sizeof(u32));
 
-        if (command.is_transparent) {
+        if (draw_call.is_transparent) {
             distance_bits = ~distance_bits;
         }
 

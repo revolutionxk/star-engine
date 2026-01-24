@@ -27,7 +27,7 @@ namespace star::systems {
 
     void RenderSystem::update(f32 delta_time) {}
 
-    void RenderSystem::render(scene::Scene& scene, graphics::DeviceContext& context) {
+    void RenderSystem::render(scene::Scene& scene, graphics::DeviceContext& context, const u32 view_id) {
         if (!scene.is_active()) {
             return;
         }
@@ -50,7 +50,7 @@ namespace star::systems {
 
         m_render_queue.sort();
 
-        execute_render_queue(context);
+        execute_render_queue(context, view_id);
     }
 
     void RenderSystem::setup_camera(scene::Scene& scene) {
@@ -91,35 +91,34 @@ namespace star::systems {
                 return;
             }
 
-            rendering::RenderCommand command;
-            command.model_matrix = transform.to_matrix();
-            command.mvp_matrix = m_projection_matrix * m_view_matrix * command.model_matrix;
-            command.mesh = mesh_renderer.mesh;
-            command.material = mesh_renderer.material;
-            command.layer = mesh_renderer.layer;
+            rendering::DrawCall draw_call;
+            draw_call.model_matrix = transform.to_matrix();
+            draw_call.mvp_matrix = m_projection_matrix * m_view_matrix * draw_call.model_matrix;
+            draw_call.mesh = mesh_renderer.mesh;
+            draw_call.material = mesh_renderer.material;
+            draw_call.layer = mesh_renderer.layer;
 
             const Vector3 object_position = transform.position;
             const Vector3 delta = object_position - m_camera_position;
-            command.distance_to_camera = delta.length();
+            draw_call.distance_to_camera = delta.length();
 
-            command.is_transparent = false;
+            draw_call.is_transparent = false;
 
-            command.sort_key = rendering::RenderQueue::calculate_sort_key(command);
+            draw_call.sort_key = rendering::RenderQueue::calculate_sort_key(draw_call);
 
-            m_render_queue.submit(command);
+            m_render_queue.submit(draw_call);
 
             STAR_LOG_TRACE(LogCategory::Rendering, "Submitted entity {} to render queue (dist: {:.2f})",
-                           static_cast<u64>(e), command.distance_to_camera);
+                           static_cast<u64>(e), draw_call.distance_to_camera);
         });
 
         // STAR_LOG_DEBUG(LogCategory::Rendering, "Collected {} renderables for scene '{}'",
         //                m_render_queue.command_count(), scene.name());
     }
 
-    void RenderSystem::execute_render_queue(graphics::DeviceContext& context) {
-        context.set_view_rect(0, 0, 0, static_cast<u16>(m_viewport_width), static_cast<u16>(m_viewport_height));
-        context.set_view_clear(0, 0x1 | 0x2, 0x443355FF, 1.0f, 0);
-        context.set_view_transform(0, m_view_matrix, m_projection_matrix);
+    void RenderSystem::execute_render_queue(graphics::DeviceContext& context, const u32 view_id) {
+        context.set_view_rect(view_id, 0, 0, static_cast<u16>(m_viewport_width), static_cast<u16>(m_viewport_height));
+        context.set_view_transform(view_id, m_view_matrix, m_projection_matrix);
 
         if (!m_resource_manager) {
             STAR_LOG_WARN(LogCategory::Rendering, "ResourceManager not set, cannot render");
@@ -163,7 +162,7 @@ namespace star::systems {
             }
 
             if (shader_handle.is_valid()) {
-                context.submit(0, shader_handle);
+                context.submit(view_id, shader_handle);
             } else {
                 STAR_LOG_WARN(LogCategory::Rendering, "No valid shader available for rendering");
             }

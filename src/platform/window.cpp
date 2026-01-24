@@ -4,8 +4,8 @@
 #include "star/core/common.hpp"
 
 namespace star::platform {
-    bool Window::create(const VideoMode& video_mode) {
-        m_video_mode = video_mode;
+    bool Window::create(const WindowConfiguration& config) {
+        m_configuration = config;
         m_opened = true;
         return true;
     }

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "star/platform/window.hpp"
+#include "star/platform/window_config.hpp"
 
 namespace star::application {
     using WindowId = u32;
@@ -17,6 +18,7 @@ namespace star::application {
         WindowManager(const WindowManager&) = delete;
         WindowManager& operator=(const WindowManager&) = delete;
 
+        WindowId create_window(const platform::WindowConfiguration& config);
         WindowId create_window(const platform::VideoMode& video_mode, bool is_main = false);
 
         bool destroy_window(WindowId window_id);
@@ -32,6 +34,7 @@ namespace star::application {
         bool set_main_window(WindowId window_id);
 
         std::vector<WindowId> get_all_window_ids() const;
+        std::vector<platform::Window*> get_all_windows() const;
 
         size_t get_window_count() const {
             return m_windows.size();

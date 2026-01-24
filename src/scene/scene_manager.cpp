@@ -51,6 +51,10 @@ namespace star::scene {
         m_active_scene->set_active(true);
 
         STAR_LOG_INFO(LogCategory::Scene, "Scene '{}' is now active", name);
+
+        if (m_scene_changed_callback) {
+            m_scene_changed_callback(m_active_scene);
+        }
     }
 
     void SceneManager::destroy_scene(const std::string& name) {

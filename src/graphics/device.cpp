@@ -3,10 +3,11 @@
 #include "bgfx/bgfx_device.hpp"
 
 namespace star::graphics {
-    std::unique_ptr<Device> Device::create(const GraphicsAPI api) {
+    std::unique_ptr<Device> Device::create(const GraphicsDeviceConfig& config) {
+        const auto api = config.api;
 #if defined(STAR_GRAPHICS_API_BGFX)
         if (api == GraphicsAPI::Auto || api == GraphicsAPI::BGFX) {
-            return std::make_unique<BGFXDevice>();
+            return std::make_unique<BGFXDevice>(config);
         }
 #else
     #error "No graphics API defined! Define STAR_GRAPHICS_API_BGFX in CMake."

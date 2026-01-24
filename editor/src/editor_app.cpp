@@ -2,16 +2,18 @@
 
 #include <memory>
 
-#include "editor_layer.hpp"
+#include "editor_window.hpp"
 
 namespace star::editor {
     EditorApp::EditorApp(const CommandLineArgs& args) : Application(args) {}
 
     bool EditorApp::on_initialize() {
-        push_layer(std::make_unique<EditorLayer>());
+        if (const auto* editor_window = create_window<EditorWindow>(); !editor_window) {
+            STAR_LOG_ERROR(LogCategory::Application, "Failed to create editor window");
+            return false;
+        }
 
         STAR_LOG_INFO(LogCategory::Application, "Editor initialized successfully");
-
         return true;
     }
 

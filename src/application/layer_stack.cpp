@@ -41,4 +41,13 @@ namespace star::application {
             m_layers.erase(it);
         }
     }
+
+    void LayerStack::clear() {
+        for (const auto& layer : m_layers) {
+            layer->on_detach();
+            layer->shutdown();
+        }
+        m_layers.clear();
+        m_layer_insert_index = 0;
+    }
 } // namespace star::application

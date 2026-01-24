@@ -6,10 +6,12 @@ namespace star::graphics {
     struct BufferDescriptor;
     struct ShaderDescriptor;
     struct TextureDescriptor;
+    struct FramebufferDescriptor;
 
     struct Buffer;
     struct Shader;
     struct Texture;
+    struct Framebuffer;
 
     class DeviceContext;
 
@@ -22,6 +24,8 @@ namespace star::graphics {
         GraphicsAPI api = GraphicsAPI::Auto;
         platform::PlatformData platform{};
         Vector2 window_size{};
+        bool debug = false;
+        bool profile = false;
     };
 
     struct DeviceCaps {
@@ -38,29 +42,30 @@ namespace star::graphics {
       public:
         virtual ~Device() = default;
 
-        virtual bool initialize(GraphicsDeviceConfig& device) = 0;
-        virtual void shutdown() = 0;
         virtual std::string name() const = 0;
         virtual DeviceCaps caps() const = 0;
 
-        virtual std::unique_ptr<DeviceContext> create_context() = 0;
+        virtual DeviceContext* context() = 0;
 
         virtual ResourceHandle<Buffer> create_buffer(BufferDescriptor& buffer_descriptor) = 0;
         virtual ResourceHandle<Texture> create_texture(TextureDescriptor& buffer_descriptor) = 0;
         virtual ResourceHandle<Shader> create_shader(ShaderDescriptor& buffer_descriptor) = 0;
+        virtual ResourceHandle<Framebuffer> create_framebuffer(FramebufferDescriptor& framebuffer_descriptor) = 0;
 
         virtual void destroy_buffer(ResourceHandle<Buffer> handle) = 0;
         virtual void destroy_texture(ResourceHandle<Texture> handle) = 0;
         virtual void destroy_shader(ResourceHandle<Shader> handle) = 0;
+        virtual void destroy_framebuffer(ResourceHandle<Framebuffer> handle) = 0;
 
         bool is_initialized() const {
             return m_initialized;
         }
 
-        static std::unique_ptr<Device> create(GraphicsAPI api = GraphicsAPI::Auto);
+        static std::unique_ptr<Device> create(const GraphicsDeviceConfig& config);
 
       protected:
         bool m_initialized = false;
         GraphicsDeviceConfig m_config;
+        std::unique_ptr<DeviceContext> m_context;
     };
 } // namespace star::graphics

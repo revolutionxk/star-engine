@@ -13,7 +13,7 @@ namespace star::components {
 }
 
 namespace star::rendering {
-    struct RenderCommand {
+    struct DrawCall {
         Matrix4 model_matrix;
         Matrix4 mvp_matrix;
         graphics::ResourceHandle<resources::Mesh> mesh;
@@ -29,15 +29,15 @@ namespace star::rendering {
         RenderQueue();
         ~RenderQueue();
 
-        void submit(const RenderCommand& command);
+        void submit(const DrawCall& draw_call);
         void sort();
         void clear();
 
-        const std::vector<RenderCommand>& opaque_commands() const {
+        const std::vector<DrawCall>& opaque_commands() const {
             return m_opaque_commands;
         }
 
-        const std::vector<RenderCommand>& transparent_commands() const {
+        const std::vector<DrawCall>& transparent_commands() const {
             return m_transparent_commands;
         }
 
@@ -45,10 +45,10 @@ namespace star::rendering {
             return m_opaque_commands.size() + m_transparent_commands.size();
         }
 
-        static u64 calculate_sort_key(const RenderCommand& command);
+        static u64 calculate_sort_key(const DrawCall& draw_call);
 
       private:
-        std::vector<RenderCommand> m_opaque_commands;
-        std::vector<RenderCommand> m_transparent_commands;
+        std::vector<DrawCall> m_opaque_commands;
+        std::vector<DrawCall> m_transparent_commands;
     };
 } // namespace star::rendering

@@ -1,5 +1,8 @@
 #include "sdl_window.hpp"
 
+#include "backends/imgui_impl_sdl3.h"
+#include "imgui_sdl3_backend.hpp"
+
 namespace star::platform::sdl {
     SDLWindow::SDLWindow() {
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD)) {
@@ -12,14 +15,14 @@ namespace star::platform::sdl {
         SDL_Quit();
     }
 
-    bool SDLWindow::create(const VideoMode& video_mode) {
+    bool SDLWindow::create(const WindowConfiguration& config) {
         auto flags = SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
-        if (video_mode.resizable) {
+        if (config.video_mode.resizable) {
             flags |= SDL_WINDOW_RESIZABLE;
         }
 
-        switch (video_mode.mode) {
+        switch (config.video_mode.mode) {
             case WindowMode::Fullscreen:
                 flags |= SDL_WINDOW_FULLSCREEN;
                 break;
@@ -31,16 +34,17 @@ namespace star::platform::sdl {
                 break;
         }
 
-        m_window = SDL_CreateWindow("", video_mode.size.x, video_mode.size.y, flags);
+        m_window = SDL_CreateWindow(config.title.c_str(), config.video_mode.size.x, config.video_mode.size.y, flags);
 
         if (!m_window) {
             STAR_LOG_ERROR(LogCategory::Platform, "Failed to create SDL window: {}", SDL_GetError());
             return false;
         }
 
-        STAR_LOG_INFO(LogCategory::Platform, "SDL window created: {}x{}", video_mode.size.x, video_mode.size.y);
+        STAR_LOG_INFO(LogCategory::Platform, "SDL window created: {}x{}", config.video_mode.size.x,
+                      config.video_mode.size.y);
 
-        return Super::create(video_mode);
+        return Super::create(config);
     }
 
     void SDLWindow::destroy() {
@@ -52,6 +56,10 @@ namespace star::platform::sdl {
         m_window = nullptr;
     }
 
+    void SDLWindow::set_resize_callback(ResizeCallback callback) {
+        m_resize_callback = std::move(callback);
+    }
+
     void SDLWindow::pool_events() {
         if (!m_window) {
             return;
@@ -60,6 +68,8 @@ namespace star::platform::sdl {
         SDL_Event event;
 
         while (SDL_PollEvent(&event)) {
+            ImGui_ImplSDL3_ProcessEvent(&event); // TODO: temp fix, move to ImGui backend later with proper checks
+
             switch (event.type) {
                 case SDL_EVENT_QUIT:
                     m_opened = false;
@@ -68,11 +78,16 @@ namespace star::platform::sdl {
                 case SDL_EVENT_WINDOW_RESIZED:
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
                     const auto new_size = size();
-                    STAR_LOG_DEBUG(LogCategory::Platform, "Window resized to {}x{}", static_cast<u32>(new_size.x),
-                                   static_cast<u32>(new_size.y));
+                    const auto width = static_cast<u32>(new_size.x);
+                    const auto height = static_cast<u32>(new_size.y);
+                    STAR_LOG_DEBUG(LogCategory::Platform, "Window resized to {}x{}", width, height);
 
                     if (m_device_context) {
-                        m_device_context->resize(static_cast<u32>(new_size.x), static_cast<u32>(new_size.y));
+                        m_device_context->resize(width, height);
+                    }
+
+                    if (m_resize_callback) {
+                        m_resize_callback(width, height);
                     }
                     break;
                 }
@@ -105,6 +120,10 @@ namespace star::platform::sdl {
     }
 
     void* SDLWindow::handle() const {
+        return m_window;
+    }
+
+    void* SDLWindow::native_handle() const {
         if (!m_window) {
             return nullptr;
         }
@@ -137,7 +156,7 @@ namespace star::platform::sdl {
     }
 
     PlatformData SDLWindow::platform_data() {
-        return {handle(), display_handle()};
+        return {native_handle(), display_handle()};
     }
 
     Vector2 SDLWindow::size() const {
@@ -168,5 +187,9 @@ namespace star::platform::sdl {
         if (m_device_context) {
             m_device_context->resize(static_cast<u32>(width), static_cast<u32>(height));
         }
+    }
+
+    std::unique_ptr<IImGuiPlatformBackend> SDLWindow::create_imgui_backend() const {
+        return std::make_unique<ImGuiSDL3Backend>();
     }
 } // namespace star::platform::sdl

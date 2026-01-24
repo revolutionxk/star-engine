@@ -23,4 +23,10 @@ namespace star::platform {
             return !(*this == other);
         }
     };
+
+    struct WindowConfiguration {
+        std::string title = "Star Engine Application";
+        VideoMode video_mode{};
+        bool is_main = false;
+    };
 } // namespace star::platform

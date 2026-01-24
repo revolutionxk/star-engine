@@ -12,8 +12,8 @@
 #include "star/graphics/texture.hpp"
 #include "star/platform/window.hpp"
 
-static bgfx::TextureFormat::Enum to_bgfx_format(const graphics::TextureDescriptor::Format format) {
-    using Format = graphics::TextureDescriptor::Format;
+static bgfx::TextureFormat::Enum to_bgfx_format(const graphics::TextureFormat format) {
+    using Format = graphics::TextureFormat;
     switch (format) {
         case Format::RGBA8:
             return bgfx::TextureFormat::RGBA8;
@@ -25,7 +25,7 @@ static bgfx::TextureFormat::Enum to_bgfx_format(const graphics::TextureDescripto
             return bgfx::TextureFormat::RGBA16F;
         case Format::RGBA32F:
             return bgfx::TextureFormat::RGBA32F;
-        case Format::Depth24Stencil8:
+        case Format::D24S8:
             return bgfx::TextureFormat::D24S8;
         default:
             return bgfx::TextureFormat::RGBA8;

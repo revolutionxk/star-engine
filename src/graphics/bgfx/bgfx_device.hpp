@@ -22,8 +22,6 @@ namespace star::graphics {
 
         DeviceCaps caps() const override;
 
-        DeviceContext* context() override;
-
         ResourceHandle<Buffer> create_buffer(BufferDescriptor& buffer_descriptor) override;
         ResourceHandle<Texture> create_texture(TextureDescriptor& texture_descriptor) override;
         ResourceHandle<Shader> create_shader(ShaderDescriptor& shader_descriptor) override;

@@ -45,8 +45,6 @@ namespace star::graphics {
         virtual std::string name() const = 0;
         virtual DeviceCaps caps() const = 0;
 
-        virtual DeviceContext* context() = 0;
-
         virtual ResourceHandle<Buffer> create_buffer(BufferDescriptor& buffer_descriptor) = 0;
         virtual ResourceHandle<Texture> create_texture(TextureDescriptor& buffer_descriptor) = 0;
         virtual ResourceHandle<Shader> create_shader(ShaderDescriptor& buffer_descriptor) = 0;
@@ -61,11 +59,19 @@ namespace star::graphics {
             return m_initialized;
         }
 
-        static std::unique_ptr<Device> create(const GraphicsDeviceConfig& config);
+        DeviceContext* context() const {
+            return m_context.get();
+        }
+
+        std::shared_ptr<DeviceContext> create_context() {
+            return m_context;
+        }
+
+        static std::shared_ptr<Device> create(const GraphicsDeviceConfig& config);
 
       protected:
         bool m_initialized = false;
         GraphicsDeviceConfig m_config;
-        std::unique_ptr<DeviceContext> m_context;
+        std::shared_ptr<DeviceContext> m_context;
     };
 } // namespace star::graphics

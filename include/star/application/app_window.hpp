@@ -101,9 +101,9 @@ namespace star::application {
         WindowId m_window_id{INVALID_WINDOW_ID};
         platform::Window* m_window{nullptr};
 
-        std::unique_ptr<graphics::Device> m_device{nullptr};
+        std::shared_ptr<graphics::Device> m_device{nullptr};
+        std::shared_ptr<resources::ResourceManager> m_resource_manager{nullptr};
         std::unique_ptr<rendering::Renderer> m_renderer;
-        std::unique_ptr<resources::ResourceManager> m_resource_manager;
 
         std::unique_ptr<scene::SceneManager> m_scene_manager;
 

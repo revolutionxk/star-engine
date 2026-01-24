@@ -12,7 +12,7 @@ namespace star::application {
         ApplicationContext& operator=(const ApplicationContext&) = delete;
 
         template<typename T>
-        void register_service(std::unique_ptr<T> service) {
+        void register_service(std::shared_ptr<T> service) {
             const auto type_id = std::type_index(typeid(T));
 
             auto wrapper = std::make_unique<ServiceWrapper<T>>(std::move(service));
@@ -76,7 +76,7 @@ namespace star::application {
 
         template<typename T>
         struct ServiceWrapper : IServiceWrapper {
-            explicit ServiceWrapper(std::unique_ptr<T> owned_service)
+            explicit ServiceWrapper(std::shared_ptr<T> owned_service)
                 : m_owned_service(std::move(owned_service)), m_service(m_owned_service.get()) {}
 
             explicit ServiceWrapper(T* non_owned_service) : m_owned_service(nullptr), m_service(non_owned_service) {}
@@ -85,7 +85,7 @@ namespace star::application {
                 return *m_service;
             }
 
-            std::unique_ptr<T> m_owned_service;
+            std::shared_ptr<T> m_owned_service;
             T* m_service;
         };
 

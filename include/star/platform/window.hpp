@@ -1,10 +1,11 @@
 #pragma once
+#include <functional>
+
 #include "imgui_platform_backend.hpp"
 #include "platform_data.hpp"
 #include "star/core/common.hpp"
 #include "star/graphics/device_context.hpp"
 #include "window_config.hpp"
-#include <functional>
 
 namespace star::platform {
     class Window {
@@ -37,6 +38,7 @@ namespace star::platform {
         }
 
         using ResizeCallback = std::function<void(u32, u32)>;
+
         virtual void set_resize_callback(ResizeCallback callback) {
             m_resize_callback = std::move(callback);
         }
@@ -46,7 +48,7 @@ namespace star::platform {
       protected:
         bool m_opened = true;
         WindowConfiguration m_configuration{};
-        std::unique_ptr<graphics::DeviceContext> m_device_context{};
+        std::shared_ptr<graphics::DeviceContext> m_device_context{};
         ResizeCallback m_resize_callback;
     };
 } // namespace star::platform

@@ -103,10 +103,6 @@ namespace star::graphics {
         return device_caps;
     }
 
-    DeviceContext* BGFXDevice::context() {
-        return m_context.get();
-    }
-
     ResourceHandle<Buffer> BGFXDevice::create_buffer(BufferDescriptor& buffer_descriptor) {
         const bgfx::Memory* mem = nullptr;
         if (buffer_descriptor.initial_data != nullptr) {

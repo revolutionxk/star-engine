@@ -112,9 +112,9 @@ namespace star::rendering {
         void reset_render_passes(u32 width, u32 height) const;
 
       private:
-        graphics::Device& m_device;
-        platform::Window& m_window;
-        resources::ResourceManager& m_resource_manager;
+        graphics::Device* m_device;
+        platform::Window* m_window;
+        resources::ResourceManager* m_resource_manager;
         scene::Scene* m_active_scene = nullptr;
 
         std::vector<std::unique_ptr<IRenderPass>> m_render_passes;

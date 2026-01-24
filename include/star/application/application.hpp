@@ -115,6 +115,9 @@ namespace star::application {
         std::vector<std::unique_ptr<AppWindow>> m_app_windows;
         std::unique_ptr<GameLoop> m_game_loop;
 
+        std::shared_ptr<graphics::Device> m_device;
+        std::shared_ptr<resources::ResourceManager> m_resource_manager;
+
         bool m_running = false;
         static Application* s_instance;
     };

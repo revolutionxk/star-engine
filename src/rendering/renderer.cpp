@@ -12,13 +12,13 @@
 
 namespace star::rendering {
     Renderer::Renderer(graphics::Device& device, platform::Window& window, resources::ResourceManager& resource_manager)
-        : m_device(device), m_window(window), m_resource_manager(resource_manager) {
+        : m_device(&device), m_window(&window), m_resource_manager(&resource_manager) {
         if (m_initialized) {
             STAR_LOG_WARN(LogCategory::Rendering, "Renderer already initialized");
         }
 
-        m_render_system = std::make_unique<systems::RenderSystem>(m_device);
-        m_render_system->set_resource_manager(&m_resource_manager);
+        m_render_system = std::make_unique<systems::RenderSystem>(*m_device);
+        m_render_system->set_resource_manager(m_resource_manager);
 
         auto scene_pass = std::make_unique<SceneRenderPass>(*m_render_system);
         auto imgui_pass = std::make_unique<ImGuiRenderPass>(std::make_unique<platform::sdl::ImGuiSDL3Backend>(),
@@ -55,7 +55,7 @@ namespace star::rendering {
             return;
         }
 
-        const auto context = m_device.context();
+        const auto context = m_device->context();
 
         for (const auto& pass : m_render_passes) {
             if (pass->is_enabled()) {
@@ -67,7 +67,7 @@ namespace star::rendering {
         u32 view_id = 0;
         for (const auto& pass : m_render_passes) {
             if (pass->is_enabled()) {
-                pass->render(*m_device.context(), view_id++);
+                pass->render(*m_device->context(), view_id++);
             }
         }
         context->end_frame();
@@ -139,7 +139,7 @@ namespace star::rendering {
         for (const auto& pass : m_render_passes) {
             if (pass) {
                 const auto view_id = pass->reset(width, height);
-                const auto context = m_device.context();
+                const auto context = m_device->context();
                 context->set_view_clear(view_id, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
                 context->set_view_rect(view_id, 0, 0, width, height);
             }

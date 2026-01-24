@@ -11,7 +11,7 @@
 #include "star/scene/components/transform.hpp"
 
 namespace star::rendering {
-    Viewport::Viewport(graphics::Device& device) : m_device(device) {
+    Viewport::Viewport(graphics::Device& device) : m_device(&device) {
         STAR_LOG_INFO(LogCategory::Rendering, "Viewport created ({}x{})", m_width, m_height);
     }
 
@@ -43,7 +43,7 @@ namespace star::rendering {
 
         context.set_view_rect(view_id, 0, 0, static_cast<u16>(m_width), static_cast<u16>(m_height));
         context.set_view_clear(view_id, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
-        
+
         if (m_framebuffer_enabled && m_render_target && m_render_target->is_valid()) {
             context.set_view_framebuffer(view_id, m_render_target->framebuffer());
         } else {
@@ -91,9 +91,9 @@ namespace star::rendering {
 
         m_render_target = std::make_unique<RenderTarget>();
 
-        const bool success = m_render_target->create(&m_device, m_width, m_height, graphics::TextureFormat::RGBA8,
-                                                     true // has_depth
-        );
+        const bool success =
+            m_render_target->create(m_device, m_width, m_height, graphics::TextureFormat::RGBA8, true // has_depth
+            );
 
         if (!success) {
             STAR_LOG_ERROR(LogCategory::Rendering, "Failed to create viewport render target");

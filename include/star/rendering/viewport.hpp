@@ -78,7 +78,7 @@ namespace star::rendering {
         void destroy_render_target();
         void update_camera_matrices(const scene::Camera& camera, const scene::Transform& transform);
 
-        graphics::Device& m_device;
+        graphics::Device* m_device;
 
         u32 m_width{1280};
         u32 m_height{720};

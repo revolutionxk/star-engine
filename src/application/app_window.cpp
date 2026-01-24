@@ -256,7 +256,11 @@ namespace star::application {
         return m_window->size();
     }
 
-    void AppWindow::on_window_resize(const u32 width, const u32 height) {
+    void AppWindow::on_window_resize(const u32 width, const u32 height) const {
+        if (const auto context = m_device->context()) {
+            context->resize(width, height);
+        }
+
         if (m_renderer) {
             m_renderer->reset_render_passes(width, height);
         }

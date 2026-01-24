@@ -61,14 +61,13 @@ namespace star::graphics {
             return;
         }
 
-        constexpr auto clear_hex = static_cast<uint32_t>(0x443355FF);
+        constexpr auto clear_hex = static_cast<uint32_t>(0x303030ff);
 
         bgfx::setPaletteColor(0, 0xFF000000);
         bgfx::setPaletteColor(1, clear_hex);
         bgfx::setPaletteColor(2, 0xFFFFFFFF);
 
         bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, clear_hex, 1.0f, 0);
-
         bgfx::setViewRect(0, 0, 0, init.resolution.width, init.resolution.height);
 
         m_initialized = true;

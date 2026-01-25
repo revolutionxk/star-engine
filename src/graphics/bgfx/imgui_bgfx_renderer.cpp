@@ -52,9 +52,11 @@ namespace star::graphics {
         int width, height;
         io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
+        constexpr auto texture_flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_MIN_ANISOTROPIC | BGFX_SAMPLER_MAG_ANISOTROPIC;
+
         m_data.font_texture =
             bgfx::createTexture2D(static_cast<uint16_t>(width), static_cast<uint16_t>(height), false, 1,
-                                  bgfx::TextureFormat::BGRA8, 0, bgfx::copy(pixels, width * height * 4));
+                                  bgfx::TextureFormat::BGRA8, texture_flags, bgfx::copy(pixels, width * height * 4));
 
         if (!bgfx::isValid(m_data.font_texture)) {
             STAR_LOG_ERROR(LogCategory::Graphics, "Failed to create ImGui font texture");

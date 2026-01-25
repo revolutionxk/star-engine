@@ -37,6 +37,8 @@ namespace star::application {
             return false;
         }
 
+        imgui_setup();
+
         m_initialized = true;
         STAR_LOG_INFO(LogCategory::Application, "Window initialized successfully: {}", m_configuration.title);
         return true;
@@ -99,7 +101,6 @@ namespace star::application {
         });
 
         if (const auto imgui_render_pass = m_renderer->get_render_pass<rendering::ImGuiRenderPass>()) {
-            imgui_render_pass->set_window(m_window);
             imgui_render_pass->add_imgui_callback([this] {
                 if (m_layer_stack) {
                     for (const auto& layer : *m_layer_stack) {
@@ -209,6 +210,30 @@ namespace star::application {
         if (m_layer_stack) {
             m_layer_stack->pop_overlay(overlay);
         }
+    }
+
+    void AppWindow::imgui_setup() {
+        if (m_imgui_initialized) {
+            STAR_LOG_WARN(LogCategory::Application, "ImGui already initialized for this window");
+            return;
+        }
+
+        const auto imgui_render_pass = m_renderer->get_render_pass<rendering::ImGuiRenderPass>();
+        if (!imgui_render_pass) {
+            STAR_LOG_WARN(LogCategory::Application, "No ImGui render pass found");
+            return;
+        }
+
+        if (m_layer_stack) {
+            for (const auto& layer : *m_layer_stack) {
+                layer->on_imgui_init();
+            }
+        }
+
+        imgui_render_pass->set_window(m_window);
+        m_imgui_initialized = true;
+
+        STAR_LOG_INFO(LogCategory::Application, "ImGui fully initialized for window: {}", m_configuration.title);
     }
 
     void AppWindow::show() {

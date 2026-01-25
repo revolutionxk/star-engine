@@ -22,10 +22,11 @@ namespace star::editor {
         void shutdown() override;
         void update(f32 dt) override;
         void on_imgui_render() override;
+        void on_imgui_init() override;
 
       private:
         static void setup_dockspace();
-        void render_main_menu_bar();
+        void render_main_menu_bar() const;
         void initialize_panels();
 
         EditorWindow* m_editor_window = nullptr;

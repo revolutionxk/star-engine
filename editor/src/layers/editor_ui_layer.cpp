@@ -10,6 +10,7 @@
 #include "../theme/editor_theme.hpp"
 #include "star/application/application.hpp"
 #include "star/graphics/device.hpp"
+#include "star/platform/imgui_font_config.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
 
 namespace star::editor {
@@ -92,7 +93,7 @@ namespace star::editor {
         ImGui::End();
     }
 
-    void EditorUILayer::render_main_menu_bar() {
+    void EditorUILayer::render_main_menu_bar() const {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("New Scene")) {
@@ -142,6 +143,24 @@ namespace star::editor {
 
             ImGui::EndMainMenuBar();
         }
+    }
+
+    void EditorUILayer::on_imgui_init() {
+        const std::filesystem::path font_path = "assets/fonts/Roboto-Medium.ttf";
+
+        if (!std::filesystem::exists(font_path)) {
+            STAR_LOG_WARN(LogCategory::Editor, "Roboto font not found, using default font");
+            platform::ImGuiFontManager::load_default_font(16.0f);
+            return;
+        }
+
+        platform::FontConfiguration font_config(font_path, 16.0f);
+        font_config.freetype_enabled = true;
+        font_config.pixel_snap = true;
+        font_config.oversample_h = 3;
+        font_config.oversample_v = 1;
+
+        platform::ImGuiFontManager::load_font(font_config);
     }
 
 } // namespace star::editor

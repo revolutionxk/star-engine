@@ -9,7 +9,7 @@ namespace star::application {
     class STAR_EXPORT Layer : public IInitializable, public IUpdatable, public IRenderable, public IImGuiRenderable {
       public:
         explicit Layer(std::string_view name = "Layer");
-        virtual ~Layer() = default;
+        ~Layer() override = default;
 
         bool initialize() override {
             return true;
@@ -26,6 +26,8 @@ namespace star::application {
         virtual void on_attach() {}
 
         virtual void on_detach() {}
+
+        virtual void on_imgui_init() {}
 
         // TODO: Add event handling
         // virtual void on_event(Event& event) {}

@@ -45,6 +45,8 @@ namespace star::application {
         void pop_layer(Layer* layer) const;
         void pop_overlay(Layer* overlay) const;
 
+        void imgui_setup();
+
         void show();
         void hide();
         void close() const;
@@ -110,5 +112,6 @@ namespace star::application {
         std::unique_ptr<LayerStack> m_layer_stack;
 
         bool m_initialized{false};
+        bool m_imgui_initialized{false};
     };
 } // namespace star::application

@@ -1,6 +1,7 @@
 #include "star/application/application.hpp"
 
-#include "../graphics/bgfx/imgui_bgfx_renderer.hpp"
+#include "star/platform/input/input.hpp"
+#include "graphics/bgfx/imgui_bgfx_renderer.hpp"
 #include "star/application/command_line_args.hpp"
 #include "star/application/window_manager.hpp"
 #include "star/graphics/command_buffer.hpp"
@@ -49,6 +50,11 @@ namespace star::application {
         m_window_manager = std::make_unique<WindowManager>();
         m_context.register_service(m_window_manager.get());
 
+        m_input_manager = platform::Input::create();
+        m_context.register_service(m_input_manager.get());
+
+        m_window_manager->set_input_manager(m_input_manager.get());
+
         GameLoopConfig loop_config{.fixed_timestep = m_config.fixed_timestep,
                                    .use_fixed_timestep = m_config.fixed_timestep > 0.0f,
                                    .target_fps = m_config.max_fps};
@@ -79,6 +85,10 @@ namespace star::application {
             m_window_manager.reset();
         }
 
+        if (m_input_manager) {
+            m_input_manager.reset();
+        }
+
         m_context.clear();
 
         m_running = false;
@@ -105,6 +115,10 @@ namespace star::application {
 
     void Application::update_frame(const f32 delta_time) {
         m_window_manager->poll_events();
+
+        if (m_input_manager) {
+            m_input_manager->update();
+        }
 
         for (const auto& app_window : m_app_windows) {
             if (app_window && app_window->is_open()) {
@@ -136,5 +150,9 @@ namespace star::application {
 
     WindowManager& Application::window_manager() const {
         return *m_window_manager;
+    }
+
+    platform::Input& Application::input_manager() const {
+        return *m_input_manager;
     }
 } // namespace star::application

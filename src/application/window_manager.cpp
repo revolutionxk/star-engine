@@ -20,6 +20,10 @@ namespace star::application {
         data.window = std::move(window);
         data.is_main = config.is_main;
 
+        if (m_input_manager) {
+            data.window->set_input_manager(m_input_manager);
+        }
+
         m_windows[window_id] = std::move(data);
 
         if (config.is_main || m_main_window_id == INVALID_WINDOW_ID) {
@@ -149,5 +153,17 @@ namespace star::application {
 
         m_windows.clear();
         m_main_window_id = INVALID_WINDOW_ID;
+    }
+
+    void WindowManager::set_input_manager(platform::Input* input_manager) {
+        m_input_manager = input_manager;
+        
+        for (auto& [window, is_main] : m_windows | std::views::values) {
+            if (window) {
+                window->set_input_manager(input_manager);
+            }
+        }
+        
+        STAR_LOG_INFO(LogCategory::Application, "Input manager configured for {} windows", m_windows.size());
     }
 } // namespace star::application

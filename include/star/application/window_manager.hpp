@@ -6,6 +6,10 @@
 #include "star/platform/window.hpp"
 #include "star/platform/window_config.hpp"
 
+namespace star::platform {
+    class Input;
+}
+
 namespace star::application {
     using WindowId = u32;
     constexpr WindowId INVALID_WINDOW_ID = 0;
@@ -44,6 +48,8 @@ namespace star::application {
         void poll_events() const;
         void destroy_all();
 
+        void set_input_manager(platform::Input* input_manager);
+
       private:
         struct WindowData {
             std::unique_ptr<platform::Window> window;
@@ -53,5 +59,6 @@ namespace star::application {
         std::unordered_map<WindowId, WindowData> m_windows;
         WindowId m_main_window_id = INVALID_WINDOW_ID;
         WindowId m_next_window_id = 1;
+        platform::Input* m_input_manager = nullptr;
     };
 } // namespace star::application

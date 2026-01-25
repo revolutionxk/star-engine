@@ -4,10 +4,12 @@
 #include "application_config.hpp"
 #include "application_context.hpp"
 #include "game_loop.hpp"
-#include "layer_stack.hpp"
 #include "star/rendering/renderer.hpp"
 #include "star/resources/resource_manager.hpp"
-#include "star/systems/render_system.hpp"
+
+namespace star::platform {
+    class Input;
+}
 
 namespace star::scene {
     class SceneManager;
@@ -51,6 +53,7 @@ namespace star::application {
 
         [[nodiscard]] platform::Window& main_window() const;
         [[nodiscard]] WindowManager& window_manager() const;
+        [[nodiscard]] platform::Input& input_manager() const;
 
         [[nodiscard]] ApplicationConfig& config() {
             return m_config;
@@ -112,6 +115,7 @@ namespace star::application {
         ApplicationContext m_context;
 
         std::unique_ptr<WindowManager> m_window_manager;
+        std::unique_ptr<platform::Input> m_input_manager;
         std::vector<std::unique_ptr<AppWindow>> m_app_windows;
         std::unique_ptr<GameLoop> m_game_loop;
 

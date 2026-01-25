@@ -8,6 +8,7 @@
 #include "window_config.hpp"
 
 namespace star::platform {
+    class Input;
     class Window {
       public:
         virtual ~Window() = default;
@@ -36,6 +37,8 @@ namespace star::platform {
         virtual std::unique_ptr<IImGuiPlatformBackend> create_imgui_backend() const {
             return nullptr;
         }
+
+        virtual void set_input_manager(Input* input_manager) {}
 
         using ResizeCallback = std::function<void(u32, u32)>;
 

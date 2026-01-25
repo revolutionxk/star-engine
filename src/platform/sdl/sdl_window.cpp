@@ -2,6 +2,7 @@
 
 #include "backends/imgui_impl_sdl3.h"
 #include "imgui_sdl3_backend.hpp"
+#include "sdl_input.hpp"
 
 namespace star::platform::sdl {
     SDLWindow::SDLWindow() {
@@ -69,6 +70,10 @@ namespace star::platform::sdl {
 
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL3_ProcessEvent(&event); // TODO: temp fix, move to ImGui backend later with proper checks
+
+            if (m_input_manager) {
+                m_input_manager->process_event(event);
+            }
 
             switch (event.type) {
                 case SDL_EVENT_QUIT:
@@ -191,5 +196,9 @@ namespace star::platform::sdl {
 
     std::unique_ptr<IImGuiPlatformBackend> SDLWindow::create_imgui_backend() const {
         return std::make_unique<ImGuiSDL3Backend>();
+    }
+
+    void SDLWindow::set_input_manager(Input* input_manager) {
+        m_input_manager = dynamic_cast<SDLInput*>(input_manager);
     }
 } // namespace star::platform::sdl

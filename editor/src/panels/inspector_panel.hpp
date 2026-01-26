@@ -7,7 +7,7 @@
 #include "../core/editor_events.hpp"
 #include "panel.hpp"
 #include "star/core/logger.hpp"
-#include "star/scene/components/transform.hpp"
+#include "star/ecs/components/transform.hpp"
 
 namespace star::editor {
 

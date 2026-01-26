@@ -1,5 +1,8 @@
 # Build artifacts
 build/
+cmake-build*/
+out/
+
 *.o
 *.obj
 *.so
@@ -15,8 +18,6 @@ CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 Makefile
-
-cmake-build-debug-visual-studio/
 
 # IDE-specific files
 .idea/

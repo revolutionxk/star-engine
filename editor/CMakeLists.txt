@@ -10,10 +10,16 @@ file(GLOB_RECURSE EDITOR_SRC_FILES
 
 set(EDITOR_NAME "${PROJECT_NAME}_editor")
 
-if (WIN32)
+option(ENABLE_CONSOLE_APPLICATION "Build the editor as a console application" OFF)
+
+if (WIN32 AND NOT ENABLE_CONSOLE_APPLICATION)
     add_executable(${EDITOR_NAME} WIN32 ${EDITOR_SRC_FILES})
 else ()
     add_executable(${EDITOR_NAME} ${EDITOR_SRC_FILES})
+endif ()
+
+if (ENABLE_CONSOLE_APPLICATION)
+    target_compile_definitions(${EDITOR_NAME} PUBLIC STAR_CONSOLE_APPLICATION)
 endif ()
 
 set_property(TARGET ${EDITOR_NAME} PROPERTY CXX_STANDARD 26)

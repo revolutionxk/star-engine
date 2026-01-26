@@ -1,4 +1,4 @@
-#include "star/systems/render_system.hpp"
+#include "star/rendering/systems/render_system.hpp"
 
 #include "star/core/common.hpp"
 #include "star/graphics/device.hpp"

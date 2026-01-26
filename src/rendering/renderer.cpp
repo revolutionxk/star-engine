@@ -1,14 +1,14 @@
 #include "star/rendering/renderer.hpp"
 
-#include "../graphics/bgfx/imgui_bgfx_renderer.hpp"
+#include "graphics/bgfx/imgui_bgfx_renderer.hpp"
 #include "platform/sdl/imgui_sdl3_backend.hpp"
 #include "star/core/logger.hpp"
 #include "star/graphics/device.hpp"
 #include "star/platform/window.hpp"
 #include "star/rendering/passes/imgui_render_pass.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
+#include "star/rendering/systems/render_system.hpp"
 #include "star/scene/scene.hpp"
-#include "star/systems/render_system.hpp"
 
 namespace star::rendering {
     Renderer::Renderer(graphics::Device& device, platform::Window& window, resources::ResourceManager& resource_manager)

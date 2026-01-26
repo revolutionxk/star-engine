@@ -33,7 +33,7 @@ namespace star::systems {
                     rendering::Viewport* viewport = nullptr);
         void update(f32 delta_time);
 
-        const rendering::RenderQueue& render_queue() const {
+        [[nodiscard]] const rendering::RenderQueue& render_queue() const {
             return m_render_queue;
         }
 

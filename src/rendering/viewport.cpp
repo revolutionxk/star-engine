@@ -3,12 +3,12 @@
 #include <bgfx/bgfx.h>
 
 #include "star/core/common.hpp"
+#include "star/ecs/components/transform.hpp"
 #include "star/graphics/device.hpp"
 #include "star/graphics/device_context.hpp"
 #include "star/graphics/texture.hpp"
 #include "star/rendering/render_target.hpp"
 #include "star/scene/components/camera.hpp"
-#include "star/scene/components/transform.hpp"
 
 namespace star::rendering {
     Viewport::Viewport(graphics::Device& device) : m_device(&device) {

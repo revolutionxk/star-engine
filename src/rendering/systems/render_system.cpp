@@ -1,6 +1,7 @@
 #include "star/rendering/systems/render_system.hpp"
 
 #include "star/core/common.hpp"
+#include "star/ecs/components/transform.hpp"
 #include "star/graphics/device.hpp"
 #include "star/graphics/device_context.hpp"
 #include "star/rendering/components/material.hpp"
@@ -10,7 +11,6 @@
 #include "star/resources/resource_manager.hpp"
 #include "star/resources/shader/shader.hpp"
 #include "star/scene/components/camera.hpp"
-#include "star/scene/components/transform.hpp"
 #include "star/scene/scene.hpp"
 
 namespace star::systems {

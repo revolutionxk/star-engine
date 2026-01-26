@@ -1,10 +1,10 @@
 #include "star/scene/scene.hpp"
 
 #include "star/core/common.hpp"
+#include "star/ecs/components/transform.hpp"
 #include "star/rendering/components/material.hpp"
 #include "star/rendering/components/mesh_renderer.hpp"
 #include "star/scene/components/camera.hpp"
-#include "star/scene/components/transform.hpp"
 
 namespace star::scene {
     Scene::Scene(const std::string& name) : m_name(name) {

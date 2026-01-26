@@ -1,5 +1,5 @@
 #pragma once
-#include "components/transform.hpp"
+#include "star/ecs/components/transform.hpp"
 #include "node.hpp"
 #include "star/rendering/components/material.hpp"
 

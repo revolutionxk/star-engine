@@ -1,6 +1,6 @@
 #pragma once
-#include "star/ecs/components/transform.hpp"
 #include "node.hpp"
+#include "star/ecs/components/transform.hpp"
 #include "star/rendering/components/material.hpp"
 
 namespace star::scene {
@@ -18,8 +18,8 @@ namespace star::scene {
         Quaternion rotation();
         Vector3 scale();
 
-        Transform& transform() {
-            return get_component<Transform>();
+        components::Transform& transform() {
+            return get_component<components::Transform>();
         }
 
       protected:

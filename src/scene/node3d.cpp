@@ -4,7 +4,7 @@
 
 namespace star::scene {
     Node3D::Node3D(flecs::world& world, const std::string& name) : Node(world, name) {
-        add_component<Transform>(Transform{});
+        add_component<components::Transform>(components::Transform{});
     }
 
     void Node3D::on_ready() {

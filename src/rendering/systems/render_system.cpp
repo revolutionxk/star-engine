@@ -53,7 +53,7 @@ namespace star::systems {
 
         const auto& world = scene.world();
 
-        world.each([&](flecs::entity, const scene::Camera& camera, const scene::Transform& transform) {
+        world.each([&](flecs::entity, const components::Camera& camera, const components::Transform& transform) {
             if (!camera.is_primary) {
                 return;
             }
@@ -76,7 +76,7 @@ namespace star::systems {
         const auto& camera_position = viewport->camera_position();
 
         world.each([&](const flecs::entity e, const components::MeshRenderer& mesh_renderer,
-                       const scene::Transform& transform) {
+                       const components::Transform& transform) {
             if (!mesh_renderer.visible) {
                 return;
             }

@@ -60,7 +60,7 @@ namespace star::scene {
             return m_active;
         }
 
-        void set_active(bool active) {
+        void set_active(const bool active) {
             m_active = active;
         }
 
@@ -73,9 +73,6 @@ namespace star::scene {
         }
 
       private:
-        void register_components();
-        void register_systems();
-
         std::string m_name;
         flecs::world m_world;
 

@@ -3,7 +3,9 @@
 #include <memory>
 
 #include "star/core/types.hpp"
+#include "star/ecs/components/transform.hpp"
 #include "star/graphics/resource_handle.hpp"
+#include "star/scene/components/camera.hpp"
 
 namespace star::graphics {
     class Device;
@@ -11,11 +13,6 @@ namespace star::graphics {
     struct Framebuffer;
     struct Texture;
 } // namespace star::graphics
-
-namespace star::scene {
-    struct Camera;
-    struct Transform;
-} // namespace star::scene
 
 namespace star::rendering {
     class RenderTarget;
@@ -32,7 +29,7 @@ namespace star::rendering {
 
         void bind(graphics::DeviceContext& context, u32 view_id) const;
 
-        void set_camera(const scene::Camera& camera, const scene::Transform& transform);
+        void set_camera(const components::Camera& camera, const components::Transform& transform);
         void set_framebuffer_enabled(bool enabled);
 
         [[nodiscard]] graphics::ResourceHandle<graphics::Texture> get_color_texture() const;
@@ -76,7 +73,7 @@ namespace star::rendering {
       private:
         void create_render_target();
         void destroy_render_target();
-        void update_camera_matrices(const scene::Camera& camera, const scene::Transform& transform);
+        void update_camera_matrices(const components::Camera& camera, const components::Transform& transform);
 
         graphics::Device* m_device;
 

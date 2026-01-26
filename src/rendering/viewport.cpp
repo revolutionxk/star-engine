@@ -55,7 +55,7 @@ namespace star::rendering {
         }
     }
 
-    void Viewport::set_camera(const scene::Camera& camera, const scene::Transform& transform) {
+    void Viewport::set_camera(const components::Camera& camera, const components::Transform& transform) {
         m_has_camera = true;
         update_camera_matrices(camera, transform);
     }
@@ -110,7 +110,7 @@ namespace star::rendering {
         }
     }
 
-    void Viewport::update_camera_matrices(const scene::Camera& camera, const scene::Transform& transform) {
+    void Viewport::update_camera_matrices(const components::Camera& camera, const components::Transform& transform) {
         m_camera_position = transform.position;
 
         const auto transform_matrix = transform.to_matrix();

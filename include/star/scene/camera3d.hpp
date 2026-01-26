@@ -14,14 +14,14 @@ namespace star::scene {
         void make_current();
 
         Matrix4 view_matrix();
-        Matrix4 projection_matrix() const;
+        [[nodiscard]] Matrix4 projection_matrix() const;
 
-        Camera& camera() {
-            return get_component<Camera>();
+        components::Camera& camera() {
+            return get_component<components::Camera>();
         }
 
-        const Camera& camera() const {
-            return m_entity.get<Camera>();
+        [[nodiscard]] const components::Camera& camera() const {
+            return m_entity.get<components::Camera>();
         }
 
         void on_ready() override;

@@ -2,45 +2,17 @@
 
 #include "star/core/common.hpp"
 #include "star/ecs/components/transform.hpp"
-#include "star/rendering/components/material.hpp"
-#include "star/rendering/components/mesh_renderer.hpp"
-#include "star/scene/components/camera.hpp"
+#include "world_module.hpp"
 
 namespace star::scene {
     Scene::Scene(const std::string& name) : m_name(name) {
         STAR_LOG_INFO(LogCategory::Scene, "Creating scene '{}'", m_name);
 
-        register_components();
-        register_systems();
+        m_world.import <WorldModule>();
     }
 
     Scene::~Scene() {
         shutdown();
-    }
-
-    void Scene::register_components() {
-        m_world.component<Transform>("Transform");
-        m_world.component<Camera>("Camera");
-
-        m_world.component<components::MeshRenderer>("MeshRenderer");
-        m_world.component<components::Material>("Material");
-
-        STAR_LOG_DEBUG(LogCategory::Scene, "Scene '{}': Components registered", m_name);
-    }
-
-    void Scene::register_systems() {
-        m_world.system<Transform>("TransformPropagation")
-            .kind(flecs::OnUpdate)
-            .each([](const flecs::entity e, Transform& transform) {
-                const auto parent = e.parent();
-                if (!parent) {
-                    return;
-                }
-
-                const auto& parent_transform = parent.get<Transform>();
-            });
-
-        STAR_LOG_DEBUG(LogCategory::Scene, "Scene '{}': Systems registered", m_name);
     }
 
     void Scene::ready() {

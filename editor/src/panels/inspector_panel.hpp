@@ -26,7 +26,7 @@ namespace star::editor {
         void set_selected_entity(scene::Node* node) {
             m_selected_node = node;
             if (m_selected_node.has_value() && m_selected_node.value()->entity()) {
-                const auto& [position, rotation, scale] = m_selected_node.value()->get_component<scene::Transform>();
+                const auto& [position, rotation, scale] = m_selected_node.value()->get_component<components::Transform>();
                 m_transform_position = position;
                 m_transform_rotation = rotation.to_euler() * (180.0f / math::Constants<f32>::pi);
                 m_transform_scale = scale;
@@ -90,14 +90,14 @@ namespace star::editor {
 
                 if (ImGui::DragFloat3("Position", m_transform_position.data, 0.1f)) {
                     if (m_selected_node.has_value()) {
-                        auto& transform = m_selected_node.value()->get_component<scene::Transform>();
+                        auto& transform = m_selected_node.value()->get_component<components::Transform>();
                         transform.position = m_transform_position;
                     }
                 }
 
                 if (ImGui::DragFloat3("Rotation", m_transform_rotation.data, 0.5f)) {
                     if (m_selected_node.has_value()) {
-                        auto& transform = m_selected_node.value()->get_component<scene::Transform>();
+                        auto& transform = m_selected_node.value()->get_component<components::Transform>();
                         transform.rotation =
                             Quaternion::from_euler(radians(m_transform_rotation.x), radians(m_transform_rotation.y),
                                                    radians(m_transform_rotation.z));
@@ -106,7 +106,7 @@ namespace star::editor {
 
                 if (ImGui::DragFloat3("Scale", m_transform_scale.data, 0.05f, 0.01f, 100.0f)) {
                     if (m_selected_node.has_value()) {
-                        auto& transform = m_selected_node.value()->get_component<scene::Transform>();
+                        auto& transform = m_selected_node.value()->get_component<components::Transform>();
                         transform.scale = m_transform_scale;
                     }
                 }

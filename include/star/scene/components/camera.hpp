@@ -1,6 +1,6 @@
 #pragma once
 
-namespace star::scene {
+namespace star::components {
     struct Camera {
         float fov_y = 45.0f;
         float near_plane = 0.1f;
@@ -10,4 +10,4 @@ namespace star::scene {
 
         bool is_primary = true;
     };
-} // namespace star::scene
+} // namespace star::components

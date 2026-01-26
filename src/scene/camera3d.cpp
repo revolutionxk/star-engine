@@ -4,7 +4,7 @@
 
 namespace star::scene {
     Camera3D::Camera3D(flecs::world& world, const std::string& name) : Node3D(world, name) {
-        add_component<Camera>(Camera{});
+        add_component<components::Camera>(components::Camera{});
     }
 
     void Camera3D::on_ready() {
@@ -12,7 +12,7 @@ namespace star::scene {
         STAR_LOG_DEBUG(LogCategory::Scene, "Camera3D '{}' ready", m_name);
     }
 
-    void Camera3D::set_fov(float fov) {
+    void Camera3D::set_fov(const float fov) {
         auto& cam = camera();
         cam.fov_y = fov;
     }
@@ -30,7 +30,7 @@ namespace star::scene {
 
     void Camera3D::make_current() {
         auto& cam = camera();
-        m_world.each([](flecs::entity e, Camera& other_cam) { other_cam.is_primary = false; });
+        m_world.each([](flecs::entity, components::Camera& other_cam) { other_cam.is_primary = false; });
 
         cam.is_primary = true;
 

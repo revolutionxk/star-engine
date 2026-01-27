@@ -23,10 +23,14 @@ namespace star::editor {
             });
         }
 
-        void set_selected_entity(scene::Node* node) {
-            m_selected_node = node;
-            if (m_selected_node.has_value() && m_selected_node.value()->entity()) {
-                const auto& [position, rotation, scale] = m_selected_node.value()->get_component<components::Transform>();
+        void set_selected_entity(flecs::entity& entity) {
+            m_selected_entity = entity;
+            if (m_selected_entity.has_value() && m_selected_entity.value()) {
+                auto transform = m_selected_entity->try_get<components::Transform>();
+                if (!transform)
+                    return;
+
+                auto& [position, rotation, scale] = *transform;
                 m_transform_position = position;
                 m_transform_rotation = rotation.to_euler() * (180.0f / math::Constants<f32>::pi);
                 m_transform_scale = scale;
@@ -50,14 +54,13 @@ namespace star::editor {
 
       private:
         [[nodiscard]] bool has_valid_entity() const {
-            if (!m_selected_node)
+            if (!m_selected_entity)
                 return false;
 
-            const auto entity = m_selected_node.value()->entity();
-            if (!entity.has_value())
+            if (!m_selected_entity.has_value())
                 return false;
 
-            return entity.value();
+            return m_selected_entity.value();
         }
 
         void render_entity_info() {
@@ -72,12 +75,12 @@ namespace star::editor {
         }
 
         void render_entity_name() {
-            if (!m_selected_node)
+            if (!m_selected_entity)
                 return;
             ImGui::Text("Entity Name");
             ImGui::SameLine();
 
-            std::strncpy(m_name_buffer.data(), m_selected_node.value()->name().c_str(), m_name_buffer.size() - 1);
+            std::strncpy(m_name_buffer.data(), m_selected_entity->name().c_str(), m_name_buffer.size() - 1);
 
             if (ImGui::InputText("##EntityName", m_name_buffer.data(), m_name_buffer.size())) {
                 // Rename entity logic
@@ -89,15 +92,15 @@ namespace star::editor {
                 ImGui::PushItemWidth(-120);
 
                 if (ImGui::DragFloat3("Position", m_transform_position.data, 0.1f)) {
-                    if (m_selected_node.has_value()) {
-                        auto& transform = m_selected_node.value()->get_component<components::Transform>();
+                    if (m_selected_entity.has_value()) {
+                        auto& transform = m_selected_entity->get<components::Transform>();
                         transform.position = m_transform_position;
                     }
                 }
 
                 if (ImGui::DragFloat3("Rotation", m_transform_rotation.data, 0.5f)) {
-                    if (m_selected_node.has_value()) {
-                        auto& transform = m_selected_node.value()->get_component<components::Transform>();
+                    if (m_selected_entity.has_value()) {
+                        auto& transform = m_selected_entity->get<components::Transform>();
                         transform.rotation =
                             Quaternion::from_euler(radians(m_transform_rotation.x), radians(m_transform_rotation.y),
                                                    radians(m_transform_rotation.z));
@@ -105,8 +108,8 @@ namespace star::editor {
                 }
 
                 if (ImGui::DragFloat3("Scale", m_transform_scale.data, 0.05f, 0.01f, 100.0f)) {
-                    if (m_selected_node.has_value()) {
-                        auto& transform = m_selected_node.value()->get_component<components::Transform>();
+                    if (m_selected_entity.has_value()) {
+                        auto& transform = m_selected_entity->get<components::Transform>();
                         transform.scale = m_transform_scale;
                     }
                 }
@@ -153,7 +156,7 @@ namespace star::editor {
             // Component addition logic
         }
 
-        std::optional<scene::Node*> m_selected_node;
+        std::optional<flecs::entity> m_selected_entity;
         std::array<char, 256> m_name_buffer{};
         Vector3 m_transform_position{0.0f, 0.0f, 0.0f};
         Vector3 m_transform_rotation{0.0f, 0.0f, 0.0f};

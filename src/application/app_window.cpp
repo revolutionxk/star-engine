@@ -146,6 +146,7 @@ namespace star::application {
 
         m_window->pool_events();
 
+        m_scene_manager->update(delta_time);
         on_update(delta_time);
 
         if (m_layer_stack) {

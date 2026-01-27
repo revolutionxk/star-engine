@@ -53,11 +53,8 @@ namespace star::systems {
 
         const auto& world = scene.world();
 
-        world.each([&](flecs::entity, const components::Camera& camera, const components::Transform& transform) {
-            if (!camera.is_primary) {
-                return;
-            }
-
+        world.each([&](flecs::entity, const components::Camera& camera, const components::Transform& transform,
+                       const components::PrimaryCamera&) {
             viewport->set_camera(camera, transform);
 
             STAR_LOG_TRACE(LogCategory::Rendering, "Camera setup: pos({}, {}, {})", transform.position.x,

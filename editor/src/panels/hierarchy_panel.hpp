@@ -6,7 +6,6 @@
 
 #include "../core/editor_events.hpp"
 #include "panel.hpp"
-#include "star/scene/node.hpp"
 #include "star/scene/scene.hpp"
 #include "star/scene/scene_manager.hpp"
 
@@ -43,36 +42,39 @@ namespace star::editor {
             ImGui::BeginChild("EntityList", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 
             const auto& scene = m_editor_window->scene_manager();
+            const auto active_scene = scene.get_active_scene();
 
-            for (const auto active_scene = scene.get_active_scene(); const auto node : active_scene->get_root_nodes()) {
-                render_entity_node(node);
+            if (!active_scene) {
+                ImGui::EndChild();
+                return;
             }
+
+            const auto root = active_scene->root();
+            root.children([this](const flecs::entity child) { render_entity_node(child); });
 
             ImGui::EndChild();
         }
 
-        void render_entity_node(scene::Node* node) {
+        void render_entity_node(const flecs::entity entity) {
             ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 
-            if (node->get_children().empty()) {
+            if (const auto children_count = entity.world().count(flecs::ChildOf, entity.id()); children_count == 0) {
                 node_flags |= ImGuiTreeNodeFlags_Leaf;
             }
 
-            if (node == m_selected_entity) {
+            if (entity == m_selected_entity) {
                 node_flags |= ImGuiTreeNodeFlags_Selected;
             }
-            const bool node_open =
-                ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<intptr_t>(node->entity().value()->id())),
-                                  node_flags, "%s", node->name().c_str());
+
+            const bool node_open = ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<intptr_t>(entity.id())),
+                                                     node_flags, "%s", entity.name().c_str());
             if (ImGui::IsItemClicked()) {
-                m_selected_entity = node;
+                m_selected_entity = entity;
                 on_entity_selected(m_selected_entity);
             }
 
             if (node_open) {
-                for (const auto child : node->get_children()) {
-                    render_entity_node(child);
-                }
+                entity.children([this](const flecs::entity child) { render_entity_node(child); });
                 ImGui::TreePop();
             }
         }
@@ -108,18 +110,18 @@ namespace star::editor {
             // Camera entity creation logic
         }
 
-        static void on_entity_selected(scene::Node* node) {
+        static void on_entity_selected(flecs::entity& entity) {
             EditorEvent event;
             event.type = EditorEventType::EntitySelected;
 
-            auto event_data = NodeSelectedEvent{node};
+            auto event_data = NodeSelectedEvent{entity};
             event.data = &event_data;
 
             EditorEventBus::instance().publish(event);
         }
 
         std::array<char, 256> m_search_buffer{};
-        scene::Node* m_selected_entity;
+        flecs::entity m_selected_entity;
         EditorWindow* m_editor_window = nullptr;
     };
 

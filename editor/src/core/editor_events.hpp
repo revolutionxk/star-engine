@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "flecs.h"
-#include "star/scene/node.hpp"
 
 namespace star::editor {
 
@@ -28,7 +27,7 @@ namespace star::editor {
     };
 
     struct NodeSelectedEvent {
-        scene::Node* node;
+        flecs::entity& node;
     };
 
     class EditorEventBus {

@@ -1,10 +1,11 @@
 #pragma once
+#include "star/math/math.hpp"
 
 namespace star::components {
     struct Transform {
-        Vector3 position{0.0f, 0.0f, 0.0f};
-        Quaternion rotation{0.0f, 0.0f, 0.0f, 1.0f};
-        Vector3 scale{1.0f, 1.0f, 1.0f};
+        mutable Vector3 position{0.0f, 0.0f, 0.0f};
+        mutable Quaternion rotation{0.0f, 0.0f, 0.0f, 1.0f};
+        mutable Vector3 scale{1.0f, 1.0f, 1.0f};
 
         [[nodiscard]] Matrix4 to_matrix() const {
             const auto translation_matrix = Matrix4::translate(position);
@@ -13,4 +14,4 @@ namespace star::components {
             return translation_matrix * rotation_matrix * scale_matrix;
         }
     };
-} // namespace star::scene
+} // namespace star::components

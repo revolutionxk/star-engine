@@ -64,9 +64,7 @@ namespace star::platform {
 
         void reset();
 
-      private:
-        using TimePoint = std::chrono::steady_clock::time_point;
-
+    private:
         Clock m_clock;
         TimePoint m_last_frame_time;
 

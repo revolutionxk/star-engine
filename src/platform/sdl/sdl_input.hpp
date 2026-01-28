@@ -33,7 +33,7 @@ namespace star::platform::sdl {
 
       private:
         static KeyCode sdl_keycode_to_keycode(SDL_Keycode sdl_key);
-        static [[nodiscard]] MouseButton sdl_button_to_mouse_button(u8 sdl_button);
+        static MouseButton sdl_button_to_mouse_button(u8 sdl_button);
 
         std::unordered_set<KeyCode> m_pressed_keys;
         std::unordered_set<KeyCode> m_just_pressed_keys;

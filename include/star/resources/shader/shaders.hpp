@@ -1,21 +1,32 @@
 #pragma once
 
+#include <bgfx/embedded_shader.h>
+#ifdef STAR_PLATFORM_LINUX
+    // idk why but on linux dxbc(direct x) is defined by bgfx even tho its not supported
+    #undef BGFX_EMBEDDED_SHADER_DXBC
+    #define BGFX_EMBEDDED_SHADER_DXBC(...)
+#endif
+
+#include <essl/f_imgui.sc.bin.h>
 #include <essl/f_material.sc.bin.h>
 #include <essl/f_simple.sc.bin.h>
+#include <essl/v_imgui.sc.bin.h>
 #include <essl/v_material.sc.bin.h>
 #include <essl/v_simple.sc.bin.h>
+#include <glsl/f_imgui.sc.bin.h>
 #include <glsl/f_material.sc.bin.h>
 #include <glsl/f_simple.sc.bin.h>
+#include <glsl/v_imgui.sc.bin.h>
 #include <glsl/v_material.sc.bin.h>
 #include <glsl/v_simple.sc.bin.h>
+#include <spirv/f_imgui.sc.bin.h>
 #include <spirv/f_material.sc.bin.h>
 #include <spirv/f_simple.sc.bin.h>
+#include <spirv/v_imgui.sc.bin.h>
 #include <spirv/v_material.sc.bin.h>
 #include <spirv/v_simple.sc.bin.h>
 
-#include "bgfx/embedded_shader.h"
-
-#if defined(_WIN32)
+#ifdef STAR_PLATFORM_WINDOWS
     #include <dx10/f_imgui.sc.bin.h>
     #include <dx10/f_material.sc.bin.h>
     #include <dx10/f_simple.sc.bin.h>
@@ -28,14 +39,8 @@
     #include <dx11/v_imgui.sc.bin.h>
     #include <dx11/v_material.sc.bin.h>
     #include <dx11/v_simple.sc.bin.h>
-    #include <essl/f_imgui.sc.bin.h>
-    #include <essl/v_imgui.sc.bin.h>
-    #include <glsl/f_imgui.sc.bin.h>
-    #include <glsl/v_imgui.sc.bin.h>
-    #include <spirv/f_imgui.sc.bin.h>
-    #include <spirv/v_imgui.sc.bin.h>
 #endif
-#if __APPLE__
+#ifdef STAR_PLATFORM_MACOS
     #include <mtl/f_imgui.sc.bin.h>
     #include <mtl/f_material.sc.bin.h>
     #include <mtl/f_simple.sc.bin.h>

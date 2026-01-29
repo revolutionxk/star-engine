@@ -10,7 +10,6 @@ FetchContent_MakeAvailable(imgui)
 file(GLOB SRC_IMGUI
         "${imgui_SOURCE_DIR}/*.cpp"
         "${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp"
-        "${imgui_SOURCE_DIR}/backends/imgui_impl_dx11.cpp"
         "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp"
         "${imgui_SOURCE_DIR}/misc/freetype/imgui_freetype.cpp"
 )

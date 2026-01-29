@@ -132,10 +132,23 @@ namespace star::platform::sdl {
         if (!m_window) {
             return nullptr;
         }
+
+#ifdef STAR_PLATFORM_WINDOWS
         const auto hwnd = static_cast<HWND>(
             SDL_GetPointerProperty(SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
 
         return hwnd;
+#elifdef STAR_PLATFORM_LINUX
+        if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) {
+            return SDL_GetPointerProperty(SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER,
+                                          nullptr);
+        }
+        if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0) {
+            const auto surface = static_cast<struct wl_surface*>(SDL_GetPointerProperty(
+                SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
+            return surface;
+        }
+#endif
     }
 
     void* SDLWindow::display_handle() const {

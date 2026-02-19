@@ -49,6 +49,39 @@ namespace star::math {
             return columns[col];
         }
 
+        constexpr QuaternionT<T> to_quaternion() const {
+            T trace = m[0] + m[5] + m[10];
+            QuaternionT<T> q;
+
+            if (trace > 0) {
+                T s = std::sqrt(trace + 1) * 2;
+                q.w = s * T(0.25);
+                q.x = (m[9] - m[6]) / s;
+                q.y = (m[2] - m[8]) / s;
+                q.z = (m[4] - m[1]) / s;
+            } else if ((m[0] > m[5]) && (m[0] > m[10])) {
+                T s = std::sqrt(1 + m[0] - m[5] - m[10]) * 2;
+                q.w = (m[9] - m[6]) / s;
+                q.x = s * T(0.25);
+                q.y = (m[1] + m[4]) / s;
+                q.z = (m[2] + m[8]) / s;
+            } else if (m[5] > m[10]) {
+                T s = std::sqrt(1 + m[5] - m[0] - m[10]) * 2;
+                q.w = (m[2] - m[8]) / s;
+                q.x = (m[1] + m[4]) / s;
+                q.y = s * T(0.25);
+                q.z = (m[6] + m[9]) / s;
+            } else {
+                T s = std::sqrt(1 + m[10] - m[0] - m[5]) * 2;
+                q.w = (m[4] - m[1]) / s;
+                q.x = (m[2] + m[8]) / s;
+                q.y = (m[6] + m[9]) / s;
+                q.z = s * T(0.25);
+            }
+
+            return q.normalized();
+        }
+
         Matrix4T operator*(const Matrix4T& other) const {
             Matrix4T result;
             for (u32 col = 0; col < 4; ++col) {

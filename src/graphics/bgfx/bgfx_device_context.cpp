@@ -7,7 +7,14 @@ namespace star::graphics {
     BGFXDeviceContext::BGFXDeviceContext(Device* device, void* native_window_handle)
         : DeviceContext(device, native_window_handle) {}
 
-    BGFXDeviceContext::~BGFXDeviceContext() {}
+    BGFXDeviceContext::~BGFXDeviceContext() {
+        for (const auto& handle : m_uniform_cache | std::views::values) {
+            if (bgfx::isValid(handle)) {
+                bgfx::destroy(handle);
+            }
+        }
+        m_uniform_cache.clear();
+    }
 
     void BGFXDeviceContext::begin_frame() {
         bgfx::touch(m_current_view);
@@ -86,7 +93,7 @@ namespace star::graphics {
         }
     }
 
-    void BGFXDeviceContext::set_index_buffer(ResourceHandle<Buffer> handle) {
+    void BGFXDeviceContext::set_index_buffer(const ResourceHandle<Buffer> handle) {
         if (!handle.is_valid()) {
             STAR_LOG_WARN(LogCategory::Graphics, "Attempted to set invalid index buffer");
             return;
@@ -113,8 +120,100 @@ namespace star::graphics {
         }
     }
 
+    bgfx::UniformHandle BGFXDeviceContext::get_or_create_uniform(const std::string& name, const UniformType type,
+                                                                 const u16 num) {
+        if (const auto it = m_uniform_cache.find(name); it != m_uniform_cache.end()) {
+            return it->second;
+        }
+
+        bgfx::UniformType::Enum bgfx_type;
+        switch (type) {
+            case UniformType::Mat3:
+                bgfx_type = bgfx::UniformType::Mat3;
+                break;
+            case UniformType::Mat4:
+                bgfx_type = bgfx::UniformType::Mat4;
+                break;
+            case UniformType::Sampler:
+                bgfx_type = bgfx::UniformType::Sampler;
+                break;
+            case UniformType::Vec4:
+            default:
+                bgfx_type = bgfx::UniformType::Vec4;
+                break;
+        }
+
+        const bgfx::UniformHandle handle = bgfx::createUniform(name.c_str(), bgfx_type, num);
+        m_uniform_cache.emplace(name, handle);
+        return handle;
+    }
+
+    void BGFXDeviceContext::set_uniform(const std::string& name, const void* data, const u16 num,
+                                        const UniformType type) {
+        const bgfx::UniformHandle handle = get_or_create_uniform(name, type, num);
+        bgfx::setUniform(handle, data, num);
+    }
+
     void BGFXDeviceContext::set_transform(const Matrix4& model) {
         bgfx::setTransform(model.data());
+    }
+
+    void BGFXDeviceContext::set_state(const u64 state) {
+        m_next_state = state;
+    }
+
+    void BGFXDeviceContext::set_pipeline_state(const PipelineState& state) {
+        u64 flags = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A;
+
+        if (state.depth_write)
+            flags |= BGFX_STATE_WRITE_Z;
+
+        switch (state.depth_test) {
+            case DepthTest::Less:
+                flags |= BGFX_STATE_DEPTH_TEST_LESS;
+                break;
+            case DepthTest::LessEqual:
+                flags |= BGFX_STATE_DEPTH_TEST_LEQUAL;
+                break;
+            case DepthTest::Always:
+                flags |= BGFX_STATE_DEPTH_TEST_ALWAYS;
+                break;
+            case DepthTest::None:
+                break;
+        }
+
+        switch (state.cull) {
+            case CullMode::Back:
+                flags |= BGFX_STATE_CULL_CCW;
+                break;
+            case CullMode::Front:
+                flags |= BGFX_STATE_CULL_CW;
+                break;
+            case CullMode::None:
+                break;
+        }
+
+        switch (state.blend_mode) {
+            case BlendMode::AlphaBlend:
+                flags |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA);
+                break;
+            case BlendMode::Additive:
+                flags |= BGFX_STATE_BLEND_ADD;
+                break;
+            case BlendMode::Premultiplied:
+                flags |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_INV_SRC_ALPHA);
+                break;
+            case BlendMode::Opaque:
+            default:
+                break;
+        }
+
+        if (state.wireframe)
+            flags |= BGFX_STATE_PT_LINES;
+
+        flags |= BGFX_STATE_MSAA;
+
+        m_next_state = flags;
     }
 
     u32 BGFXDeviceContext::submit(const u32 view_id, const ResourceHandle<Shader> program) {
@@ -123,13 +222,15 @@ namespace star::graphics {
             return 0;
         }
 
-        bgfx::ProgramHandle prog{static_cast<u16>(program.id)};
+        const bgfx::ProgramHandle prog{static_cast<u16>(program.id)};
         if (!bgfx::isValid(prog)) {
             STAR_LOG_WARN(LogCategory::Graphics, "Invalid BGFX program handle");
             return 0;
         }
-        constexpr auto state = 0 | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
-                               BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_CULL_CCW | BGFX_STATE_MSAA;
+        const u64 state = m_next_state != 0 ? m_next_state
+                                            : BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z |
+                                                  BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_CULL_CCW | BGFX_STATE_MSAA;
+        m_next_state = 0;
 
         bgfx::setState(state);
         bgfx::submit(static_cast<bgfx::ViewId>(view_id), prog);

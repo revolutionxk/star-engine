@@ -1,4 +1,7 @@
 #pragma once
+#include <unordered_map>
+
+#include "bgfx/bgfx.h"
 #include "star/graphics/device_context.hpp"
 
 namespace star::graphics {
@@ -22,11 +25,20 @@ namespace star::graphics {
         void set_index_buffer(ResourceHandle<Buffer> handle) override;
         void set_texture(u8 stage, ResourceHandle<Texture> handle) override;
 
+        void set_uniform(const std::string& name, const void* data, u16 num = 1,
+                         UniformType type = UniformType::Vec4) override;
+
         void set_transform(const Matrix4& model) override;
+        void set_pipeline_state(const PipelineState& state) override;
+        void set_state(u64 state) override;
 
         u32 submit(u32 view_id, ResourceHandle<Shader> program) override;
 
       private:
+        bgfx::UniformHandle get_or_create_uniform(const std::string& name, UniformType type, u16 num);
+
         u32 m_current_view{0};
+        u64 m_next_state{0};
+        std::unordered_map<std::string, bgfx::UniformHandle> m_uniform_cache;
     };
 } // namespace star::graphics

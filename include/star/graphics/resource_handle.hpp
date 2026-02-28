@@ -1,13 +1,35 @@
 #pragma once
+#include <functional>
+#include <limits>
 
 namespace star::graphics {
+
     template<typename>
     struct ResourceHandle {
-        u32 id{0};
+        static constexpr u32 INVALID_ID = std::numeric_limits<u32>::max();
+
+        u32 id{INVALID_ID};
         u32 generation{0};
 
-        bool is_valid() const {
-            return id != 0;
+        [[nodiscard]] bool is_valid() const noexcept {
+            return id != INVALID_ID;
         }
+
+        void reset() noexcept {
+            id = INVALID_ID;
+            generation = 0;
+        }
+
+        bool operator==(const ResourceHandle&) const noexcept = default;
+        bool operator!=(const ResourceHandle&) const noexcept = default;
     };
+
 } // namespace star::graphics
+
+template<typename T>
+struct std::hash<graphics::ResourceHandle<T>> {
+    size_t operator()(const graphics::ResourceHandle<T>& h) const noexcept {
+        const u64 packed = static_cast<u64>(h.id) << 32 | h.generation;
+        return std::hash<u64>{}(packed);
+    }
+}; // namespace std

@@ -1,4 +1,5 @@
 #pragma once
+#include "pipeline_state.hpp"
 #include "resource_handle.hpp"
 #include "star/core/types.hpp"
 
@@ -7,15 +8,24 @@ namespace star::graphics {
     struct Shader;
     struct Texture;
     struct Framebuffer;
-    
+
     class Device;
+
+    enum class UniformType {
+        Vec4,
+        Mat3,
+        Mat4,
+        Sampler,
+    };
 
     class DeviceContext {
       public:
         explicit DeviceContext(Device* device, void* native_window_handle);
         virtual ~DeviceContext() = default;
-        
-        Device* device() const { return m_device; }
+
+        Device* device() const {
+            return m_device;
+        }
 
         virtual void begin_frame() = 0;
         virtual void present() = 0;
@@ -32,7 +42,13 @@ namespace star::graphics {
         virtual void set_index_buffer(ResourceHandle<Buffer> handle) = 0;
         virtual void set_texture(u8 stage, ResourceHandle<Texture> handle) = 0;
 
+        virtual void set_uniform(const std::string& name, const void* data, u16 num = 1,
+                                 UniformType type = UniformType::Vec4) = 0;
+
         virtual void set_transform(const Matrix4& model) = 0;
+
+        virtual void set_pipeline_state(const PipelineState& state) = 0;
+        virtual void set_state(u64 state) = 0;
 
         virtual u32 submit(u32 view_id, ResourceHandle<Shader> program) = 0;
 

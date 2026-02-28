@@ -3,21 +3,20 @@
 
 #include "star/core/types.hpp"
 #include "star/graphics/resource_handle.hpp"
+#include "star/rendering/material_property.hpp"
 
 namespace star::resources {
     struct Mesh;
-}
-
-namespace star::components {
     struct Material;
-}
+} // namespace star::resources
 
 namespace star::rendering {
     struct DrawCall {
         Matrix4 model_matrix;
         Matrix4 mvp_matrix;
         graphics::ResourceHandle<resources::Mesh> mesh;
-        graphics::ResourceHandle<components::Material> material;
+        graphics::ResourceHandle<resources::Material> material;
+        std::vector<MaterialProperty> overrides;
         u64 sort_key{0};
         f32 distance_to_camera{0.0f};
         u8 layer{0};

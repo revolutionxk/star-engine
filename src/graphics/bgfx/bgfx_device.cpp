@@ -129,14 +129,14 @@ namespace star::graphics {
                 } else {
                     if (!mem) {
                         STAR_LOG_ERROR(LogCategory::Graphics, "Static vertex buffer requires initial data");
-                        return ResourceHandle<Buffer>{0, 0};
+                        return ResourceHandle<Buffer>{};
                     }
                     bgfx_handle = bgfx::createVertexBuffer(mem, layout);
                 }
 
                 if (!bgfx::isValid(bgfx_handle)) {
                     STAR_LOG_ERROR(LogCategory::Graphics, "Failed to create vertex buffer");
-                    return ResourceHandle<Buffer>{0, 0};
+                    return ResourceHandle<Buffer>{};
                 }
 
                 handle_id = bgfx_handle.idx;
@@ -148,7 +148,7 @@ namespace star::graphics {
                 const bool is_32bit = buffer_descriptor.type == BufferDescriptor::Type::Index32;
                 const u32 flags = is_32bit ? BGFX_BUFFER_INDEX32 : 0;
 
-                bgfx::IndexBufferHandle bgfx_handle{};
+                bgfx::IndexBufferHandle bgfx_handle;
                 if (is_dynamic) {
                     const auto num_indices = static_cast<u32>(buffer_descriptor.size_in_bytes / (is_32bit ? 4 : 2));
                     auto dynamic_handle = bgfx::createDynamicIndexBuffer(num_indices, flags);
@@ -159,14 +159,14 @@ namespace star::graphics {
                 } else {
                     if (!mem) {
                         STAR_LOG_ERROR(LogCategory::Graphics, "Static index buffer requires initial data");
-                        return ResourceHandle<Buffer>{0, 0};
+                        return ResourceHandle<Buffer>{};
                     }
                     bgfx_handle = bgfx::createIndexBuffer(mem, flags);
                 }
 
                 if (!bgfx::isValid(bgfx_handle)) {
                     STAR_LOG_ERROR(LogCategory::Graphics, "Failed to create index buffer");
-                    return ResourceHandle<Buffer>{0, 0};
+                    return ResourceHandle<Buffer>{};
                 }
 
                 handle_id = bgfx_handle.idx;
@@ -175,7 +175,7 @@ namespace star::graphics {
 
             default:
                 STAR_LOG_ERROR(LogCategory::Graphics, "Unsupported buffer type");
-                return ResourceHandle<Buffer>{0, 0};
+                return ResourceHandle<Buffer>{};
         }
 
         STAR_LOG_DEBUG(LogCategory::Graphics, "Created buffer (handle: {}, size: {} bytes)", handle_id,
@@ -201,7 +201,7 @@ namespace star::graphics {
         if (!bgfx::isValid(bgfx_handle)) {
             STAR_LOG_ERROR(LogCategory::Graphics, "Failed to create texture ({}x{})", texture_descriptor.width,
                            texture_descriptor.height);
-            return ResourceHandle<Texture>{0, 0};
+            return ResourceHandle<Texture>{};
         }
 
         return ResourceHandle<Texture>{bgfx_handle.idx, 0};
@@ -210,7 +210,7 @@ namespace star::graphics {
     ResourceHandle<Shader> BGFXDevice::create_shader(ShaderDescriptor& shader_descriptor) {
         if (shader_descriptor.stages.empty()) {
             STAR_LOG_ERROR(LogCategory::Graphics, "Shader descriptor has no stages");
-            return ResourceHandle<Shader>{0, 0};
+            return ResourceHandle<Shader>{};
         }
 
         bgfx::ShaderHandle vertex_shader = BGFX_INVALID_HANDLE;
@@ -236,7 +236,7 @@ namespace star::graphics {
                 if (bgfx::isValid(compute_shader))
                     bgfx::destroy(compute_shader);
 
-                return ResourceHandle<Shader>{0, 0};
+                return ResourceHandle<Shader>{};
             }
 
             switch (stage.stage) {
@@ -267,12 +267,12 @@ namespace star::graphics {
             if (bgfx::isValid(compute_shader))
                 bgfx::destroy(compute_shader);
 
-            return ResourceHandle<Shader>{0, 0};
+            return ResourceHandle<Shader>{};
         }
 
         if (!bgfx::isValid(program)) {
             STAR_LOG_ERROR(LogCategory::Graphics, "Failed to create shader program");
-            return ResourceHandle<Shader>{0, 0};
+            return ResourceHandle<Shader>{};
         }
 
         STAR_LOG_DEBUG(LogCategory::Graphics, "Created shader program '{}' (handle: {})", shader_descriptor.name,
@@ -331,12 +331,12 @@ namespace star::graphics {
     ResourceHandle<Framebuffer> BGFXDevice::create_framebuffer(FramebufferDescriptor& framebuffer_descriptor) {
         if (framebuffer_descriptor.width == 0 || framebuffer_descriptor.height == 0) {
             STAR_LOG_ERROR(LogCategory::Graphics, "Invalid framebuffer dimensions");
-            return ResourceHandle<Framebuffer>{0, 0};
+            return ResourceHandle<Framebuffer>{};
         }
 
         if (framebuffer_descriptor.color_attachments.empty() && !framebuffer_descriptor.has_depth) {
             STAR_LOG_ERROR(LogCategory::Graphics, "Framebuffer must have at least one attachment");
-            return ResourceHandle<Framebuffer>{0, 0};
+            return ResourceHandle<Framebuffer>{};
         }
 
         std::vector<bgfx::TextureHandle> bgfx_attachments;
@@ -345,13 +345,13 @@ namespace star::graphics {
         for (const auto& attachment : framebuffer_descriptor.color_attachments) {
             if (!attachment.texture.is_valid()) {
                 STAR_LOG_ERROR(LogCategory::Graphics, "Invalid color attachment texture");
-                return ResourceHandle<Framebuffer>{0, 0};
+                return ResourceHandle<Framebuffer>{};
             }
 
             bgfx::TextureHandle tex_handle{static_cast<u16>(attachment.texture.id)};
             if (!bgfx::isValid(tex_handle)) {
                 STAR_LOG_ERROR(LogCategory::Graphics, "Invalid BGFX texture handle for color attachment");
-                return ResourceHandle<Framebuffer>{0, 0};
+                return ResourceHandle<Framebuffer>{};
             }
 
             bgfx_attachments.push_back(tex_handle);
@@ -360,14 +360,14 @@ namespace star::graphics {
         if (framebuffer_descriptor.has_depth) {
             if (!framebuffer_descriptor.depth_stencil_attachment.texture.is_valid()) {
                 STAR_LOG_ERROR(LogCategory::Graphics, "Invalid depth attachment texture");
-                return ResourceHandle<Framebuffer>{0, 0};
+                return ResourceHandle<Framebuffer>{};
             }
 
             const bgfx::TextureHandle depth_handle{
                 static_cast<u16>(framebuffer_descriptor.depth_stencil_attachment.texture.id)};
             if (!bgfx::isValid(depth_handle)) {
                 STAR_LOG_ERROR(LogCategory::Graphics, "Invalid BGFX texture handle for depth attachment");
-                return ResourceHandle<Framebuffer>{0, 0};
+                return ResourceHandle<Framebuffer>{};
             }
 
             bgfx_attachments.push_back(depth_handle);
@@ -379,7 +379,7 @@ namespace star::graphics {
         if (!bgfx::isValid(fb_handle)) {
             STAR_LOG_ERROR(LogCategory::Graphics, "Failed to create framebuffer ({}x{}, {} attachments)",
                            framebuffer_descriptor.width, framebuffer_descriptor.height, num_attachments);
-            return ResourceHandle<Framebuffer>{0, 0};
+            return ResourceHandle<Framebuffer>{};
         }
 
         STAR_LOG_DEBUG(LogCategory::Graphics, "Created framebuffer (handle: {}, size: {}x{}, attachments: {})",

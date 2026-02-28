@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "bgfx/embedded_shader.h"
+#include "material/material.hpp"
 #include "mesh/mesh.hpp"
 #include "star/core/types.hpp"
 #include "star/graphics/buffer.hpp"
@@ -17,10 +18,6 @@ namespace star::graphics {
     struct Texture;
     struct Shader;
 } // namespace star::graphics
-
-namespace star::components {
-    struct Material;
-}
 
 namespace star::resources {
     using namespace star::graphics;
@@ -68,10 +65,9 @@ namespace star::resources {
         ResourceHandle<Texture> create_texture(const std::string& name, std::unique_ptr<Texture> texture);
         Texture* get_texture(const ResourceHandle<Texture>& handle);
         void destroy_texture(const ResourceHandle<Texture>& handle);
-        ResourceHandle<components::Material> create_material(const std::string& name,
-                                                             std::unique_ptr<components::Material> material);
-        components::Material* get_material(const ResourceHandle<components::Material>& handle);
-        void destroy_material(const ResourceHandle<components::Material>& handle);
+        ResourceHandle<Material> create_material(const std::string& name, std::unique_ptr<Material> material);
+        Material* get_material(const ResourceHandle<Material>& handle);
+        void destroy_material(const ResourceHandle<Material>& handle);
 
         ResourceHandle<graphics::Shader> load_shader(const std::string& vertex_path,
                                                      const std::string& fragment_path) const;
@@ -91,7 +87,7 @@ namespace star::resources {
             return m_sphere_mesh;
         }
 
-        ResourceHandle<components::Material> default_material() const {
+        ResourceHandle<Material> default_material() const {
             return m_default_material;
         }
 
@@ -123,7 +119,7 @@ namespace star::resources {
         ResourceHandle<Mesh> m_plane_mesh;
         ResourceHandle<Texture> m_white_texture;
         ResourceHandle<Texture> m_black_texture;
-        ResourceHandle<components::Material> m_default_material;
+        ResourceHandle<Material> m_default_material;
         ResourceHandle<graphics::Shader> m_default_shader;
     };
 } // namespace star::resources

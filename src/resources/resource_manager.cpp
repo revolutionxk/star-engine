@@ -6,7 +6,6 @@
 #include "star/graphics/buffer.hpp"
 #include "star/graphics/mesh.hpp"
 #include "star/graphics/texture.hpp"
-#include "star/rendering/components/material.hpp"
 #include "star/resources/shader/shader.hpp"
 #include "star/resources/shader/shaders.hpp"
 #include "star/utils/file_utils.hpp"
@@ -15,7 +14,7 @@ namespace star::resources {
     static ResourceStorage<Mesh> s_meshes;
     static ResourceStorage<Texture> s_textures;
     static ResourceStorage<Shader> s_shaders;
-    static ResourceStorage<components::Material> s_materials;
+    static ResourceStorage<Material> s_materials;
 
     ResourceManager::ResourceManager(Device& device) : m_device(device) {
         STAR_LOG_INFO(LogCategory::Resources, "Initializing ResourceManager");
@@ -299,8 +298,8 @@ namespace star::resources {
         return it->second.resource.get();
     }
 
-    ResourceHandle<components::Material>
-    ResourceManager::create_material(const std::string& name, std::unique_ptr<components::Material> material) {
+    ResourceHandle<Material> ResourceManager::create_material(const std::string& name,
+                                                              std::unique_ptr<Material> material) {
         if (!material) {
             STAR_LOG_ERROR(LogCategory::Resources, "Cannot create material with null pointer");
             return {};
@@ -309,19 +308,22 @@ namespace star::resources {
         if (const auto it = s_materials.path_to_id.find(name); it != s_materials.path_to_id.end()) {
             STAR_LOG_WARN(LogCategory::Resources, "Material '{}' already exists", name);
             const auto& entry = s_materials.resources[it->second];
-            return ResourceHandle<components::Material>{it->second, entry.generation};
+            return ResourceHandle<Material>{it->second, entry.generation};
         }
 
         const u32 id = s_materials.allocate_id();
+        material->m_path = name;
+        material->m_state = ResourceState::Loaded;
+        material->m_generation = 1;
 
         s_materials.resources[id] = {std::move(material), 1, 1};
         s_materials.path_to_id[name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Created material '{}' (id: {})", name, id);
-        return ResourceHandle<components::Material>{id, 1};
+        return ResourceHandle<Material>{id, 1};
     }
 
-    components::Material* ResourceManager::get_material(const ResourceHandle<components::Material>& handle) {
+    Material* ResourceManager::get_material(const ResourceHandle<Material>& handle) {
         if (!handle.is_valid()) {
             return nullptr;
         }
@@ -340,7 +342,7 @@ namespace star::resources {
         return it->second.resource.get();
     }
 
-    void ResourceManager::destroy_material(const ResourceHandle<components::Material>& handle) {
+    void ResourceManager::destroy_material(const ResourceHandle<Material>& handle) {
         if (!handle.is_valid()) {
             return;
         }
@@ -451,14 +453,14 @@ namespace star::resources {
         *sphere = Mesh::create_sphere(1.0f, 32, 32);
         m_sphere_mesh = create_mesh("__default_sphere", std::move(sphere));
 
-        m_default_shader = create_embedded_shader("__simple_shader", k_simple_vs, k_simple_fs);
+        m_default_shader = create_embedded_shader("__simple_shader", k_material_vs, k_material_fs);
 
         if (!m_default_shader.is_valid()) {
             STAR_LOG_ERROR(LogCategory::Resources, "Failed to create default embedded shader!");
         } else {
-            auto default_mat = std::make_unique<components::Material>();
+            auto default_mat = std::make_unique<Material>();
             default_mat->shader = m_default_shader;
-            default_mat->albedo_color = Vector4{0.8f, 0.8f, 0.8f, 1.0f};
+            default_mat->albedo_color = Vector4{1.0f, 0.0f, 0.0f, 1.0f};
             m_default_material = create_material("__default_material", std::move(default_mat));
 
             STAR_LOG_INFO(LogCategory::Resources, "Default material created with embedded shader");

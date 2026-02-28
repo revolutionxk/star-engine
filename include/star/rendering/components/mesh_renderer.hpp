@@ -4,14 +4,13 @@
 
 namespace star::resources {
     struct Mesh;
-}
+    struct Material;
+} // namespace star::resources
 
 namespace star::components {
-    struct Material;
-
     struct MeshRenderer {
         graphics::ResourceHandle<resources::Mesh> mesh{};
-        graphics::ResourceHandle<Material> material{};
+        graphics::ResourceHandle<resources::Material> material{};
 
         bool visible{true};
         u8 layer{0};

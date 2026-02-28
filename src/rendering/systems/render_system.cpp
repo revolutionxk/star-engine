@@ -4,14 +4,68 @@
 #include "star/ecs/components/transform.hpp"
 #include "star/graphics/device.hpp"
 #include "star/graphics/device_context.hpp"
-#include "star/rendering/components/material.hpp"
+#include "star/rendering/components/material_instance.hpp"
 #include "star/rendering/components/mesh_renderer.hpp"
+#include "star/rendering/material_property.hpp"
 #include "star/rendering/render_queue.hpp"
 #include "star/rendering/viewport.hpp"
+#include "star/resources/material/material.hpp"
 #include "star/resources/resource_manager.hpp"
 #include "star/resources/shader/shader.hpp"
 #include "star/scene/components/camera.hpp"
 #include "star/scene/scene.hpp"
+
+namespace {
+    // IDK WHY THIS IS HERE BUUUT I GUESS IT'S BETTER THAN HAVING IT IN THE HEADER
+    // I NEED TO MOVE THIS SOMEWHERE ELSE THOUGH, FOR NOW IT'S FINE
+    // TODO: Move this to a more appropriate place, maybe a utility file for rendering-related functions?
+    void upload_property(graphics::DeviceContext& ctx, const rendering::MaterialProperty& prop) {
+        std::visit(
+            [&]<typename Value>(const Value& v) {
+                using T = std::decay_t<Value>;
+
+                if constexpr (std::is_same_v<T, float>) {
+                    const Vector4 padded{v, 0.0f, 0.0f, 0.0f};
+                    ctx.set_uniform(prop.name, &padded, 1, graphics::UniformType::Vec4);
+
+                } else if constexpr (std::is_same_v<T, Vector2>) {
+                    const Vector4 padded{v.x, v.y, 0.0f, 0.0f};
+                    ctx.set_uniform(prop.name, &padded, 1, graphics::UniformType::Vec4);
+
+                } else if constexpr (std::is_same_v<T, Vector3>) {
+                    const Vector4 padded{v.x, v.y, v.z, 0.0f};
+                    ctx.set_uniform(prop.name, &padded, 1, graphics::UniformType::Vec4);
+
+                } else if constexpr (std::is_same_v<T, Vector4>) {
+                    ctx.set_uniform(prop.name, &v, 1, graphics::UniformType::Vec4);
+
+                } else if constexpr (std::is_same_v<T, Matrix4>) {
+                    ctx.set_uniform(prop.name, &v, 1, graphics::UniformType::Mat4);
+
+                } else if constexpr (std::is_same_v<T, graphics::ResourceHandle<graphics::Texture>>) {
+                    if (v.is_valid())
+                        ctx.set_texture(prop.texture_stage, v);
+                }
+            },
+            prop.value);
+    }
+
+    void submit_material(graphics::DeviceContext& ctx, const resources::Material& mat,
+                         const std::vector<rendering::MaterialProperty>& overrides) {
+        ctx.set_pipeline_state(mat.pipeline_state);
+
+        ctx.set_uniform("u_albedoColor", &mat.albedo_color, 1, graphics::UniformType::Vec4);
+        const Vector4 pbr_params{mat.metallic, mat.roughness, 0.0f, 0.0f};
+        ctx.set_uniform("u_pbrParams", &pbr_params, 1, graphics::UniformType::Vec4);
+
+        if (mat.albedo_texture.is_valid())
+            ctx.set_texture(0, mat.albedo_texture);
+
+        for (const auto& prop : overrides)
+            upload_property(ctx, prop);
+    }
+
+} // anonymous namespace
 
 namespace star::systems {
     RenderSystem::RenderSystem(graphics::Device& device) : m_device(device) {
@@ -38,7 +92,6 @@ namespace star::systems {
             STAR_LOG_WARN(LogCategory::Rendering, "No active camera found in scene '{}'", scene.name());
             return;
         }
-
         collect_renderables(scene, viewport);
 
         m_render_queue.sort();
@@ -88,6 +141,10 @@ namespace star::systems {
             draw_call.mesh = mesh_renderer.mesh;
             draw_call.material = mesh_renderer.material;
             draw_call.layer = mesh_renderer.layer;
+
+            if (const auto material_instance = e.try_get<components::MaterialInstance>()) {
+                draw_call.overrides = material_instance->overrides;
+            }
 
             const Vector3 object_position = transform.position;
             const Vector3 delta = object_position - camera_position;
@@ -140,9 +197,15 @@ namespace star::systems {
 
             graphics::ResourceHandle<graphics::Shader> shader_handle;
             if (command.material.is_valid()) {
-                if (const auto* material = m_resource_manager->get_material(command.material);
-                    material && material->shader.is_valid()) {
-                    shader_handle = material->shader;
+                if (const auto* material = m_resource_manager->get_material(command.material)) {
+                    submit_material(context, *material, command.overrides);
+
+                    // material->shader holds the resource manager slot ID — resolve it to get the actual GPU handle
+                    if (material->shader.is_valid()) {
+                        if (const auto* shader_res = m_resource_manager->get_shader(material->shader)) {
+                            shader_handle = shader_res->handle;
+                        }
+                    }
                 }
             }
 

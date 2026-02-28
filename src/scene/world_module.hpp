@@ -1,7 +1,7 @@
 #pragma once
 #include "star/ecs/components/tag.hpp"
 #include "star/ecs/components/transform.hpp"
-#include "star/rendering/components/material.hpp"
+#include "star/rendering/components/material_instance.hpp"
 #include "star/rendering/components/mesh_renderer.hpp"
 #include "star/scene/components/camera.hpp"
 
@@ -16,7 +16,7 @@ namespace star::scene {
             world.component<components::Transform>("Transform");
             world.component<components::Camera>("Camera");
             world.component<components::MeshRenderer>("MeshRenderer");
-            world.component<components::Material>("Material");
+            world.component<components::MaterialInstance>("MaterialInstance");
             world.component<components::PrimaryCamera>("PrimaryCamera");
         }
     };

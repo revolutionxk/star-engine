@@ -7,6 +7,10 @@ uniform vec4 u_baseColor;
 uniform vec4 u_materialParams;
 uniform vec4 u_emissive;
 
+uniform vec4 u_lightDir;
+uniform vec4 u_lightColor;
+uniform vec4 u_ambientColor;
+
 SAMPLER2D(s_texColor, 0);
 SAMPLER2D(s_texNormal, 1);
 SAMPLER2D(s_texMetallicRoughness, 2);

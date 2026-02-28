@@ -103,7 +103,7 @@ namespace star::rendering {
 
         if (m_framebuffer.is_valid()) {
             m_device->destroy_framebuffer(m_framebuffer);
-            m_framebuffer = graphics::ResourceHandle<graphics::Framebuffer>{0, 0};
+            m_framebuffer = graphics::ResourceHandle<graphics::Framebuffer>{};
         }
 
         for (auto& texture : m_color_textures) {
@@ -115,7 +115,7 @@ namespace star::rendering {
 
         if (m_depth_texture.is_valid()) {
             m_device->destroy_texture(m_depth_texture);
-            m_depth_texture = graphics::ResourceHandle<graphics::Texture>{0, 0};
+            m_depth_texture = graphics::ResourceHandle<graphics::Texture>{};
         }
 
         m_device = nullptr;

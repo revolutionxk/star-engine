@@ -14,13 +14,13 @@ void main()
 
     mat = initMaterial(mat);
 
-    vec3 lightDir = normalize(vec3(0.5, 1.0, 0.5));
+    vec3 lightDir = normalize(-u_lightDir.xyz);
     vec3 viewDir = normalize(v_viewDir);
 
-    vec3 radiance = vec3(1.0, 1.0, 1.0); // Light color and intensity
+    vec3 radiance = u_lightColor.xyz;
     vec3 Lo = cookTorrance(mat.normal, viewDir, lightDir, mat);
 
-    vec3 ambient = vec3(0.03, 0.03, 0.03) * mat.baseColor.rgb;
+    vec3 ambient = u_ambientColor.xyz * u_ambientColor.w * mat.baseColor.rgb;
 
     vec3 color = ambient + Lo * radiance + mat.emissive;
 

@@ -46,7 +46,7 @@ namespace star::graphics {
             if (index < m_color_attachments.size()) {
                 return m_color_attachments[index];
             }
-            return ResourceHandle<Texture>{0, 0};
+            return ResourceHandle<Texture>{};
         }
 
         ResourceHandle<Texture> get_depth_attachment() const {
@@ -60,7 +60,7 @@ namespace star::graphics {
       private:
         bgfx::FrameBufferHandle m_handle{BGFX_INVALID_HANDLE};
         std::vector<ResourceHandle<Texture>> m_color_attachments;
-        ResourceHandle<Texture> m_depth_attachment{0, 0};
+        ResourceHandle<Texture> m_depth_attachment{};
         u32 m_width{0};
         u32 m_height{0};
         bool m_has_depth{false};

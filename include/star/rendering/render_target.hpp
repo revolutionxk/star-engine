@@ -32,7 +32,7 @@ namespace star::rendering {
             if (index < m_color_textures.size()) {
                 return m_color_textures[index];
             }
-            return graphics::ResourceHandle<graphics::Texture>{0, 0};
+            return graphics::ResourceHandle<graphics::Texture>{};
         }
 
         [[nodiscard]] graphics::ResourceHandle<graphics::Texture> depth_texture() const {
@@ -57,9 +57,9 @@ namespace star::rendering {
 
       private:
         graphics::Device* m_device{nullptr};
-        graphics::ResourceHandle<graphics::Framebuffer> m_framebuffer{0, 0};
+        graphics::ResourceHandle<graphics::Framebuffer> m_framebuffer{};
         std::vector<graphics::ResourceHandle<graphics::Texture>> m_color_textures;
-        graphics::ResourceHandle<graphics::Texture> m_depth_texture{0, 0};
+        graphics::ResourceHandle<graphics::Texture> m_depth_texture{};
 
         std::vector<graphics::TextureFormat> m_color_formats;
         bool m_has_depth{false};

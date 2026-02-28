@@ -73,7 +73,7 @@ namespace star::graphics {
                            m_height, num_attachments);
 
             m_color_attachments.clear();
-            m_depth_attachment = ResourceHandle<Texture>{0, 0};
+            m_depth_attachment = ResourceHandle<Texture>{};
             m_width = 0;
             m_height = 0;
             m_has_depth = false;
@@ -94,7 +94,7 @@ namespace star::graphics {
         }
 
         m_color_attachments.clear();
-        m_depth_attachment = ResourceHandle<Texture>{0, 0};
+        m_depth_attachment = ResourceHandle<Texture>{};
         m_width = 0;
         m_height = 0;
         m_has_depth = false;

@@ -1,14 +1,17 @@
 #pragma once
+
+#include "star/graphics/pipeline_state.hpp"
 #include "star/graphics/resource_handle.hpp"
 #include "star/math/math.hpp"
+#include "star/resources/resource.hpp"
 
 namespace star::graphics {
     struct Shader;
     struct Texture;
 } // namespace star::graphics
 
-namespace star::components {
-    struct Material {
+namespace star::resources {
+    struct Material : Resource {
         graphics::ResourceHandle<graphics::Shader> shader{};
         graphics::ResourceHandle<graphics::Texture> albedo_texture{};
 
@@ -16,7 +19,10 @@ namespace star::components {
         float metallic{0.0f};
         float roughness{0.5f};
 
-        bool is_transparent{false};
-        bool double_sided{false};
+        graphics::PipelineState pipeline_state{};
+
+        bool is_valid() const {
+            return shader.is_valid();
+        }
     };
-} // namespace star::components
+} // namespace star::resources

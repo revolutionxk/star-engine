@@ -16,6 +16,7 @@ include(scripts/spdlog.cmake)
 include(scripts/flecs.cmake)
 include(scripts/freetype.cmake)
 include(scripts/imgui.cmake)
+include(scripts/nlohmann.cmake)
 
 # Project Files
 file(GLOB_RECURSE ENGINE_SRC_FILES
@@ -118,6 +119,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         imgui
         freetype
         flecs::flecs_static
+        nlohmann_json::nlohmann_json
         ${CMAKE_DL_LIBS}
 )
 

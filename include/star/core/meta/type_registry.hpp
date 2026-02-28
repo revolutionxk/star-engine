@@ -1,0 +1,226 @@
+#pragma once
+
+#include <any>
+#include <expected>
+#include <functional>
+#include <optional>
+#include <ranges>
+#include <string>
+#include <string_view>
+#include <typeindex>
+#include <unordered_map>
+#include <vector>
+
+#include "visitors/visitor.hpp"
+
+namespace star::meta {
+    struct AnyAttr {
+        std::type_index type;
+        std::any value;
+
+        template<typename A>
+        [[nodiscard]] static AnyAttr from(const A& a) {
+            return {typeid(A), a};
+        }
+
+        template<typename A>
+        [[nodiscard]] std::optional<A> as() const {
+            if (type != typeid(A))
+                return std::nullopt;
+            return std::any_cast<A>(value);
+        }
+
+        template<typename A>
+        [[nodiscard]] bool is() const noexcept {
+            return type == typeid(A);
+        }
+    };
+
+    struct AnyRef {
+        void* data{};
+        std::type_index type;
+        bool is_const{false};
+
+        template<typename T>
+        [[nodiscard]] T* as() noexcept {
+            if (is_const || type != typeid(T))
+                return nullptr;
+            return static_cast<T*>(data);
+        }
+
+        template<typename T>
+        [[nodiscard]] const T* as() const noexcept {
+            if (type != typeid(T))
+                return nullptr;
+            return static_cast<const T*>(data);
+        }
+
+        [[nodiscard]] bool is_valid() const noexcept {
+            return data != nullptr;
+        }
+    };
+
+    enum class RegistryError {
+        TypeNotFound,
+        FieldNotFound,
+        TypeMismatch
+    };
+
+    struct RuntimeField {
+        std::string_view name;
+        std::string_view script_name;
+        std::type_index value_type{typeid(void)};
+        std::vector<AnyAttr> attributes;
+
+        std::function<AnyRef(void*)> get_mut;
+        std::function<AnyRef(const void*)> get;
+        std::function<bool(void*, const AnyRef&)> set;
+
+        template<typename A>
+        [[nodiscard]] bool has_attr() const noexcept {
+            return std::ranges::any_of(attributes, [](const AnyAttr& a) { return a.type == typeid(A); });
+        }
+
+        template<typename A>
+        [[nodiscard]] std::optional<A> find_attr() const noexcept {
+            auto it = std::ranges::find_if(attributes, [](const AnyAttr& a) { return a.type == typeid(A); });
+            return it != attributes.end() ? it->template as<A>() : std::nullopt;
+        }
+    };
+
+    struct RuntimeTypeInfo {
+        std::string_view name;
+        std::string_view script_name;
+        std::string_view category;
+        std::type_index type{typeid(void)};
+        std::vector<RuntimeField> fields;
+
+        [[nodiscard]] const RuntimeField* find_field(const std::string_view field_name) const noexcept {
+            const auto it = std::ranges::find_if(fields, [&](const RuntimeField& f) { return f.name == field_name; });
+            return it != fields.end() ? &*it : nullptr;
+        }
+
+        [[nodiscard]] const RuntimeField* find_field_by_script_name(const std::string_view sname) const noexcept {
+            const auto it = std::ranges::find_if(fields, [&](const RuntimeField& f) { return f.script_name == sname; });
+            return it != fields.end() ? &*it : nullptr;
+        }
+    };
+
+    class TypeRegistry {
+      public:
+        static TypeRegistry& instance() {
+            static TypeRegistry s;
+            return s;
+        }
+
+        TypeRegistry(const TypeRegistry&) = delete;
+        TypeRegistry& operator=(const TypeRegistry&) = delete;
+
+        template<Reflected T>
+        void register_type() {
+            const std::type_index id{typeid(T)};
+            if (m_by_id.contains(id))
+                return;
+
+            RuntimeTypeInfo info{
+                .name = type_name<T>(), .script_name = script_name<T>(), .category = type_category<T>(), .type = id};
+
+            for_each_field_desc<T>([&info]<typename T0>(const T0& field_desc) {
+                using FD = std::decay_t<T0>;
+                using ValueT = FD::value_type;
+
+                RuntimeField rf;
+                rf.name = field_desc.name;
+
+                if (auto sn = field_desc.template get_attr<attr::ScriptName>())
+                    rf.script_name = sn->name;
+                else
+                    rf.script_name = field_desc.name;
+
+                rf.value_type = typeid(ValueT);
+
+                rf.get_mut = [ptr = field_desc.ptr](void* obj) -> AnyRef {
+                    auto& val = static_cast<T*>(obj)->*ptr;
+                    return {&val, typeid(ValueT), false};
+                };
+                rf.get = [ptr = field_desc.ptr](const void* obj) -> AnyRef {
+                    const auto& val = static_cast<const T*>(obj)->*ptr;
+                    return {const_cast<ValueT*>(&val), typeid(ValueT), true};
+                };
+                rf.set = [ptr = field_desc.ptr](void* obj, const AnyRef& ref) -> bool {
+                    if (ref.type != typeid(ValueT))
+                        return false;
+                    static_cast<T*>(obj)->*ptr = *static_cast<const ValueT*>(ref.data);
+                    return true;
+                };
+                std::apply([&rf](const auto&... a) { (rf.attributes.emplace_back(AnyAttr::from(a)), ...); },
+                           field_desc.attributes);
+
+                info.fields.emplace_back(std::move(rf));
+            });
+
+            const std::string name_key{info.name};
+            m_by_name[name_key] = info;
+            m_by_id[id] = std::move(info);
+        }
+
+        using Result = std::expected<const RuntimeTypeInfo*, RegistryError>;
+
+        [[nodiscard]] Result find(std::string_view name) const noexcept {
+            const auto it = m_by_name.find(std::string{name});
+            if (it == m_by_name.end())
+                return std::unexpected(RegistryError::TypeNotFound);
+            return &it->second;
+        }
+
+        [[nodiscard]] Result find(std::type_index id) const noexcept {
+            const auto it = m_by_id.find(id);
+            if (it == m_by_id.end())
+                return std::unexpected(RegistryError::TypeNotFound);
+            return &it->second;
+        }
+
+        template<Reflected T>
+        [[nodiscard]] Result find() const noexcept {
+            return find(typeid(T));
+        }
+
+        template<typename T>
+        std::expected<void, RegistryError> set_field(T& instance, const std::string_view field_name,
+                                                     const AnyRef value) const {
+            auto type_result = find(typeid(T));
+            if (!type_result)
+                return std::unexpected(type_result.error());
+
+            const RuntimeField* rf = (*type_result)->find_field(field_name);
+            if (!rf)
+                return std::unexpected(RegistryError::FieldNotFound);
+
+            if (!rf->set(&instance, value))
+                return std::unexpected(RegistryError::TypeMismatch);
+
+            return {};
+        }
+
+        [[nodiscard]] auto all_types() const noexcept {
+            return m_by_name | std::views::values;
+        }
+
+        [[nodiscard]] std::size_t registered_count() const noexcept {
+            return m_by_name.size();
+        }
+
+      private:
+        TypeRegistry() = default;
+
+        std::unordered_map<std::string, RuntimeTypeInfo> m_by_name;
+        std::unordered_map<std::type_index, RuntimeTypeInfo> m_by_id;
+    };
+
+    template<Reflected... Ts>
+    struct AutoRegister {
+        AutoRegister() {
+            (TypeRegistry::instance().register_type<Ts>(), ...);
+        }
+    };
+} // namespace star::meta

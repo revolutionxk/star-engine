@@ -1,4 +1,5 @@
 #pragma once
+#include "star/core/meta/reflect.hpp"
 #include "star/core/types.hpp"
 #include "star/math/math.hpp"
 
@@ -22,3 +23,15 @@ namespace star::components {
         bool cast_shadows{false};
     };
 } // namespace star::components
+
+template<>
+struct meta::TypeInfo<components::Light> {
+    static constexpr std::string_view name = "Light";
+    static constexpr auto fields = std::make_tuple(
+        field("Type", &components::Light::type) | attr::EnumOptions{"Directional", "Point", "Spot"},
+        field("Direction", &components::Light::direction) | attr::Speed{0.01f} | attr::Normalized{},
+        field("Color", &components::Light::color) | attr::Color{},
+        field("Intensity", &components::Light::intensity) | attr::Speed{0.01f} | attr::Range{0.f, 100.f},
+        field("Ambient", &components::Light::ambient_intensity) | attr::Speed{0.001f} | attr::Range{0.f, 1.f},
+        field("Shadows", &components::Light::cast_shadows));
+};

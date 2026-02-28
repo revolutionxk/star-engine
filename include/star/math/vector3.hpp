@@ -105,14 +105,6 @@ namespace star::math {
             return *this;
         }
 
-        constexpr Vector3T& operator=(const std::array<float, 3> other) {
-            x = other[0];
-            y = other[1];
-            z = other[2];
-
-            return *this;
-        }
-
         constexpr Vector3T& operator+=(const Vector3T& other) {
             x += other.x;
             y += other.y;

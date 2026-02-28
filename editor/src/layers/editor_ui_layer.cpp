@@ -9,6 +9,7 @@
 #include "../panels/scene_panel.hpp"
 #include "../theme/editor_theme.hpp"
 #include "star/application/application.hpp"
+#include "star/ecs/components.hpp"
 #include "star/graphics/device.hpp"
 #include "star/platform/imgui_font_config.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
@@ -37,8 +38,13 @@ namespace star::editor {
     }
 
     void EditorUILayer::initialize_panels() {
+        using namespace components;
+        m_component_registry.register_all<Transform, Light, Camera,
+                                          Atmosphere>(); // this is sooooo ugly i need to find a better way to do this
+        m_component_inspector.register_all<Transform, Light, Camera, Atmosphere>();
+
         auto* hierarchy = m_panel_manager.register_panel<HierarchyPanel>(m_editor_window);
-        auto* inspector = m_panel_manager.register_panel<InspectorPanel>();
+        auto* inspector = m_panel_manager.register_panel<InspectorPanel>(&m_component_registry, &m_component_inspector);
         auto* scene = m_panel_manager.register_panel<ScenePanel>();
         auto* console = m_panel_manager.register_panel<ConsolePanel>();
         m_panel_manager.register_panel<MetricsPanel>();

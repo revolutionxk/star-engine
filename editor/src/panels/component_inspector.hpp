@@ -11,10 +11,12 @@
 namespace star::editor {
     class ComponentInspector {
       public:
-        void set_resource_manager(resources::ResourceManager* rm) { m_resource_manager = rm; }
+        void set_resource_manager(resources::ResourceManager* rm) {
+            m_resource_manager = rm;
+        }
 
         void draw_components(const flecs::entity entity) const {
-            for (const auto& type_registry = meta::TypeRegistry::instance();
+            for (const auto& type_registry = star::reflection::TypeRegistry::instance();
                  const auto& type_info : type_registry.all_types()) {
                 const auto* ecs = type_registry.get_extension<ecs::EcsComponentInfo>(type_info.type);
                 if (!ecs || !ecs->has(entity))
@@ -63,7 +65,7 @@ namespace star::editor {
             ImGui::Separator();
 
             bool any = false;
-            const auto& type_registry = meta::TypeRegistry::instance();
+            const auto& type_registry = star::reflection::TypeRegistry::instance();
             for (const auto& type_info : type_registry.all_types()) {
                 const auto* ecs = type_registry.get_extension<ecs::EcsComponentInfo>(type_info.type);
                 if (!ecs || ecs::has_flag(ecs->flags, ecs::RegistrationFlags::Hidden))
@@ -85,8 +87,8 @@ namespace star::editor {
         }
 
       private:
-        [[nodiscard]] const resources::Material* resolve_material(
-            const flecs::entity entity, const components::MaterialInstance& inst) const {
+        [[nodiscard]] const resources::Material* resolve_material(const flecs::entity entity,
+                                                                  const components::MaterialInstance& inst) const {
             if (!m_resource_manager)
                 return nullptr;
             if (inst.material.is_valid())

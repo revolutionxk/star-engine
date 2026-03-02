@@ -27,7 +27,7 @@ namespace star::components {
 } // namespace star::components
 
 template<>
-struct meta::TypeInfo<components::Transform> {
+struct reflection::TypeInfo<components::Transform> {
     static constexpr std::string_view name = "Transform";
     static constexpr bool is_component = true;
     static constexpr bool required = true;

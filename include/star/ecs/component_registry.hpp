@@ -6,8 +6,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include "star/core/meta/reflect.hpp"
-#include "star/core/meta/visitors/json_serializer.hpp"
+#include "star/core/reflection/reflect.hpp"
+#include "star/core/reflection/visitors/json_serializer.hpp"
 #include "star/core/types.hpp"
 
 namespace star::ecs {
@@ -37,13 +37,13 @@ namespace star::ecs {
         std::function<void(flecs::world&, std::string_view)> register_world;
     };
 
-    template<meta::EcsComponent T>
+    template<reflection::EcsComponent T>
     void register_component(RegistrationFlags flags = RegistrationFlags::None) {
-        if constexpr (requires { requires meta::TypeInfo<T>::required; })
+        if constexpr (requires { requires reflection::TypeInfo<T>::required; })
             if (flags == RegistrationFlags::None)
                 flags = RegistrationFlags::Required;
 
-        meta::TypeRegistry::instance().register_type<T>();
+        reflection::TypeRegistry::instance().register_type<T>();
 
         EcsComponentInfo info;
         info.flags = flags;
@@ -58,23 +58,23 @@ namespace star::ecs {
         };
         info.serialize = [](flecs::entity e) -> nlohmann::json {
             if (const auto* c = e.try_get<T>())
-                return meta::to_json(*c);
+                return reflection::to_json(*c);
             return nullptr;
         };
         info.deserialize = [](flecs::entity e, const nlohmann::json& j) {
             if (!e.has<T>())
                 e.add<T>();
-            meta::from_json(j, *e.try_get_mut<T>());
+            reflection::from_json(j, *e.try_get_mut<T>());
         };
         info.register_world = [](flecs::world& w, std::string_view name) { w.component<T>(name.data()); };
 
-        meta::TypeRegistry::instance().extend<EcsComponentInfo>(typeid(T), std::move(info));
+        reflection::TypeRegistry::instance().extend<EcsComponentInfo>(typeid(T), std::move(info));
     }
 
     inline nlohmann::json serialize_entity(flecs::entity entity) {
         nlohmann::json j;
-        for (const auto& type_info : meta::TypeRegistry::instance().all_types()) {
-            const auto* ecs = meta::TypeRegistry::instance().get_extension<EcsComponentInfo>(type_info.type);
+        for (const auto& type_info : reflection::TypeRegistry::instance().all_types()) {
+            const auto* ecs = reflection::TypeRegistry::instance().get_extension<EcsComponentInfo>(type_info.type);
             if (!ecs || !ecs->has(entity))
                 continue;
             auto comp_json = ecs->serialize(entity);
@@ -85,8 +85,8 @@ namespace star::ecs {
     }
 
     inline void deserialize_entity(flecs::entity entity, const nlohmann::json& j) {
-        for (const auto& type_info : meta::TypeRegistry::instance().all_types()) {
-            const auto* ecs = meta::TypeRegistry::instance().get_extension<EcsComponentInfo>(type_info.type);
+        for (const auto& type_info : reflection::TypeRegistry::instance().all_types()) {
+            const auto* ecs = reflection::TypeRegistry::instance().get_extension<EcsComponentInfo>(type_info.type);
             if (!ecs || !j.contains(std::string{type_info.name}))
                 continue;
             if (!ecs->has(entity))
@@ -96,8 +96,8 @@ namespace star::ecs {
     }
 
     inline void register_world_components(flecs::world& world) {
-        for (const auto& type_info : meta::TypeRegistry::instance().all_types()) {
-            const auto* ecs = meta::TypeRegistry::instance().get_extension<EcsComponentInfo>(type_info.type);
+        for (const auto& type_info : reflection::TypeRegistry::instance().all_types()) {
+            const auto* ecs = reflection::TypeRegistry::instance().get_extension<EcsComponentInfo>(type_info.type);
             if (!ecs)
                 continue;
             ecs->register_world(world, type_info.name);
@@ -106,7 +106,7 @@ namespace star::ecs {
 } // namespace star::ecs
 
 #define STAR_REGISTER_COMPONENT(T, ...)                                                                                \
-    namespace star::meta::detail {                                                                                     \
+    namespace star::reflection::detail {                                                                                     \
         namespace {                                                                                                    \
             [[maybe_unused]] const bool STAR_META_CONCAT(_comp_, __COUNTER__) = [] {                                   \
                 ::star::ecs::register_component<T>(__VA_ARGS__);                                                       \

@@ -6,7 +6,7 @@
 
 #include "star/core/types.hpp"
 
-namespace star::meta::attr {
+namespace star::reflection::attr {
     struct Speed {
         f32 value{0.1f};
     };
@@ -74,4 +74,4 @@ namespace star::meta::attr {
 
     template<typename T>
     inline constexpr bool is_enum_options_v = is_enum_options<T>::value;
-} // namespace star::meta::attr
+} // namespace star::reflection::attr

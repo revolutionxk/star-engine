@@ -6,7 +6,7 @@
 
 #include "../type_info.hpp"
 
-namespace star::meta {
+namespace star::reflection {
 
     template<Reflected T, typename V>
     constexpr void for_each_field(T& obj, V&& visitor) {
@@ -48,4 +48,4 @@ namespace star::meta {
     template<Reflected T, typename A>
     inline constexpr bool any_field_has_attr_v = count_fields_with_attr<T, A>() > 0;
 
-} // namespace star::meta
+} // namespace star::reflection

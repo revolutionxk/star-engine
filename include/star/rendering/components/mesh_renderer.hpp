@@ -20,7 +20,7 @@ namespace star::components {
 } // namespace star::components
 
 template<>
-struct meta::TypeInfo<components::MeshRenderer> {
+struct reflection::TypeInfo<components::MeshRenderer> {
     static constexpr std::string_view name = "MeshRenderer";
     static constexpr bool is_component = true;
     static constexpr auto fields = std::make_tuple(field("Visible", &components::MeshRenderer::visible),

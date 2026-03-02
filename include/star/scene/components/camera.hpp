@@ -13,7 +13,7 @@ namespace star::components {
 } // namespace star::components
 
 template<>
-struct meta::TypeInfo<components::Camera> {
+struct reflection::TypeInfo<components::Camera> {
     static constexpr std::string_view name = "Camera";
     static constexpr bool is_component = true;
     static constexpr auto fields = std::make_tuple(
@@ -26,7 +26,7 @@ struct meta::TypeInfo<components::Camera> {
 STAR_REGISTER_COMPONENT(star::components::Camera);
 
 template<>
-struct meta::TypeInfo<components::PrimaryCamera> {
+struct reflection::TypeInfo<components::PrimaryCamera> {
     static constexpr std::string_view name = "PrimaryCamera";
     static constexpr bool is_component = true;
     static constexpr bool hidden = true;

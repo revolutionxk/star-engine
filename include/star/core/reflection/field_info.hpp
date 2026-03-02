@@ -8,7 +8,7 @@
 
 #include "attributes.hpp"
 
-namespace star::meta {
+namespace star::reflection {
     template<typename Owner, typename Value, typename... Attrs>
     struct FieldInfo {
         using owner_type = Owner;
@@ -78,4 +78,4 @@ namespace star::meta {
         return FieldInfo<Owner, Value>{name, ptr};
     }
 
-} // namespace star::meta
+} // namespace star::reflection

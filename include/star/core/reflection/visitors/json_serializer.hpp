@@ -80,7 +80,7 @@ namespace star::math {
 
 } // namespace star::math
 
-namespace star::meta {
+namespace star::reflection {
 
     namespace detail {
         template<typename FD>
@@ -195,4 +195,4 @@ namespace star::meta {
         }
     }
 
-} // namespace star::meta
+} // namespace star::reflection

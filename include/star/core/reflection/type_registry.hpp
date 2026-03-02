@@ -14,7 +14,7 @@
 #include "star/core/export.hpp"
 #include "visitors/visitor.hpp"
 
-namespace star::meta {
+namespace star::reflection {
     struct AnyAttr {
         std::type_index type;
         std::any value;
@@ -252,15 +252,15 @@ namespace star::meta {
         std::unordered_map<std::string, RuntimeTypeInfo> m_by_name;
         std::unordered_map<std::type_index, RuntimeTypeInfo> m_by_id;
     };
-} // namespace star::meta
+} // namespace star::reflection
 
 #define STAR_META_CONCAT_IMPL(a, b) a##b
 #define STAR_META_CONCAT(a, b) STAR_META_CONCAT_IMPL(a, b)
 #define STAR_REGISTER_TYPE(T)                                                                                          \
-    namespace star::meta::detail {                                                                                     \
+    namespace star::reflection::detail {                                                                                     \
         namespace {                                                                                                    \
             [[maybe_unused]] const bool STAR_META_CONCAT(_reg_, __COUNTER__) = [] {                                    \
-                ::star::meta::TypeRegistry::instance().register_type<T>();                                             \
+                ::star::reflection::TypeRegistry::instance().register_type<T>();                                             \
                 return true;                                                                                           \
             }();                                                                                                       \
         }                                                                                                              \

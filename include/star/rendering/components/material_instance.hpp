@@ -17,7 +17,7 @@ namespace star::components {
 } // namespace star::components
 
 template<>
-struct meta::TypeInfo<components::MaterialInstance> {
+struct reflection::TypeInfo<components::MaterialInstance> {
     static constexpr std::string_view name = "MaterialInstance";
     static constexpr bool is_component = true;
     static constexpr auto fields = std::make_tuple();

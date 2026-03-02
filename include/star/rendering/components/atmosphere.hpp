@@ -15,7 +15,7 @@ namespace star::components {
 } // namespace star::components
 
 template<>
-struct meta::TypeInfo<components::Atmosphere> {
+struct reflection::TypeInfo<components::Atmosphere> {
     static constexpr std::string_view name = "Atmosphere";
     static constexpr bool is_component = true;
     static constexpr auto fields = std::make_tuple(

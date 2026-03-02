@@ -6,7 +6,7 @@
 #include "field_info.hpp"
 #include "star/platform/input/input.hpp"
 
-namespace star::meta {
+namespace star::reflection {
     template<typename T>
     struct TypeInfo;
 
@@ -47,4 +47,4 @@ namespace star::meta {
 
     template<typename T>
     concept EcsComponent = Reflected<T> && requires { requires TypeInfo<T>::is_component; };
-} // namespace star::meta
+} // namespace star::reflection

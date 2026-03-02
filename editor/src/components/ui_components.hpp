@@ -8,7 +8,7 @@
 #include <imgui_internal.h>
 
 #include "reflection/imgui_visitor.hpp"
-#include "star/core/meta/reflect.hpp"
+#include "star/core/reflection/reflect.hpp"
 #include "star/rendering/components/material_instance.hpp"
 #include "star/resources/material/material.hpp"
 
@@ -127,23 +127,25 @@ namespace star::editor::ui {
         return pressed;
     }
 
-    inline void draw_field_runtime(const meta::RuntimeField& field, void* comp) {
+    inline void draw_field_runtime(const star::reflection::RuntimeField& field, void* comp) {
         auto ref = field.get_mut(comp);
         if (!ref.is_valid())
             return;
 
         const char* label = field.name.data();
 
-        if (field.has_attr<meta::attr::HideInEditor>())
+        if (field.has_attr<star::reflection::attr::HideInEditor>())
             return;
 
-        const bool is_ro = field.has_attr<meta::attr::ReadOnly>();
+        const bool is_ro = field.has_attr<star::reflection::attr::ReadOnly>();
         if (is_ro)
             ImGui::BeginDisabled();
 
-        const auto sp = field.find_attr<meta::attr::Speed>().value_or(meta::attr::Speed{0.1f}).value;
-        const auto [min, max] = field.find_attr<meta::attr::Range>().value_or(meta::attr::Range{});
-        const bool color = field.has_attr<meta::attr::Color>();
+        const auto sp =
+            field.find_attr<star::reflection::attr::Speed>().value_or(star::reflection::attr::Speed{0.1f}).value;
+        const auto [min, max] =
+            field.find_attr<star::reflection::attr::Range>().value_or(star::reflection::attr::Range{});
+        const bool color = field.has_attr<star::reflection::attr::Color>();
 
         if (const auto ty = field.value_type; ty == typeid(f32)) {
             ImGui::DragFloat(label, ref.as<f32>(), sp, min, max, "%.3f");
@@ -159,7 +161,8 @@ namespace star::editor::ui {
                 *ref.as<u32>() = static_cast<u32>(iv);
         } else if (ty == typeid(u8)) {
             int iv = *ref.as<u8>();
-            const auto r2 = field.find_attr<meta::attr::Range>().value_or(meta::attr::Range{0.f, 255.f});
+            const auto r2 =
+                field.find_attr<star::reflection::attr::Range>().value_or(star::reflection::attr::Range{0.f, 255.f});
             if (ImGui::SliderInt(label, &iv, static_cast<int>(r2.min), static_cast<int>(r2.max)))
                 *ref.as<u8>() = static_cast<u8>(iv);
         } else if (ty == typeid(bool)) {
@@ -187,7 +190,8 @@ namespace star::editor::ui {
         } else if (ty == typeid(Quaternion)) {
             auto* q = ref.as<Quaternion>();
             auto euler = q->to_euler() * math::Constants<f32>::rad_to_deg;
-            const auto sp2 = field.find_attr<meta::attr::Speed>().value_or(meta::attr::Speed{0.5f}).value;
+            const auto sp2 =
+                field.find_attr<star::reflection::attr::Speed>().value_or(star::reflection::attr::Speed{0.5f}).value;
             if (ImGui::DragFloat3(label, euler.data, sp2, 0.f, 0.f, "%.2f deg"))
                 *q = Quaternion::from_euler(radians(euler.x), radians(euler.y), radians(euler.z));
         } else if (!field.enum_labels.empty()) {
@@ -209,23 +213,23 @@ namespace star::editor::ui {
         if (is_ro)
             ImGui::EndDisabled();
 
-        if (const auto tt = field.find_attr<meta::attr::Tooltip>()) {
+        if (const auto tt = field.find_attr<star::reflection::attr::Tooltip>()) {
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
                 ImGui::SetTooltip("%s", tt->text.data());
         }
     }
 
-    inline void draw_fields(const meta::RuntimeTypeInfo& type_info, void* comp) {
+    inline void draw_fields(const star::reflection::RuntimeTypeInfo& type_info, void* comp) {
         ImGui::PushItemWidth(-140.0f);
         for (const auto& field : type_info.fields)
             draw_field_runtime(field, comp);
         ImGui::PopItemWidth();
     }
 
-    template<meta::Reflected T>
+    template<star::reflection::Reflected T>
     void draw_component(T& component) {
         ImGui::PushItemWidth(-140.0f);
-        meta::for_each_field(component, reflection::ImGuiVisitor{});
+        star::reflection::for_each_field(component, reflection::ImGuiVisitor{});
         ImGui::PopItemWidth();
     }
 

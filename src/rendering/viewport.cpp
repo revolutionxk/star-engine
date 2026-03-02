@@ -55,6 +55,24 @@ namespace star::rendering {
         }
     }
 
+    void Viewport::bind_overlay(graphics::DeviceContext& context, const u32 view_id) const {
+        if (m_width == 0 || m_height == 0)
+            return;
+
+        context.set_view_rect(view_id, 0, 0, static_cast<u16>(m_width), static_cast<u16>(m_height));
+        context.set_view_clear(view_id, 0, 0, 1.0f, 0);
+
+        if (m_framebuffer_enabled && m_render_target && m_render_target->is_valid()) {
+            context.set_view_framebuffer(view_id, m_render_target->framebuffer());
+        } else {
+            context.set_view_framebuffer(view_id, graphics::ResourceHandle<graphics::Framebuffer>{});
+        }
+
+        if (m_has_camera) {
+            context.set_view_transform(view_id, m_view_matrix, m_projection_matrix);
+        }
+    }
+
     void Viewport::set_camera(const components::Camera& camera, const components::Transform& transform) {
         m_has_camera = true;
         update_camera_matrices(camera, transform);

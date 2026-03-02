@@ -431,6 +431,8 @@ namespace star::resources {
 
         STAR_LOG_DEBUG(LogCategory::Resources, "Uploaded mesh to GPU (vertices: {}, indices: {})", mesh.vertices.size(),
                        mesh.indices.size());
+
+        mesh.bounds = mesh.bounding_box();
     }
 
     void ResourceManager::upload_texture_to_gpu(Texture& texture) {

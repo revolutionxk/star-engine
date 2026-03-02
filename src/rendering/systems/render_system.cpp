@@ -7,8 +7,10 @@
 #include "star/rendering/components/light.hpp"
 #include "star/rendering/components/material_instance.hpp"
 #include "star/rendering/components/mesh_renderer.hpp"
+#include "star/rendering/frustum.hpp"
 #include "star/rendering/material_property.hpp"
 #include "star/rendering/render_queue.hpp"
+#include "star/rendering/shader_uniforms.hpp"
 #include "star/rendering/viewport.hpp"
 #include "star/resources/material/material.hpp"
 #include "star/resources/resource_manager.hpp"
@@ -17,9 +19,6 @@
 #include "star/scene/scene.hpp"
 
 namespace {
-    // IDK WHY THIS IS HERE BUUUT I GUESS IT'S BETTER THAN HAVING IT IN THE HEADER
-    // I NEED TO MOVE THIS SOMEWHERE ELSE THOUGH, FOR NOW IT'S FINE
-    // TODO: Move this to a more appropriate place, maybe a utility file for rendering-related functions?
     void upload_property(graphics::DeviceContext& ctx, const rendering::MaterialProperty& prop) {
         std::visit(
             [&]<typename Value>(const Value& v) {
@@ -55,19 +54,22 @@ namespace {
                          const std::vector<rendering::MaterialProperty>& params) {
         ctx.set_pipeline_state(mat.pipeline_state);
 
-        auto is_overridden = [&](std::string_view name) {
-            return std::ranges::any_of(params, [name](const auto& p) { return p.name == name; });
-        };
+        std::unordered_set<std::string_view> overridden;
+        overridden.reserve(params.size());
+        for (const auto& p : params)
+            overridden.insert(p.name);
 
-        if (!is_overridden("u_baseColor"))
-            ctx.set_uniform("u_baseColor", &mat.albedo_color, 1, graphics::UniformType::Vec4);
+        if (!overridden.contains(rendering::uniforms::BASE_COLOR))
+            ctx.set_uniform(std::string(rendering::uniforms::BASE_COLOR), &mat.albedo_color, 1,
+                            graphics::UniformType::Vec4);
 
         const Vector4 pbr_params{mat.metallic, mat.roughness, 0.0f, 0.0f};
-        if (!is_overridden("u_materialParams"))
-            ctx.set_uniform("u_materialParams", &pbr_params, 1, graphics::UniformType::Vec4);
+        if (!overridden.contains(rendering::uniforms::MATERIAL_PARAMS))
+            ctx.set_uniform(std::string(rendering::uniforms::MATERIAL_PARAMS), &pbr_params, 1,
+                            graphics::UniformType::Vec4);
 
-        if (mat.albedo_texture.is_valid() && !is_overridden("u_albedoTexture"))
-            ctx.set_texture(0, mat.albedo_texture);
+        if (mat.albedo_texture.is_valid() && !overridden.contains(rendering::uniforms::ALBEDO_TEXTURE))
+            ctx.set_texture(rendering::uniforms::STAGE_ALBEDO, mat.albedo_texture);
 
         for (const auto& prop : params)
             upload_property(ctx, prop);
@@ -76,7 +78,8 @@ namespace {
 } // anonymous namespace
 
 namespace star::systems {
-    RenderSystem::RenderSystem(graphics::Device& device) : m_device(device) {
+    RenderSystem::RenderSystem(graphics::Device& device, resources::ResourceManager& resource_manager)
+        : m_device(device), m_resource_manager(resource_manager) {
         STAR_LOG_INFO(LogCategory::Rendering, "RenderSystem initialized");
     }
 
@@ -85,6 +88,38 @@ namespace star::systems {
     }
 
     void RenderSystem::update(f32 delta_time) {}
+
+    void RenderSystem::collect_lights(scene::Scene& scene) {
+        m_light_env = {};
+
+        scene.world().each([&](flecs::entity, const components::Light& light) {
+            if (light.type != components::Light::Type::Directional || m_light_env.has_directional)
+                return;
+
+            m_light_env.directional_dir = light.direction;
+            m_light_env.directional_color = light.color;
+            m_light_env.directional_intensity = light.intensity;
+            m_light_env.ambient_intensity = light.ambient_intensity;
+            m_light_env.has_directional = true;
+        });
+    }
+
+    void RenderSystem::submit_lighting(graphics::DeviceContext& context) const {
+        const Vector4 light_dir{m_light_env.directional_dir.x, m_light_env.directional_dir.y,
+                                m_light_env.directional_dir.z, 0.0f};
+        context.set_uniform(std::string(rendering::uniforms::LIGHT_DIR), &light_dir, 1, graphics::UniformType::Vec4);
+
+        const f32 i = m_light_env.directional_intensity;
+        const Vector4 light_color{m_light_env.directional_color.x * i, m_light_env.directional_color.y * i,
+                                  m_light_env.directional_color.z * i, 1.0f};
+        context.set_uniform(std::string(rendering::uniforms::LIGHT_COLOR), &light_color, 1,
+                            graphics::UniformType::Vec4);
+
+        const Vector4 ambient_color{m_light_env.ambient_color.x, m_light_env.ambient_color.y,
+                                    m_light_env.ambient_color.z, m_light_env.ambient_intensity};
+        context.set_uniform(std::string(rendering::uniforms::AMBIENT_COLOR), &ambient_color, 1,
+                            graphics::UniformType::Vec4);
+    }
 
     void RenderSystem::render(scene::Scene& scene, graphics::DeviceContext& context, const u32 view_id,
                               rendering::Viewport* viewport) {
@@ -95,8 +130,9 @@ namespace star::systems {
         m_render_queue.clear();
 
         setup_camera(scene, viewport);
+        collect_lights(scene);
 
-        if (const bool has_camera = viewport ? viewport->has_camera() : false; !has_camera) {
+        if (!viewport || !viewport->has_camera()) {
             STAR_LOG_WARN(LogCategory::Rendering, "No active camera found in scene '{}'", scene.name());
             return;
         }
@@ -129,68 +165,58 @@ namespace star::systems {
         }
 
         const auto& world = scene.world();
-        const auto& view_matrix = viewport->view_matrix();
-        const auto& projection_matrix = viewport->projection_matrix();
         const auto& camera_position = viewport->camera_position();
+        const rendering::Frustum frustum =
+            rendering::Frustum::extract(viewport->projection_matrix() * viewport->view_matrix());
 
         world.each([&](const flecs::entity e, const components::MeshRenderer& mesh_renderer,
                        const components::Transform& transform) {
-            if (!mesh_renderer.visible) {
-                return;
-            }
-
-            if (!mesh_renderer.mesh.is_valid()) {
+            if (!mesh_renderer.visible || !mesh_renderer.mesh.is_valid()) {
                 return;
             }
 
             rendering::DrawCall draw_call;
             draw_call.model_matrix = transform.to_matrix();
-            draw_call.mvp_matrix = projection_matrix * view_matrix * draw_call.model_matrix;
             draw_call.mesh = mesh_renderer.mesh;
             draw_call.material = mesh_renderer.material;
             draw_call.layer = mesh_renderer.layer;
 
-            if (const auto material_instance = e.try_get<components::MaterialInstance>()) {
+            // Frustum cull against cached mesh AABB — skip invisible objects before building draw call
+            if (const auto* mesh = m_resource_manager.get_mesh(mesh_renderer.mesh)) {
+                if (!frustum.intersects_aabb_world(mesh->bounds, draw_call.model_matrix))
+                    return;
+            }
+
+            if (const auto* material_instance = e.try_get<components::MaterialInstance>()) {
                 draw_call.parameters = material_instance->parameters;
                 if (material_instance->material.is_valid())
                     draw_call.material = material_instance->material;
             }
 
-            const Vector3 object_position = transform.position;
-            const Vector3 delta = object_position - camera_position;
-            draw_call.distance_to_camera = delta.length();
-
+            draw_call.distance_sq = camera_position.distance_squared_to(transform.position);
             draw_call.is_transparent = false;
-
             draw_call.sort_key = rendering::RenderQueue::calculate_sort_key(draw_call);
 
             m_render_queue.submit(draw_call);
 
-            STAR_LOG_TRACE(LogCategory::Rendering, "Submitted entity {} to render queue (dist: {:.2f})",
-                           static_cast<u64>(e), draw_call.distance_to_camera);
+            STAR_LOG_TRACE(LogCategory::Rendering, "Submitted entity {} to render queue", static_cast<u64>(e));
         });
-
-        // STAR_LOG_DEBUG(LogCategory::Rendering, "Collected {} renderables for scene '{}'",
-        //                m_render_queue.command_count(), scene.name());
     }
 
     void RenderSystem::execute_render_queue(graphics::DeviceContext& context, const u32 view_id,
-                                            const rendering::Viewport* viewport) const {
+                                            const rendering::Viewport* viewport) {
         if (viewport) {
             viewport->bind(context, view_id);
         }
 
-        if (!m_resource_manager) {
-            STAR_LOG_WARN(LogCategory::Rendering, "ResourceManager not set, cannot render");
-            return;
-        }
+        submit_lighting(context);
 
         for (const auto& opaque_commands = m_render_queue.opaque_commands(); const auto& command : opaque_commands) {
             if (!command.mesh.is_valid()) {
                 continue;
             }
 
-            const auto* mesh = m_resource_manager->get_mesh(command.mesh);
+            const auto* mesh = m_resource_manager.get_mesh(command.mesh);
             if (!mesh) {
                 STAR_LOG_WARN(LogCategory::Rendering, "Failed to get mesh from handle");
                 continue;
@@ -207,12 +233,12 @@ namespace star::systems {
 
             graphics::ResourceHandle<graphics::Shader> shader_handle;
             if (command.material.is_valid()) {
-                if (const auto* material = m_resource_manager->get_material(command.material)) {
+                if (const auto* material = m_resource_manager.get_material(command.material)) {
                     submit_material(context, *material, command.parameters);
 
-                    // material->shader holds the resource manager slot ID — resolve it to get the actual GPU handle
+                    // material->shader holds the resource manager slot ID — resolve to get the actual GPU handle
                     if (material->shader.is_valid()) {
-                        if (const auto* shader_res = m_resource_manager->get_shader(material->shader)) {
+                        if (const auto* shader_res = m_resource_manager.get_shader(material->shader)) {
                             shader_handle = shader_res->handle;
                         }
                     }
@@ -220,8 +246,8 @@ namespace star::systems {
             }
 
             if (!shader_handle.is_valid()) {
-                if (auto default_shader_res = m_resource_manager->default_shader(); default_shader_res.is_valid()) {
-                    if (const auto* default_shader = m_resource_manager->get_shader(default_shader_res)) {
+                if (auto default_shader_res = m_resource_manager.default_shader(); default_shader_res.is_valid()) {
+                    if (const auto* default_shader = m_resource_manager.get_shader(default_shader_res)) {
                         shader_handle = default_shader->handle;
                     }
                 }
@@ -233,20 +259,9 @@ namespace star::systems {
                 STAR_LOG_WARN(LogCategory::Rendering, "No valid shader available for rendering");
             }
 
-            STAR_LOG_TRACE(LogCategory::Rendering, "Rendered opaque object (dist: {:.2f})", command.distance_to_camera);
+            STAR_LOG_TRACE(LogCategory::Rendering, "Rendered opaque object (dist_sq: {:.2f})", command.distance_sq);
         }
 
-        for (const auto& transparent_commands = m_render_queue.transparent_commands();
-             const auto& command : transparent_commands) {
-            // TODO: Implementar renderização de transparentes com blending
-
-            STAR_LOG_TRACE(LogCategory::Rendering, "Rendering transparent object (dist: {:.2f})",
-                           command.distance_to_camera);
-        }
-
-        if (m_render_queue.command_count() > 0) {
-            // STAR_LOG_DEBUG(LogCategory::Rendering, "Rendered {} opaque + {} transparent objects",
-            //                opaque_commands.size(), transparent_commands.size());
-        }
+        // TODO: transparent pass — sort back-to-front, enable blending per pipeline state
     }
 } // namespace star::systems

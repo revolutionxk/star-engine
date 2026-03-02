@@ -11,6 +11,8 @@
 #include "star/application/application.hpp"
 #include "star/graphics/device.hpp"
 #include "star/platform/imgui_font_config.hpp"
+#include "star/rendering/debug_renderer.hpp"
+#include "star/rendering/passes/debug_render_pass.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
 
 namespace star::editor {
@@ -30,6 +32,9 @@ namespace star::editor {
         const auto& render_system = m_editor_window->renderer();
         const auto scene = render_system.get_render_pass<rendering::SceneRenderPass>();
         scene->set_viewport(m_viewport.get());
+
+        render_system.get_render_pass<rendering::DebugRenderPass>()->set_viewport(m_viewport.get());
+        render_system.debug_renderer()->set_enabled(true);
 
         initialize_panels();
 
@@ -56,6 +61,10 @@ namespace star::editor {
 
     void EditorUILayer::update(const f32 dt) {
         m_panel_manager.update_all(dt);
+
+        constexpr auto grid_size = 1.0f;
+        constexpr auto grid_color = Color4{0.5f, 0.5f, 0.5f, 0.25f};
+        m_editor_window->renderer().debug_renderer()->draw_grid({0.0f, 0.0f, 0.0f}, 100, grid_size, grid_color);
     }
 
     void EditorUILayer::on_imgui_render() {

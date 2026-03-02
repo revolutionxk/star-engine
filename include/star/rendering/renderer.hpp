@@ -19,6 +19,10 @@ namespace star::systems {
     class RenderSystem;
 }
 
+namespace star::rendering {
+    class DebugRenderer;
+}
+
 namespace star::resources {
     class ResourceManager;
 }
@@ -105,6 +109,10 @@ namespace star::rendering {
             return m_render_system.get();
         }
 
+        [[nodiscard]] DebugRenderer* debug_renderer() const {
+            return m_debug_renderer.get();
+        }
+
         void sort_render_passes();
 
         void set_active_scene(scene::Scene* scene);
@@ -119,6 +127,7 @@ namespace star::rendering {
 
         std::vector<std::unique_ptr<IRenderPass>> m_render_passes;
         std::unique_ptr<systems::RenderSystem> m_render_system;
+        std::unique_ptr<DebugRenderer> m_debug_renderer;
 
         bool m_initialized = false;
     };

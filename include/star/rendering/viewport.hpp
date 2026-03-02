@@ -28,6 +28,7 @@ namespace star::rendering {
         void resize(u32 width, u32 height);
 
         void bind(graphics::DeviceContext& context, u32 view_id) const;
+        void bind_overlay(graphics::DeviceContext& context, u32 view_id) const;
 
         void set_camera(const components::Camera& camera, const components::Transform& transform);
         void set_framebuffer_enabled(bool enabled);

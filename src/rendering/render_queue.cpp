@@ -32,7 +32,7 @@ namespace star::rendering {
                 return a.material.id < b.material.id;
             }
 
-            return a.distance_to_camera < b.distance_to_camera;
+            return a.distance_sq < b.distance_sq;
         });
 
         std::ranges::sort(m_transparent_commands, [](const DrawCall& a, const DrawCall& b) {
@@ -40,7 +40,7 @@ namespace star::rendering {
                 return a.layer < b.layer;
             }
 
-            return a.distance_to_camera > b.distance_to_camera;
+            return a.distance_sq > b.distance_sq;
         });
 
         STAR_LOG_TRACE(LogCategory::Rendering, "RenderQueue sorted: {} opaque, {} transparent",
@@ -61,7 +61,7 @@ namespace star::rendering {
         key |= static_cast<u64>(material_hash) << 32;
 
         u32 distance_bits;
-        std::memcpy(&distance_bits, &draw_call.distance_to_camera, sizeof(u32));
+        std::memcpy(&distance_bits, &draw_call.distance_sq, sizeof(u32));
 
         if (draw_call.is_transparent) {
             distance_bits = ~distance_bits;

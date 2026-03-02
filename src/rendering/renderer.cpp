@@ -5,6 +5,8 @@
 #include "star/core/logger.hpp"
 #include "star/graphics/device.hpp"
 #include "star/platform/window.hpp"
+#include "star/rendering/debug_renderer.hpp"
+#include "star/rendering/passes/debug_render_pass.hpp"
 #include "star/rendering/passes/imgui_render_pass.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
 #include "star/rendering/systems/render_system.hpp"
@@ -17,14 +19,16 @@ namespace star::rendering {
             STAR_LOG_WARN(LogCategory::Rendering, "Renderer already initialized");
         }
 
-        m_render_system = std::make_unique<systems::RenderSystem>(*m_device);
-        m_render_system->set_resource_manager(m_resource_manager);
+        m_render_system = std::make_unique<systems::RenderSystem>(*m_device, *m_resource_manager);
+        m_debug_renderer = std::make_unique<DebugRenderer>(*m_resource_manager);
 
         auto scene_pass = std::make_unique<SceneRenderPass>(*m_render_system);
+        auto debug_pass = std::make_unique<DebugRenderPass>(*m_debug_renderer);
         auto imgui_pass = std::make_unique<ImGuiRenderPass>(std::make_unique<platform::sdl::ImGuiSDL3Backend>(),
                                                             std::make_unique<graphics::ImGuiBGFXRenderer>());
 
         add_render_pass(std::move(scene_pass));
+        add_render_pass(std::move(debug_pass));
         add_render_pass(std::move(imgui_pass));
 
         STAR_LOG_INFO(LogCategory::Rendering, "Window rendering setup complete");
@@ -47,6 +51,7 @@ namespace star::rendering {
         m_render_passes.clear();
 
         m_render_system.reset();
+        m_debug_renderer.reset();
         m_initialized = false;
     }
 

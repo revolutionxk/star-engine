@@ -17,6 +17,7 @@ namespace star::resources {
 
         graphics::ResourceHandle<graphics::Buffer> vertex_buffer;
         graphics::ResourceHandle<graphics::Buffer> index_buffer;
+        AABB bounds{};
 
         u32 vertex_count() const {
             return static_cast<u32>(vertices.size());

@@ -24,6 +24,8 @@ namespace star::graphics {
         void set_vertex_buffer(u8 stream, ResourceHandle<Buffer> handle) override;
         void set_index_buffer(ResourceHandle<Buffer> handle) override;
         void set_texture(u8 stage, ResourceHandle<Texture> handle) override;
+        void set_transient_vertex_buffer(u8 stream, const void* data, u32 num_vertices,
+                                         VertexLayoutType layout_type) override;
 
         void set_uniform(const std::string& name, const void* data, u16 num = 1,
                          UniformType type = UniformType::Vec4) override;

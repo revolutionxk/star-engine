@@ -1,6 +1,7 @@
 #include "bgfx_device_context.hpp"
 
 #include "bgfx/bgfx.h"
+#include "bgfx_vertex_layout.hpp"
 #include "star/core/common.hpp"
 
 namespace star::graphics {
@@ -208,7 +209,19 @@ namespace star::graphics {
                 break;
         }
 
-        if (state.wireframe)
+        switch (state.primitive) {
+            case PrimitiveType::Lines:
+                flags |= BGFX_STATE_PT_LINES;
+                break;
+            case PrimitiveType::Points:
+                flags |= BGFX_STATE_PT_POINTS;
+                break;
+            case PrimitiveType::Triangles:
+            default:
+                break;
+        }
+
+        if (state.wireframe && state.primitive == PrimitiveType::Triangles)
             flags |= BGFX_STATE_PT_LINES;
 
         flags |= BGFX_STATE_MSAA;
@@ -236,5 +249,22 @@ namespace star::graphics {
         bgfx::submit(static_cast<bgfx::ViewId>(view_id), prog);
 
         return 1;
+    }
+
+    void BGFXDeviceContext::set_transient_vertex_buffer(const u8 stream, const void* data, const u32 num_vertices,
+                                                        const VertexLayoutType layout_type) {
+        const bgfx::VertexLayout layout =
+            layout_type == VertexLayoutType::Debug ? create_debug_vertex_layout() : create_standard_vertex_layout();
+
+        if (bgfx::getAvailTransientVertexBuffer(num_vertices, layout) < num_vertices) {
+            STAR_LOG_WARN(LogCategory::Graphics, "Not enough transient vertex buffer space for {} vertices",
+                          num_vertices);
+            return;
+        }
+
+        bgfx::TransientVertexBuffer tvb;
+        bgfx::allocTransientVertexBuffer(&tvb, num_vertices, layout);
+        std::memcpy(tvb.data, data, static_cast<size_t>(num_vertices) * layout.getStride());
+        bgfx::setVertexBuffer(stream, &tvb);
     }
 } // namespace star::graphics

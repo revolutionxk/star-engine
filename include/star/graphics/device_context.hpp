@@ -18,6 +18,11 @@ namespace star::graphics {
         Sampler,
     };
 
+    enum class VertexLayoutType {
+        Standard,
+        Debug,
+    };
+
     class DeviceContext {
       public:
         explicit DeviceContext(Device* device, void* native_window_handle);
@@ -42,6 +47,10 @@ namespace star::graphics {
         virtual void set_index_buffer(ResourceHandle<Buffer> handle) = 0;
         virtual void set_texture(u8 stage, ResourceHandle<Texture> handle) = 0;
 
+        // Uploads transient (per-frame) geometry from host memory. No ResourceHandle needed —
+        // BGFX owns the lifetime for the duration of the frame.
+        virtual void set_transient_vertex_buffer(u8 stream, const void* data, u32 num_vertices,
+                                                 VertexLayoutType layout_type) = 0;
         virtual void set_uniform(const std::string& name, const void* data, u16 num = 1,
                                  UniformType type = UniformType::Vec4) = 0;
 

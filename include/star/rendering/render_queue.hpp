@@ -16,7 +16,7 @@ namespace star::rendering {
         Matrix4 mvp_matrix;
         graphics::ResourceHandle<resources::Mesh> mesh;
         graphics::ResourceHandle<resources::Material> material;
-        std::vector<MaterialProperty> overrides;
+        std::vector<MaterialProperty> parameters;
         u64 sort_key{0};
         f32 distance_to_camera{0.0f};
         u8 layer{0};

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <string>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -8,6 +9,8 @@
 
 #include "reflection/imgui_visitor.hpp"
 #include "star/core/meta/reflect.hpp"
+#include "star/rendering/components/material_instance.hpp"
+#include "star/resources/material/material.hpp"
 
 namespace star::editor::ui {
     inline float map_range(const float value, const float min_in, const float max_in, const float min_out,
@@ -223,6 +226,150 @@ namespace star::editor::ui {
     void draw_component(T& component) {
         ImGui::PushItemWidth(-140.0f);
         meta::for_each_field(component, reflection::ImGuiVisitor{});
+        ImGui::PopItemWidth();
+    }
+
+    inline void draw_material_instance(components::MaterialInstance& inst, const resources::Material* mat) {
+        ImGui::PushItemWidth(-140.f);
+
+        auto find = [&](std::string_view name) -> rendering::MaterialProperty* {
+            for (auto& p : inst.parameters)
+                if (p.name == name)
+                    return &p;
+            return nullptr;
+        };
+
+        auto remove = [&](std::string_view name) {
+            std::erase_if(inst.parameters, [name](const auto& p) { return p.name == name; });
+        };
+
+        ImGui::SeparatorText("Parameters");
+        {
+            constexpr std::string_view KEY = "u_baseColor";
+            auto* prop = find(KEY);
+            bool enabled = prop != nullptr;
+
+            ImGui::PushID(KEY.data());
+            if (ImGui::Checkbox("##en", &enabled)) {
+                if (enabled) {
+                    const Vector4 def = mat ? mat->albedo_color : Vector4{1.f, 1.f, 1.f, 1.f};
+                    inst.parameters.push_back({std::string(KEY), def});
+                    prop = find(KEY);
+                } else {
+                    remove(KEY);
+                    prop = nullptr;
+                }
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", enabled ? "Override active" : "Using material default — check to override");
+
+            ImGui::SameLine();
+            Vector4 col =
+                prop ? std::get<Vector4>(prop->value) : (mat ? mat->albedo_color : Vector4{1.f, 1.f, 1.f, 1.f});
+            if (!enabled)
+                ImGui::BeginDisabled();
+            if (ImGui::ColorEdit4("Albedo Color", col.data) && prop)
+                std::get<Vector4>(prop->value) = col;
+            if (!enabled)
+                ImGui::EndDisabled();
+            ImGui::PopID();
+        }
+
+        {
+            constexpr std::string_view KEY = "u_materialParams";
+            auto* prop = find(KEY);
+            bool enabled = prop != nullptr;
+
+            ImGui::PushID(KEY.data());
+            if (ImGui::Checkbox("##en", &enabled)) {
+                if (enabled) {
+                    const Vector4 def{mat ? mat->metallic : 0.f, mat ? mat->roughness : 0.5f, 0.f, 0.f};
+                    inst.parameters.push_back({std::string(KEY), def});
+                    prop = find(KEY);
+                } else {
+                    remove(KEY);
+                    prop = nullptr;
+                }
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", enabled ? "Override active" : "Using material default — check to override");
+
+            ImGui::SameLine();
+            float metallic = prop ? std::get<Vector4>(prop->value).x : (mat ? mat->metallic : 0.f);
+            float roughness = prop ? std::get<Vector4>(prop->value).y : (mat ? mat->roughness : 0.5f);
+
+            if (!enabled)
+                ImGui::BeginDisabled();
+            ImGui::BeginGroup();
+            ImGui::Text("Metallic / Roughness");
+            bool changed = ImGui::SliderFloat("Metallic##mp", &metallic, 0.f, 1.f);
+            changed |= ImGui::SliderFloat("Roughness##mp", &roughness, 0.f, 1.f);
+            ImGui::EndGroup();
+            if (!enabled)
+                ImGui::EndDisabled();
+
+            if (changed && prop) {
+                auto& v = std::get<Vector4>(prop->value);
+                v.x = metallic;
+                v.y = roughness;
+            }
+            ImGui::PopID();
+        }
+
+        bool has_custom = false;
+        for (int i = 0; i < static_cast<int>(inst.parameters.size()); ++i) {
+            auto& prop = inst.parameters[i];
+            if (prop.name == "u_baseColor" || prop.name == "u_materialParams")
+                continue;
+
+            if (!has_custom) {
+                ImGui::SeparatorText("Custom");
+                has_custom = true;
+            }
+
+            ImGui::PushID(i);
+            const bool is_color = prop.name.find("olor") != std::string::npos;
+            std::visit(
+                [&]<typename T>(T& v) {
+                    using V = std::decay_t<T>;
+                    if constexpr (std::is_same_v<V, float>)
+                        ImGui::DragFloat(prop.name.c_str(), &v, 0.01f);
+                    else if constexpr (std::is_same_v<V, Vector2>)
+                        ImGui::DragFloat2(prop.name.c_str(), &v.x, 0.01f);
+                    else if constexpr (std::is_same_v<V, Vector3>)
+                        is_color ? (void)ImGui::ColorEdit3(prop.name.c_str(), v.data)
+                                 : (void)ImGui::DragFloat3(prop.name.c_str(), v.data, 0.01f);
+                    else if constexpr (std::is_same_v<V, Vector4>)
+                        is_color ? (void)ImGui::ColorEdit4(prop.name.c_str(), v.data)
+                                 : (void)ImGui::DragFloat4(prop.name.c_str(), v.data, 0.01f);
+                },
+                prop.value);
+            ImGui::SameLine();
+            if (ImGui::SmallButton("x"))
+                inst.parameters.erase(inst.parameters.begin() + i--);
+            ImGui::PopID();
+        }
+
+        ImGui::Spacing();
+        if (ImGui::Button("+ Add Custom Uniform", {-1.f, 0.f}))
+            ImGui::OpenPopup("##AddCustomMI");
+
+        if (ImGui::BeginPopup("##AddCustomMI")) {
+            static char custom_name[128]{};
+            ImGui::InputText("Uniform name", custom_name, sizeof(custom_name));
+            if (ImGui::MenuItem("Add as Vec4 (color)") && custom_name[0]) {
+                inst.parameters.push_back({custom_name, Vector4{1.f, 1.f, 1.f, 1.f}});
+                custom_name[0] = '\0';
+                ImGui::CloseCurrentPopup();
+            }
+            if (ImGui::MenuItem("Add as float") && custom_name[0]) {
+                inst.parameters.push_back({custom_name, 0.f});
+                custom_name[0] = '\0';
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
         ImGui::PopItemWidth();
     }
 } // namespace star::editor::ui

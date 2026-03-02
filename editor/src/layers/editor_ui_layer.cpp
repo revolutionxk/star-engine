@@ -33,6 +33,8 @@ namespace star::editor {
 
         initialize_panels();
 
+        m_component_inspector.set_resource_manager(&m_editor_window->resources());
+
         return true;
     }
 

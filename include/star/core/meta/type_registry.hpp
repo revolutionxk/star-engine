@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "star/core/export.hpp"
 #include "visitors/visitor.hpp"
 
 namespace star::meta {
@@ -71,6 +72,7 @@ namespace star::meta {
         std::string_view script_name;
         std::type_index value_type{typeid(void)};
         std::vector<AnyAttr> attributes;
+        std::vector<std::string_view> enum_labels; // populated for enum fields with EnumOptions
 
         std::function<AnyRef(void*)> get_mut;
         std::function<AnyRef(const void*)> get;
@@ -94,6 +96,7 @@ namespace star::meta {
         std::string_view category;
         std::type_index type{typeid(void)};
         std::vector<RuntimeField> fields;
+        std::unordered_map<std::type_index, std::any> extensions;
 
         [[nodiscard]] const RuntimeField* find_field(const std::string_view field_name) const noexcept {
             const auto it = std::ranges::find_if(fields, [&](const RuntimeField& f) { return f.name == field_name; });
@@ -106,7 +109,7 @@ namespace star::meta {
         }
     };
 
-    class TypeRegistry {
+    class STAR_EXPORT TypeRegistry {
       public:
         static TypeRegistry& instance() {
             static TypeRegistry s;
@@ -155,6 +158,12 @@ namespace star::meta {
                 };
                 std::apply([&rf](const auto&... a) { (rf.attributes.emplace_back(AnyAttr::from(a)), ...); },
                            field_desc.attributes);
+
+                field_desc.visit_enum_options([&rf]<std::size_t N>(const attr::EnumOptions<N>& opts) {
+                    rf.enum_labels.reserve(N);
+                    for (std::size_t i = 0; i < N; ++i)
+                        rf.enum_labels.push_back(opts.labels[i]);
+                });
 
                 info.fields.emplace_back(std::move(rf));
             });
@@ -210,17 +219,49 @@ namespace star::meta {
             return m_by_name.size();
         }
 
+        template<typename Ext>
+        void extend(std::type_index id, Ext ext) {
+            auto it = m_by_id.find(id);
+            if (it == m_by_id.end())
+                return;
+            const std::string key{it->second.name};
+            it->second.extensions[typeid(Ext)] = ext;
+            if (auto nit = m_by_name.find(key); nit != m_by_name.end())
+                nit->second.extensions[typeid(Ext)] = std::move(ext);
+        }
+
+        template<typename Ext>
+        [[nodiscard]] const Ext* get_extension(std::type_index id) const noexcept {
+            auto it = m_by_id.find(id);
+            if (it == m_by_id.end())
+                return nullptr;
+            auto ext_it = it->second.extensions.find(typeid(Ext));
+            if (ext_it == it->second.extensions.end())
+                return nullptr;
+            return std::any_cast<Ext>(&ext_it->second);
+        }
+
+        template<typename Ext, Reflected T>
+        [[nodiscard]] const Ext* get_extension() const noexcept {
+            return get_extension<Ext>(typeid(T));
+        }
+
       private:
         TypeRegistry() = default;
 
         std::unordered_map<std::string, RuntimeTypeInfo> m_by_name;
         std::unordered_map<std::type_index, RuntimeTypeInfo> m_by_id;
     };
-
-    template<Reflected... Ts>
-    struct AutoRegister {
-        AutoRegister() {
-            (TypeRegistry::instance().register_type<Ts>(), ...);
-        }
-    };
 } // namespace star::meta
+
+#define STAR_META_CONCAT_IMPL(a, b) a##b
+#define STAR_META_CONCAT(a, b) STAR_META_CONCAT_IMPL(a, b)
+#define STAR_REGISTER_TYPE(T)                                                                                          \
+    namespace star::meta::detail {                                                                                     \
+        namespace {                                                                                                    \
+            [[maybe_unused]] const bool STAR_META_CONCAT(_reg_, __COUNTER__) = [] {                                    \
+                ::star::meta::TypeRegistry::instance().register_type<T>();                                             \
+                return true;                                                                                           \
+            }();                                                                                                       \
+        }                                                                                                              \
+    }

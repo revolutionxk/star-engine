@@ -2,8 +2,12 @@
 
 #include <string>
 
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 #include <imgui_internal.h>
+
+#include "reflection/imgui_visitor.hpp"
+#include "star/core/meta/reflect.hpp"
 
 namespace star::editor::ui {
     inline float map_range(const float value, const float min_in, const float max_in, const float min_out,
@@ -120,4 +124,105 @@ namespace star::editor::ui {
         return pressed;
     }
 
+    inline void draw_field_runtime(const meta::RuntimeField& field, void* comp) {
+        auto ref = field.get_mut(comp);
+        if (!ref.is_valid())
+            return;
+
+        const char* label = field.name.data();
+
+        if (field.has_attr<meta::attr::HideInEditor>())
+            return;
+
+        const bool is_ro = field.has_attr<meta::attr::ReadOnly>();
+        if (is_ro)
+            ImGui::BeginDisabled();
+
+        const auto sp = field.find_attr<meta::attr::Speed>().value_or(meta::attr::Speed{0.1f}).value;
+        const auto [min, max] = field.find_attr<meta::attr::Range>().value_or(meta::attr::Range{});
+        const bool color = field.has_attr<meta::attr::Color>();
+
+        if (const auto ty = field.value_type; ty == typeid(f32)) {
+            ImGui::DragFloat(label, ref.as<f32>(), sp, min, max, "%.3f");
+        } else if (ty == typeid(f64)) {
+            float fv = static_cast<float>(*ref.as<f64>());
+            if (ImGui::DragFloat(label, &fv, sp, min, max, "%.4f"))
+                *ref.as<f64>() = static_cast<f64>(fv);
+        } else if (ty == typeid(i32)) {
+            ImGui::DragInt(label, ref.as<i32>(), sp, static_cast<int>(min), static_cast<int>(max));
+        } else if (ty == typeid(u32)) {
+            int iv = static_cast<int>(*ref.as<u32>());
+            if (ImGui::DragInt(label, &iv, sp, 0, static_cast<int>(max)))
+                *ref.as<u32>() = static_cast<u32>(iv);
+        } else if (ty == typeid(u8)) {
+            int iv = *ref.as<u8>();
+            const auto r2 = field.find_attr<meta::attr::Range>().value_or(meta::attr::Range{0.f, 255.f});
+            if (ImGui::SliderInt(label, &iv, static_cast<int>(r2.min), static_cast<int>(r2.max)))
+                *ref.as<u8>() = static_cast<u8>(iv);
+        } else if (ty == typeid(bool)) {
+            ImGui::Checkbox(label, ref.as<bool>());
+        } else if (ty == typeid(std::string)) {
+            char buf[512]{};
+            std::strncpy(buf, ref.as<std::string>()->c_str(), sizeof(buf) - 1);
+            if (ImGui::InputText(label, buf, sizeof(buf)))
+                *ref.as<std::string>() = buf;
+        } else if (ty == typeid(Vector2)) {
+            auto* v = ref.as<Vector2>();
+            ImGui::DragFloat2(label, &v->x, sp, min, max, "%.3f");
+        } else if (ty == typeid(Vector3)) {
+            auto* v = ref.as<Vector3>();
+            if (color)
+                ImGui::ColorEdit3(label, v->data);
+            else
+                ImGui::DragFloat3(label, v->data, sp, min, max, "%.3f");
+        } else if (ty == typeid(Vector4)) {
+            auto* v = ref.as<Vector4>();
+            if (color)
+                ImGui::ColorEdit4(label, v->data);
+            else
+                ImGui::DragFloat4(label, v->data, sp, min, max, "%.3f");
+        } else if (ty == typeid(Quaternion)) {
+            auto* q = ref.as<Quaternion>();
+            auto euler = q->to_euler() * math::Constants<f32>::rad_to_deg;
+            const auto sp2 = field.find_attr<meta::attr::Speed>().value_or(meta::attr::Speed{0.5f}).value;
+            if (ImGui::DragFloat3(label, euler.data, sp2, 0.f, 0.f, "%.2f deg"))
+                *q = Quaternion::from_euler(radians(euler.x), radians(euler.y), radians(euler.z));
+        } else if (!field.enum_labels.empty()) {
+            int current = 0;
+            std::memcpy(&current, ref.data, std::min(ref.data ? sizeof(int) : 0, sizeof(int)));
+            std::vector<const char*> ptrs;
+            ptrs.reserve(field.enum_labels.size());
+            for (const auto& lbl : field.enum_labels)
+                ptrs.push_back(lbl.data());
+            if (ImGui::Combo(label, &current, ptrs.data(), static_cast<int>(ptrs.size())))
+                std::memcpy(ref.data, &current, sizeof(int));
+        } else {
+            int iv = 0;
+            std::memcpy(&iv, ref.data, sizeof(int));
+            if (ImGui::DragInt(label, &iv, 1))
+                std::memcpy(ref.data, &iv, sizeof(int));
+        }
+
+        if (is_ro)
+            ImGui::EndDisabled();
+
+        if (const auto tt = field.find_attr<meta::attr::Tooltip>()) {
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
+                ImGui::SetTooltip("%s", tt->text.data());
+        }
+    }
+
+    inline void draw_fields(const meta::RuntimeTypeInfo& type_info, void* comp) {
+        ImGui::PushItemWidth(-140.0f);
+        for (const auto& field : type_info.fields)
+            draw_field_runtime(field, comp);
+        ImGui::PopItemWidth();
+    }
+
+    template<meta::Reflected T>
+    void draw_component(T& component) {
+        ImGui::PushItemWidth(-140.0f);
+        meta::for_each_field(component, reflection::ImGuiVisitor{});
+        ImGui::PopItemWidth();
+    }
 } // namespace star::editor::ui

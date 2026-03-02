@@ -13,8 +13,7 @@
 namespace star::editor {
     class InspectorPanel final : public Panel {
       public:
-        explicit InspectorPanel(ecs::ComponentRegistry* registry, ComponentInspector* inspector)
-            : Panel("Inspector"), m_registry(registry), m_inspector(inspector) {}
+        explicit InspectorPanel(ComponentInspector* inspector) : Panel("Inspector"), m_inspector(inspector) {}
 
         void on_attach() override {
             EditorEventBus::instance().subscribe(EditorEventType::EntitySelected, [this](const EditorEvent& event) {
@@ -49,11 +48,11 @@ namespace star::editor {
             ImGui::Separator();
             ImGui::Spacing();
 
-            m_inspector->draw_components(entity, *m_registry);
+            m_inspector->draw_components(entity);
 
             ImGui::Spacing();
 
-            m_inspector->draw_add_popup(entity, *m_registry);
+            m_inspector->draw_add_popup(entity);
         }
 
         static void render_entity_header(const flecs::entity entity) {
@@ -78,7 +77,6 @@ namespace star::editor {
             ImGui::TextDisabled("%s", msg);
         }
 
-        ecs::ComponentRegistry* m_registry{};
         ComponentInspector* m_inspector{};
         std::optional<flecs::entity> m_selected_entity;
     };

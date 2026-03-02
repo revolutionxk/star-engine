@@ -4,6 +4,7 @@
 #include <typeindex>
 
 #include "field_info.hpp"
+#include "star/platform/input/input.hpp"
 
 namespace star::meta {
     template<typename T>
@@ -43,4 +44,7 @@ namespace star::meta {
 
     template<Reflected T>
     inline constexpr std::size_t field_count_v = std::tuple_size_v<std::decay_t<decltype(TypeInfo<T>::fields)>>;
+
+    template<typename T>
+    concept EcsComponent = Reflected<T> && requires { requires TypeInfo<T>::is_component; };
 } // namespace star::meta

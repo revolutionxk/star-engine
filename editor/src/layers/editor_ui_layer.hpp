@@ -6,7 +6,6 @@
 #include "../panels/component_inspector.hpp"
 #include "editor_window.hpp"
 #include "star/application/layer.hpp"
-#include "star/ecs/component_registry.hpp"
 #include "star/rendering/viewport.hpp"
 
 namespace star::editor {
@@ -34,7 +33,6 @@ namespace star::editor {
         EditorWindow* m_editor_window = nullptr;
         std::unique_ptr<rendering::Viewport> m_viewport;
         PanelManager m_panel_manager;
-        ecs::ComponentRegistry m_component_registry;
         ComponentInspector m_component_inspector;
     };
 } // namespace star::editor

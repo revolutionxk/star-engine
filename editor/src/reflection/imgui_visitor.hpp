@@ -1,25 +1,18 @@
 #pragma once
 
-#include <array>
-#include <cstring>
-#include <string>
-#include <type_traits>
-
-#include <imgui.h>
-
-#include "../reflect.hpp"
+#include "imgui.h"
+#include "star/core/meta/reflect.hpp"
 #include "star/math/math.hpp"
 
-namespace star::meta {
-
+namespace star::editor::reflection {
     class ImGuiVisitor {
-    public:
+      public:
         template<typename FD, typename Value>
         void operator()(const FD& desc, Value& value) const {
-            if constexpr (FD::template has_attr<attr::HideInEditor>())
+            if constexpr (FD::template has_attr<meta::attr::HideInEditor>())
                 return;
 
-            const bool is_ro = FD::template has_attr<attr::ReadOnly>();
+            const bool is_ro = FD::template has_attr<meta::attr::ReadOnly>();
             if (is_ro)
                 ImGui::BeginDisabled();
 
@@ -28,43 +21,43 @@ namespace star::meta {
             if (is_ro)
                 ImGui::EndDisabled();
 
-            if constexpr (FD::template has_attr<attr::Tooltip>()) {
+            if constexpr (FD::template has_attr<meta::attr::Tooltip>()) {
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) {
-                    if (auto tt = desc.template get_attr<attr::Tooltip>())
+                    if (auto tt = desc.template get_attr<meta::attr::Tooltip>())
                         ImGui::SetTooltip("%s", tt->text.data());
                 }
             }
         }
 
-    private:
+      private:
         template<typename FD>
         static void draw(const FD& d, f32& v) {
-            const auto sp = d.template get_attr_or<attr::Speed>({0.1f}).value;
-            const auto rng = d.template get_attr_or<attr::Range>({});
+            const auto sp = d.template get_attr_or<meta::attr::Speed>({0.1f}).value;
+            const auto rng = d.template get_attr_or<meta::attr::Range>({});
             ImGui::DragFloat(d.name.data(), &v, sp, rng.min, rng.max, "%.3f");
         }
 
         template<typename FD>
         static void draw(const FD& d, f64& v) {
             float fv = static_cast<float>(v);
-            const auto sp = d.template get_attr_or<attr::Speed>({0.1f}).value;
-            const auto rng = d.template get_attr_or<attr::Range>({});
+            const auto sp = d.template get_attr_or<meta::attr::Speed>({0.1f}).value;
+            const auto rng = d.template get_attr_or<meta::attr::Range>({});
             if (ImGui::DragFloat(d.name.data(), &fv, sp, rng.min, rng.max, "%.4f"))
                 v = static_cast<f64>(fv);
         }
 
         template<typename FD>
         static void draw(const FD& d, i32& v) {
-            const auto sp = d.template get_attr_or<attr::Speed>({1.f}).value;
-            const auto rng = d.template get_attr_or<attr::Range>({});
+            const auto sp = d.template get_attr_or<meta::attr::Speed>({1.f}).value;
+            const auto rng = d.template get_attr_or<meta::attr::Range>({});
             ImGui::DragInt(d.name.data(), &v, sp, static_cast<int>(rng.min), static_cast<int>(rng.max));
         }
 
         template<typename FD>
         static void draw(const FD& d, u32& v) {
             int iv = static_cast<int>(v);
-            const auto sp = d.template get_attr_or<attr::Speed>({1.f}).value;
-            const auto rng = d.template get_attr_or<attr::Range>({});
+            const auto sp = d.template get_attr_or<meta::attr::Speed>({1.f}).value;
+            const auto rng = d.template get_attr_or<meta::attr::Range>({});
             if (ImGui::DragInt(d.name.data(), &iv, sp, 0, static_cast<int>(rng.max)))
                 v = static_cast<u32>(iv);
         }
@@ -72,7 +65,7 @@ namespace star::meta {
         template<typename FD>
         static void draw(const FD& d, u8& v) {
             int iv = v;
-            const auto rng = d.template get_attr_or<attr::Range>({0.f, 255.f});
+            const auto rng = d.template get_attr_or<meta::attr::Range>({0.f, 255.f});
             if (ImGui::SliderInt(d.name.data(), &iv, static_cast<int>(rng.min), static_cast<int>(rng.max)))
                 v = static_cast<u8>(iv);
         }
@@ -92,21 +85,21 @@ namespace star::meta {
 
         template<typename FD>
         static void draw(const FD& d, Vector2& v) {
-            const auto sp = d.template get_attr_or<attr::Speed>({0.1f}).value;
-            const auto rng = d.template get_attr_or<attr::Range>({});
+            const auto sp = d.template get_attr_or<meta::attr::Speed>({0.1f}).value;
+            const auto rng = d.template get_attr_or<meta::attr::Range>({});
             ImGui::DragFloat2(d.name.data(), &v.x, sp, rng.min, rng.max, "%.3f");
         }
 
         template<typename FD>
         static void draw(const FD& d, Vector3& v) {
-            if constexpr (FD::template has_attr<attr::Color>()) {
+            if constexpr (FD::template has_attr<meta::attr::Color>()) {
                 ImGui::ColorEdit3(d.name.data(), v.data);
                 return;
             }
-            const auto sp = d.template get_attr_or<attr::Speed>({0.1f}).value;
-            const auto rng = d.template get_attr_or<attr::Range>({});
+            const auto sp = d.template get_attr_or<meta::attr::Speed>({0.1f}).value;
+            const auto rng = d.template get_attr_or<meta::attr::Range>({});
             if (ImGui::DragFloat3(d.name.data(), v.data, sp, rng.min, rng.max, "%.3f")) {
-                if constexpr (FD::template has_attr<attr::Normalized>()) {
+                if constexpr (FD::template has_attr<meta::attr::Normalized>()) {
                     if (const float len = std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z); len > 1e-5f) {
                         v.x /= len;
                         v.y /= len;
@@ -118,19 +111,19 @@ namespace star::meta {
 
         template<typename FD>
         static void draw(const FD& d, Vector4& v) {
-            if constexpr (FD::template has_attr<attr::Color>()) {
+            if constexpr (FD::template has_attr<meta::attr::Color>()) {
                 ImGui::ColorEdit4(d.name.data(), v.data);
                 return;
             }
-            const auto sp = d.template get_attr_or<attr::Speed>({0.1f}).value;
-            const auto rng = d.template get_attr_or<attr::Range>({});
+            const auto sp = d.template get_attr_or<meta::attr::Speed>({0.1f}).value;
+            const auto rng = d.template get_attr_or<meta::attr::Range>({});
             ImGui::DragFloat4(d.name.data(), v.data, sp, rng.min, rng.max, "%.3f");
         }
 
         template<typename FD>
         static void draw(const FD& d, Quaternion& q) {
             auto euler = q.to_euler() * math::Constants<f32>::rad_to_deg;
-            const auto sp = d.template get_attr_or<attr::Speed>({0.5f}).value;
+            const auto sp = d.template get_attr_or<meta::attr::Speed>({0.5f}).value;
             if (ImGui::DragFloat3(d.name.data(), euler.data, sp, 0.f, 0.f, "%.2f deg"))
                 q = Quaternion::from_euler(radians(euler.x), radians(euler.y), radians(euler.z));
         }
@@ -139,7 +132,7 @@ namespace star::meta {
             requires std::is_enum_v<Enum> && (FD::has_enum_options())
         static void draw(const FD& d, Enum& v) {
             int current = static_cast<int>(v);
-            d.visit_enum_options([&]<std::size_t N>(const attr::EnumOptions<N>& opts) {
+            d.visit_enum_options([&]<std::size_t N>(const meta::attr::EnumOptions<N>& opts) {
                 std::array<const char*, N> ptrs{};
                 for (std::size_t i = 0; i < N; ++i)
                     ptrs[i] = opts.labels[i].data();
@@ -156,12 +149,4 @@ namespace star::meta {
                 v = static_cast<Enum>(iv);
         }
     };
-
-    template<Reflected T>
-    void draw_component(T& component) {
-        ImGui::PushItemWidth(-140.0f);
-        for_each_field(component, ImGuiVisitor{});
-        ImGui::PopItemWidth();
-    }
-
-} // namespace star::meta
+} // namespace star::editor::reflection

@@ -33,12 +33,14 @@ namespace star::editor {
 
         initialize_panels();
 
+        m_component_inspector.set_resource_manager(&m_editor_window->resources());
+
         return true;
     }
 
     void EditorUILayer::initialize_panels() {
         auto* hierarchy = m_panel_manager.register_panel<HierarchyPanel>(m_editor_window);
-        auto* inspector = m_panel_manager.register_panel<InspectorPanel>();
+        auto* inspector = m_panel_manager.register_panel<InspectorPanel>(&m_component_inspector);
         auto* scene = m_panel_manager.register_panel<ScenePanel>();
         auto* console = m_panel_manager.register_panel<ConsolePanel>();
         m_panel_manager.register_panel<MetricsPanel>();

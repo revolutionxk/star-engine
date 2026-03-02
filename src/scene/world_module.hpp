@@ -1,4 +1,5 @@
 #pragma once
+#include "star/ecs/component_registry.hpp"
 #include "star/ecs/components/tag.hpp"
 #include "star/ecs/components/transform.hpp"
 #include "star/rendering/components/material_instance.hpp"
@@ -7,17 +8,10 @@
 
 namespace star::scene {
     struct WorldModule {
-        explicit WorldModule(const flecs::world& world) {
+        explicit WorldModule(flecs::world& world) {
             world.module<WorldModule>();
-
             world.set<flecs::Rest>({});
-
-            world.component<components::Tag>("Tag");
-            world.component<components::Transform>("Transform");
-            world.component<components::Camera>("Camera");
-            world.component<components::MeshRenderer>("MeshRenderer");
-            world.component<components::MaterialInstance>("MaterialInstance");
-            world.component<components::PrimaryCamera>("PrimaryCamera");
+            ecs::register_world_components(world);
         }
     };
 } // namespace star::scene

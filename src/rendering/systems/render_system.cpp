@@ -4,6 +4,7 @@
 #include "star/ecs/components/transform.hpp"
 #include "star/graphics/device.hpp"
 #include "star/graphics/device_context.hpp"
+#include "star/rendering/components/light.hpp"
 #include "star/rendering/components/material_instance.hpp"
 #include "star/rendering/components/mesh_renderer.hpp"
 #include "star/rendering/material_property.hpp"
@@ -51,17 +52,24 @@ namespace {
     }
 
     void submit_material(graphics::DeviceContext& ctx, const resources::Material& mat,
-                         const std::vector<rendering::MaterialProperty>& overrides) {
+                         const std::vector<rendering::MaterialProperty>& params) {
         ctx.set_pipeline_state(mat.pipeline_state);
 
-        ctx.set_uniform("u_albedoColor", &mat.albedo_color, 1, graphics::UniformType::Vec4);
-        const Vector4 pbr_params{mat.metallic, mat.roughness, 0.0f, 0.0f};
-        ctx.set_uniform("u_pbrParams", &pbr_params, 1, graphics::UniformType::Vec4);
+        auto is_overridden = [&](std::string_view name) {
+            return std::ranges::any_of(params, [name](const auto& p) { return p.name == name; });
+        };
 
-        if (mat.albedo_texture.is_valid())
+        if (!is_overridden("u_baseColor"))
+            ctx.set_uniform("u_baseColor", &mat.albedo_color, 1, graphics::UniformType::Vec4);
+
+        const Vector4 pbr_params{mat.metallic, mat.roughness, 0.0f, 0.0f};
+        if (!is_overridden("u_materialParams"))
+            ctx.set_uniform("u_materialParams", &pbr_params, 1, graphics::UniformType::Vec4);
+
+        if (mat.albedo_texture.is_valid() && !is_overridden("u_albedoTexture"))
             ctx.set_texture(0, mat.albedo_texture);
 
-        for (const auto& prop : overrides)
+        for (const auto& prop : params)
             upload_property(ctx, prop);
     }
 
@@ -143,7 +151,9 @@ namespace star::systems {
             draw_call.layer = mesh_renderer.layer;
 
             if (const auto material_instance = e.try_get<components::MaterialInstance>()) {
-                draw_call.overrides = material_instance->overrides;
+                draw_call.parameters = material_instance->parameters;
+                if (material_instance->material.is_valid())
+                    draw_call.material = material_instance->material;
             }
 
             const Vector3 object_position = transform.position;
@@ -198,7 +208,7 @@ namespace star::systems {
             graphics::ResourceHandle<graphics::Shader> shader_handle;
             if (command.material.is_valid()) {
                 if (const auto* material = m_resource_manager->get_material(command.material)) {
-                    submit_material(context, *material, command.overrides);
+                    submit_material(context, *material, command.parameters);
 
                     // material->shader holds the resource manager slot ID — resolve it to get the actual GPU handle
                     if (material->shader.is_valid()) {

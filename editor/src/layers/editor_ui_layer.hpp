@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "../core/panel_manager.hpp"
+#include "../panels/component_inspector.hpp"
 #include "editor_window.hpp"
 #include "star/application/layer.hpp"
 #include "star/rendering/viewport.hpp"
@@ -32,5 +33,6 @@ namespace star::editor {
         EditorWindow* m_editor_window = nullptr;
         std::unique_ptr<rendering::Viewport> m_viewport;
         PanelManager m_panel_manager;
+        ComponentInspector m_component_inspector;
     };
 } // namespace star::editor

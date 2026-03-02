@@ -50,7 +50,9 @@ namespace star::editor {
             }
 
             const auto root = active_scene->root();
+            active_scene->world().defer_begin();
             root.children([this](const flecs::entity child) { render_entity_node(child); });
+            active_scene->world().defer_end();
 
             ImGui::EndChild();
         }
@@ -71,6 +73,14 @@ namespace star::editor {
             if (ImGui::IsItemClicked()) {
                 m_selected_entity = entity;
                 on_entity_selected(m_selected_entity);
+            }
+
+            if (ImGui::BeginPopupContextItem()) {
+                if (ImGui::MenuItem("Delete Entity")) {
+                    auto name = entity.name();
+                    entity.destruct();
+                }
+                ImGui::EndPopup();
             }
 
             if (node_open) {

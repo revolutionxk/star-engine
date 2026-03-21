@@ -140,8 +140,9 @@ namespace star::platform::sdl {
         return hwnd;
 #elifdef STAR_PLATFORM_LINUX
         if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) {
-            return SDL_GetPointerProperty(SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER,
-                                          nullptr);
+            const auto x11_window =
+                SDL_GetNumberProperty(SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
+            return reinterpret_cast<void*>(static_cast<uintptr_t>(x11_window));
         }
         if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0) {
             const auto surface = static_cast<struct wl_surface*>(SDL_GetPointerProperty(
@@ -174,7 +175,21 @@ namespace star::platform::sdl {
     }
 
     PlatformData SDLWindow::platform_data() {
-        return {native_handle(), display_handle()};
+        return {native_handle(), display_handle(), native_handle_type()};
+    }
+
+    NativeWindowHandleType SDLWindow::native_handle_type() const {
+#ifdef STAR_PLATFORM_WINDOWS
+        return NativeWindowHandleType::Win32;
+#elif defined(STAR_PLATFORM_LINUX)
+        if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) {
+            return NativeWindowHandleType::X11;
+        }
+        if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0) {
+            return NativeWindowHandleType::Wayland;
+        }
+#endif
+        return NativeWindowHandleType::Default;
     }
 
     Vector2 SDLWindow::size() const {

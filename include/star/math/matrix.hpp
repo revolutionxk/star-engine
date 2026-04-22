@@ -56,24 +56,24 @@ namespace star::math {
             if (trace > 0) {
                 T s = std::sqrt(trace + 1) * 2;
                 q.w = s * T(0.25);
-                q.x = (m[9] - m[6]) / s;
-                q.y = (m[2] - m[8]) / s;
-                q.z = (m[4] - m[1]) / s;
+                q.x = (m[6] - m[9]) / s;
+                q.y = (m[8] - m[2]) / s;
+                q.z = (m[1] - m[4]) / s;
             } else if ((m[0] > m[5]) && (m[0] > m[10])) {
                 T s = std::sqrt(1 + m[0] - m[5] - m[10]) * 2;
-                q.w = (m[9] - m[6]) / s;
+                q.w = (m[6] - m[9]) / s;
                 q.x = s * T(0.25);
                 q.y = (m[1] + m[4]) / s;
                 q.z = (m[2] + m[8]) / s;
             } else if (m[5] > m[10]) {
                 T s = std::sqrt(1 + m[5] - m[0] - m[10]) * 2;
-                q.w = (m[2] - m[8]) / s;
+                q.w = (m[8] - m[2]) / s;
                 q.x = (m[1] + m[4]) / s;
                 q.y = s * T(0.25);
                 q.z = (m[6] + m[9]) / s;
             } else {
                 T s = std::sqrt(1 + m[10] - m[0] - m[5]) * 2;
-                q.w = (m[4] - m[1]) / s;
+                q.w = (m[1] - m[4]) / s;
                 q.x = (m[2] + m[8]) / s;
                 q.y = (m[6] + m[9]) / s;
                 q.z = s * T(0.25);
@@ -126,15 +126,15 @@ namespace star::math {
             T wz = q.w * q.z;
 
             result(0, 0) = T(1) - T(2) * (yy + zz);
-            result(0, 1) = T(2) * (xy - wz);
-            result(0, 2) = T(2) * (xz + wy);
+            result(0, 1) = T(2) * (xy + wz);
+            result(0, 2) = T(2) * (xz - wy);
 
-            result(1, 0) = T(2) * (xy + wz);
+            result(1, 0) = T(2) * (xy - wz);
             result(1, 1) = T(1) - T(2) * (xx + zz);
-            result(1, 2) = T(2) * (yz - wx);
+            result(1, 2) = T(2) * (yz + wx);
 
-            result(2, 0) = T(2) * (xz - wy);
-            result(2, 1) = T(2) * (yz + wx);
+            result(2, 0) = T(2) * (xz + wy);
+            result(2, 1) = T(2) * (yz - wx);
             result(2, 2) = T(1) - T(2) * (xx + yy);
 
             return result;

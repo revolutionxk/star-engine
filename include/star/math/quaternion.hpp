@@ -34,8 +34,12 @@ namespace star::math {
             T cr = std::cos(roll * T(0.5));
             T sr = std::sin(roll * T(0.5));
 
-            return {sr * cp * cy - cr * sp * sy, cr * sp * cy + sr * cp * sy, cr * cp * sy - sr * sp * cy,
-                    cr * cp * cy + sr * sp * sy};
+            return {
+                cy * sp * cr + sy * cp * sr,
+                sy * cp * cr - cy * sp * sr,
+                cy * cp * sr - sy * sp * cr,
+                cy * cp * cr + sy * sp * sr
+            };
         }
 
         static QuaternionT from_euler(const Vector3T<T>& euler) {

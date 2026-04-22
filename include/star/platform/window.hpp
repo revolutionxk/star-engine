@@ -9,6 +9,7 @@
 
 namespace star::platform {
     class Input;
+
     class Window {
       public:
         virtual ~Window() = default;
@@ -26,6 +27,10 @@ namespace star::platform {
 
         virtual void* display_handle() const {
             return nullptr;
+        }
+
+        virtual NativeWindowHandleType native_handle_type() const {
+            return NativeWindowHandleType::Default;
         }
 
         virtual PlatformData platform_data() = 0;

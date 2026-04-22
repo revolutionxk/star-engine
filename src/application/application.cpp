@@ -1,11 +1,11 @@
 #include "star/application/application.hpp"
 
-#include "star/platform/input/input.hpp"
 #include "graphics/bgfx/imgui_bgfx_renderer.hpp"
 #include "star/application/command_line_args.hpp"
 #include "star/application/window_manager.hpp"
 #include "star/graphics/command_buffer.hpp"
 #include "star/graphics/device.hpp"
+#include "star/platform/input/input.hpp"
 #include "star/rendering/renderer.hpp"
 #include "star/scene/scene_manager.hpp"
 
@@ -95,22 +95,29 @@ namespace star::application {
     }
 
     i32 Application::run() {
-        if (!on_initialize()) {
-            STAR_LOG_ERROR(LogCategory::Application, "Application initialization failed");
+        try {
+            if (!on_initialize()) {
+                STAR_LOG_ERROR(LogCategory::Application, "Application initialization failed");
+                return -1;
+            }
+
+            m_game_loop->run([this](const f32 delta_time) { update_frame(delta_time); }, [this] { render_frame(); },
+                             [this] {
+                                 if (!m_window_manager->has_open_windows()) {
+                                     STAR_LOG_INFO(LogCategory::Application, "All windows closed, shutting down");
+                                     shutdown();
+                                     return false;
+                                 }
+                                 return m_running;
+                             });
+            return 0;
+        } catch (const std::exception& e) {
+            STAR_LOG_ERROR(LogCategory::Application, "Unhandled exception: {}", e.what());
+            return -1;
+        } catch (...) {
+            STAR_LOG_ERROR(LogCategory::Application, "Unhandled unknown exception");
             return -1;
         }
-
-        m_game_loop->run([this](const f32 delta_time) { update_frame(delta_time); }, [this]() { render_frame(); },
-                         [this] {
-                             if (!m_window_manager->has_open_windows()) {
-                                 STAR_LOG_INFO(LogCategory::Application, "All windows closed, shutting down");
-                                 shutdown();
-                                 return false;
-                             }
-                             return m_running;
-                         });
-
-        return 0;
     }
 
     void Application::update_frame(const f32 delta_time) {

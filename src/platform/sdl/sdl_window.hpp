@@ -5,7 +5,7 @@
 namespace star::platform {
     class IImGuiPlatformBackend;
     class Input;
-}
+} // namespace star::platform
 
 namespace star::platform::sdl {
     class SDLInput;
@@ -27,6 +27,7 @@ namespace star::platform::sdl {
         void* handle() const override;
         void* native_handle() const override;
         void* display_handle() const override;
+        NativeWindowHandleType native_handle_type() const override;
 
         PlatformData platform_data() override;
 

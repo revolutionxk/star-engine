@@ -45,6 +45,13 @@ namespace star::graphics {
         platform_data.nwh = config.platform.native_window_handle;
         platform_data.ndt = config.platform.native_display_type;
 
+        switch (config.platform.type) {
+            case platform::NativeWindowHandleType::Wayland:
+                platform_data.type = bgfx::NativeWindowHandleType::Wayland;
+            default:
+                break;
+        }
+
         init.platformData = platform_data;
         init.type = bgfx::RendererType::Count;
 

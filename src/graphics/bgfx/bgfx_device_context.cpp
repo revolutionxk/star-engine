@@ -17,8 +17,10 @@ namespace star::graphics {
         m_uniform_cache.clear();
     }
 
-    void BGFXDeviceContext::begin_frame() {
-        bgfx::touch(m_current_view);
+    void BGFXDeviceContext::begin_frame() {}
+
+    void BGFXDeviceContext::touch(const u32 view_id) {
+        bgfx::touch(static_cast<bgfx::ViewId>(view_id));
     }
 
     void BGFXDeviceContext::present() {}

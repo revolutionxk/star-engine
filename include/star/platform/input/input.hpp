@@ -1,6 +1,7 @@
 #pragma once
 
 #include "star/core/common.hpp"
+#include "star/core/event_dispatcher.hpp"
 #include "star/math/vector2.hpp"
 
 namespace star::platform {
@@ -139,15 +140,24 @@ namespace star::platform {
         [[nodiscard]] virtual Vector2 mouse_position() const = 0;
         [[nodiscard]] virtual Vector2 mouse_delta() const = 0;
 
-        using KeyEventCallback = std::function<void(const KeyEvent&)>;
-        using MouseButtonEventCallback = std::function<void(const MouseButtonEvent&)>;
-        using MouseMoveEventCallback = std::function<void(const MouseMoveEvent&)>;
-        using MouseScrollEventCallback = std::function<void(const MouseScrollEvent&)>;
+        // Handler types - key/button/scroll handlers return true to consume the event.
+        using KeyEventHandler = std::function<bool(const KeyEvent&)>;
+        using MouseButtonEventHandler = std::function<bool(const MouseButtonEvent&)>;
+        using MouseMoveEventHandler = std::function<void(const MouseMoveEvent&)>;
+        using MouseScrollEventHandler = std::function<bool(const MouseScrollEvent&)>;
+        using InputListenerHandle = EventListenerHandle;
 
-        virtual void set_key_event_callback(KeyEventCallback callback) = 0;
-        virtual void set_mouse_button_event_callback(MouseButtonEventCallback callback) = 0;
-        virtual void set_mouse_move_event_callback(MouseMoveEventCallback callback) = 0;
-        virtual void set_mouse_scroll_event_callback(MouseScrollEventCallback callback) = 0;
+        virtual InputListenerHandle add_key_listener(KeyEventHandler handler, i32 priority = 0) = 0;
+        virtual void remove_key_listener(InputListenerHandle handle) = 0;
+
+        virtual InputListenerHandle add_mouse_button_listener(MouseButtonEventHandler handler, i32 priority = 0) = 0;
+        virtual void remove_mouse_button_listener(InputListenerHandle handle) = 0;
+
+        virtual InputListenerHandle add_mouse_move_listener(MouseMoveEventHandler handler) = 0;
+        virtual void remove_mouse_move_listener(InputListenerHandle handle) = 0;
+
+        virtual InputListenerHandle add_scroll_listener(MouseScrollEventHandler handler, i32 priority = 0) = 0;
+        virtual void remove_scroll_listener(InputListenerHandle handle) = 0;
 
         virtual void update() = 0;
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <unordered_map>
 #include <unordered_set>
 
+#include "star/core/event_dispatcher.hpp"
 #include "star/platform/input/input.hpp"
 #include "SDL3/SDL.h"
 
@@ -22,10 +22,17 @@ namespace star::platform::sdl {
         [[nodiscard]] Vector2 mouse_position() const override;
         [[nodiscard]] Vector2 mouse_delta() const override;
 
-        void set_key_event_callback(KeyEventCallback callback) override;
-        void set_mouse_button_event_callback(MouseButtonEventCallback callback) override;
-        void set_mouse_move_event_callback(MouseMoveEventCallback callback) override;
-        void set_mouse_scroll_event_callback(MouseScrollEventCallback callback) override;
+        InputListenerHandle add_key_listener(KeyEventHandler handler, i32 priority = 0) override;
+        void remove_key_listener(InputListenerHandle handle) override;
+
+        InputListenerHandle add_mouse_button_listener(MouseButtonEventHandler handler, i32 priority = 0) override;
+        void remove_mouse_button_listener(InputListenerHandle handle) override;
+
+        InputListenerHandle add_mouse_move_listener(MouseMoveEventHandler handler) override;
+        void remove_mouse_move_listener(InputListenerHandle handle) override;
+
+        InputListenerHandle add_scroll_listener(MouseScrollEventHandler handler, i32 priority = 0) override;
+        void remove_scroll_listener(InputListenerHandle handle) override;
 
         void update() override;
 
@@ -47,10 +54,10 @@ namespace star::platform::sdl {
         Vector2 m_mouse_delta{};
         Vector2 m_last_mouse_position{};
 
-        KeyEventCallback m_key_event_callback;
-        MouseButtonEventCallback m_mouse_button_event_callback;
-        MouseMoveEventCallback m_mouse_move_event_callback;
-        MouseScrollEventCallback m_mouse_scroll_event_callback;
+        EventDispatcher<KeyEvent> m_key_dispatcher;
+        EventDispatcher<MouseButtonEvent> m_mouse_button_dispatcher;
+        VoidEventDispatcher<MouseMoveEvent> m_mouse_move_dispatcher;
+        EventDispatcher<MouseScrollEvent> m_scroll_dispatcher;
     };
 
 } // namespace star::platform::sdl

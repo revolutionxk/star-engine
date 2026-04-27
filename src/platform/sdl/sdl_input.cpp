@@ -43,20 +43,36 @@ namespace star::platform::sdl {
         return m_mouse_delta;
     }
 
-    void SDLInput::set_key_event_callback(KeyEventCallback callback) {
-        m_key_event_callback = std::move(callback);
+    SDLInput::InputListenerHandle SDLInput::add_key_listener(KeyEventHandler handler, const i32 priority) {
+        return m_key_dispatcher.add(std::move(handler), priority);
     }
 
-    void SDLInput::set_mouse_button_event_callback(MouseButtonEventCallback callback) {
-        m_mouse_button_event_callback = std::move(callback);
+    void SDLInput::remove_key_listener(const InputListenerHandle handle) {
+        m_key_dispatcher.remove(handle);
     }
 
-    void SDLInput::set_mouse_move_event_callback(MouseMoveEventCallback callback) {
-        m_mouse_move_event_callback = std::move(callback);
+    SDLInput::InputListenerHandle SDLInput::add_mouse_button_listener(MouseButtonEventHandler handler, const i32 priority) {
+        return m_mouse_button_dispatcher.add(std::move(handler), priority);
     }
 
-    void SDLInput::set_mouse_scroll_event_callback(MouseScrollEventCallback callback) {
-        m_mouse_scroll_event_callback = std::move(callback);
+    void SDLInput::remove_mouse_button_listener(const InputListenerHandle handle) {
+        m_mouse_button_dispatcher.remove(handle);
+    }
+
+    SDLInput::InputListenerHandle SDLInput::add_mouse_move_listener(MouseMoveEventHandler handler) {
+        return m_mouse_move_dispatcher.add(std::move(handler));
+    }
+
+    void SDLInput::remove_mouse_move_listener(const InputListenerHandle handle) {
+        m_mouse_move_dispatcher.remove(handle);
+    }
+
+    SDLInput::InputListenerHandle SDLInput::add_scroll_listener(MouseScrollEventHandler handler, const i32 priority) {
+        return m_scroll_dispatcher.add(std::move(handler), priority);
+    }
+
+    void SDLInput::remove_scroll_listener(const InputListenerHandle handle) {
+        m_scroll_dispatcher.remove(handle);
     }
 
     void SDLInput::update() {
@@ -77,15 +93,13 @@ namespace star::platform::sdl {
                         m_pressed_keys.insert(key);
                         m_just_pressed_keys.insert(key);
 
-                        if (m_key_event_callback) {
-                            KeyEvent key_event{};
-                            key_event.key = key;
-                            key_event.action = event.key.repeat ? InputAction::Repeat : InputAction::Press;
-                            key_event.ctrl_pressed = (event.key.mod & SDL_KMOD_CTRL) != 0;
-                            key_event.alt_pressed = (event.key.mod & SDL_KMOD_ALT) != 0;
-                            key_event.shift_pressed = (event.key.mod & SDL_KMOD_SHIFT) != 0;
-                            m_key_event_callback(key_event);
-                        }
+                        KeyEvent key_event{};
+                        key_event.key = key;
+                        key_event.action = event.key.repeat ? InputAction::Repeat : InputAction::Press;
+                        key_event.ctrl_pressed = (event.key.mod & SDL_KMOD_CTRL) != 0;
+                        key_event.alt_pressed = (event.key.mod & SDL_KMOD_ALT) != 0;
+                        key_event.shift_pressed = (event.key.mod & SDL_KMOD_SHIFT) != 0;
+                        m_key_dispatcher.dispatch(key_event);
                     }
                 }
                 break;
@@ -97,15 +111,13 @@ namespace star::platform::sdl {
                         m_pressed_keys.erase(key);
                         m_just_released_keys.insert(key);
 
-                        if (m_key_event_callback) {
-                            KeyEvent key_event{};
-                            key_event.key = key;
-                            key_event.action = InputAction::Release;
-                            key_event.ctrl_pressed = (event.key.mod & SDL_KMOD_CTRL) != 0;
-                            key_event.alt_pressed = (event.key.mod & SDL_KMOD_ALT) != 0;
-                            key_event.shift_pressed = (event.key.mod & SDL_KMOD_SHIFT) != 0;
-                            m_key_event_callback(key_event);
-                        }
+                        KeyEvent key_event{};
+                        key_event.key = key;
+                        key_event.action = InputAction::Release;
+                        key_event.ctrl_pressed = (event.key.mod & SDL_KMOD_CTRL) != 0;
+                        key_event.alt_pressed = (event.key.mod & SDL_KMOD_ALT) != 0;
+                        key_event.shift_pressed = (event.key.mod & SDL_KMOD_SHIFT) != 0;
+                        m_key_dispatcher.dispatch(key_event);
                     }
                 }
                 break;
@@ -118,13 +130,11 @@ namespace star::platform::sdl {
                         m_pressed_mouse_buttons.insert(button);
                         m_just_pressed_mouse_buttons.insert(button);
 
-                        if (m_mouse_button_event_callback) {
-                            MouseButtonEvent mouse_event{};
-                            mouse_event.button = button;
-                            mouse_event.action = InputAction::Press;
-                            mouse_event.position = {static_cast<f32>(event.button.x), static_cast<f32>(event.button.y)};
-                            m_mouse_button_event_callback(mouse_event);
-                        }
+                        MouseButtonEvent mouse_event{};
+                        mouse_event.button = button;
+                        mouse_event.action = InputAction::Press;
+                        mouse_event.position = {static_cast<f32>(event.button.x), static_cast<f32>(event.button.y)};
+                        m_mouse_button_dispatcher.dispatch(mouse_event);
                     }
                 }
                 break;
@@ -137,13 +147,11 @@ namespace star::platform::sdl {
                         m_pressed_mouse_buttons.erase(button);
                         m_just_released_mouse_buttons.insert(button);
 
-                        if (m_mouse_button_event_callback) {
-                            MouseButtonEvent mouse_event{};
-                            mouse_event.button = button;
-                            mouse_event.action = InputAction::Release;
-                            mouse_event.position = {static_cast<f32>(event.button.x), static_cast<f32>(event.button.y)};
-                            m_mouse_button_event_callback(mouse_event);
-                        }
+                        MouseButtonEvent mouse_event{};
+                        mouse_event.button = button;
+                        mouse_event.action = InputAction::Release;
+                        mouse_event.position = {static_cast<f32>(event.button.x), static_cast<f32>(event.button.y)};
+                        m_mouse_button_dispatcher.dispatch(mouse_event);
                     }
                 }
                 break;
@@ -152,22 +160,18 @@ namespace star::platform::sdl {
             case SDL_EVENT_MOUSE_MOTION: {
                 m_mouse_position = {static_cast<f32>(event.motion.x), static_cast<f32>(event.motion.y)};
 
-                if (m_mouse_move_event_callback) {
-                    MouseMoveEvent move_event{};
-                    move_event.position = m_mouse_position;
-                    move_event.delta = {static_cast<f32>(event.motion.xrel), static_cast<f32>(event.motion.yrel)};
-                    m_mouse_move_event_callback(move_event);
-                }
+                MouseMoveEvent move_event{};
+                move_event.position = m_mouse_position;
+                move_event.delta = {static_cast<f32>(event.motion.xrel), static_cast<f32>(event.motion.yrel)};
+                m_mouse_move_dispatcher.dispatch(move_event);
                 break;
             }
 
             case SDL_EVENT_MOUSE_WHEEL: {
-                if (m_mouse_scroll_event_callback) {
-                    MouseScrollEvent scroll_event{};
-                    scroll_event.offset = {static_cast<f32>(event.wheel.x), static_cast<f32>(event.wheel.y)};
-                    scroll_event.position = m_mouse_position;
-                    m_mouse_scroll_event_callback(scroll_event);
-                }
+                MouseScrollEvent scroll_event{};
+                scroll_event.offset = {static_cast<f32>(event.wheel.x), static_cast<f32>(event.wheel.y)};
+                scroll_event.position = m_mouse_position;
+                m_scroll_dispatcher.dispatch(scroll_event);
                 break;
             }
 

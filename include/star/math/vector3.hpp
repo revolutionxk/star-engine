@@ -213,7 +213,7 @@ namespace star::math {
             T d = std::sqrt(length_squared() * other.length_squared());
             if (d < Constants<T>::epsilon)
                 return T(0);
-            return std::acos(clamp(dot(other) / d, T(-1), T(1)));
+            return std::acos(math::clamp(dot(other) / d, T(-1), T(1)));
         }
 
         [[nodiscard]] constexpr Vector3T abs() const {

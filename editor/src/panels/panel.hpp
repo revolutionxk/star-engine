@@ -3,11 +3,9 @@
 #include <string>
 #include <string_view>
 
-#include "editor_window.hpp"
 #include "star/core/common.hpp"
 
 namespace star::editor {
-
     class Panel {
       public:
         explicit Panel(const std::string_view name) : m_name(name) {}
@@ -47,5 +45,4 @@ namespace star::editor {
         std::string m_name;
         bool m_is_open = true;
     };
-
 } // namespace star::editor

@@ -7,7 +7,6 @@
 #include "flecs.h"
 
 namespace star::editor {
-
     enum class EditorEventType {
         EntitySelected,
         EntityDeselected,
@@ -59,5 +58,4 @@ namespace star::editor {
         EditorEventBus() = default;
         std::unordered_map<EditorEventType, std::vector<EventCallback>> m_subscribers;
     };
-
 } // namespace star::editor

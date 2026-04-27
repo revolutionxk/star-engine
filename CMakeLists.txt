@@ -16,6 +16,7 @@ include(scripts/spdlog.cmake)
 include(scripts/flecs.cmake)
 include(scripts/freetype.cmake)
 include(scripts/imgui.cmake)
+include(scripts/imguizmo.cmake)
 include(scripts/nlohmann.cmake)
 
 # Project Files

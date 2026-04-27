@@ -1,8 +1,12 @@
 #pragma once
+#define IMGUI_DEFINE_MATH_OPERATORS
 
 #include <memory>
 
+#include "../core/editor_input_manager.hpp"
+#include "../core/gizmo_system.hpp"
 #include "../core/panel_manager.hpp"
+#include "../core/viewport_camera_system.hpp"
 #include "../panels/component_inspector.hpp"
 #include "editor_window.hpp"
 #include "star/application/layer.hpp"
@@ -22,6 +26,8 @@ namespace star::editor {
         bool initialize() override;
         void shutdown() override;
         void update(f32 dt) override;
+        void pre_render(f32 dt) override;
+        void render() override;
         void on_imgui_render() override;
         void on_imgui_init() override;
 
@@ -34,5 +40,8 @@ namespace star::editor {
         std::unique_ptr<rendering::Viewport> m_viewport;
         PanelManager m_panel_manager;
         ComponentInspector m_component_inspector;
+        EditorInputManager m_input_manager;
+        ViewportCameraSystem m_camera_system;
+        GizmoSystem m_gizmo_system;
     };
 } // namespace star::editor

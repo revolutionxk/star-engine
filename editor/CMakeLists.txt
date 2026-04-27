@@ -30,6 +30,7 @@ target_precompile_headers(${EDITOR_NAME} PRIVATE "${INCLUDE_DIR}/star/core/commo
 
 target_link_libraries(${EDITOR_NAME} PUBLIC
         ${PROJECT_NAME}
+        imguizmo
         ${CMAKE_DL_LIBS}
 )
 

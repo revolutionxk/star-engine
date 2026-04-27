@@ -1,5 +1,6 @@
 #include "editor_ui_layer.hpp"
 
+#include <ImGuizmo.h>
 #include <imgui.h>
 
 #include "../panels/console_panel.hpp"
@@ -9,11 +10,13 @@
 #include "../panels/scene_panel.hpp"
 #include "../theme/editor_theme.hpp"
 #include "star/application/application.hpp"
+#include "star/ecs/components/transform.hpp"
 #include "star/graphics/device.hpp"
 #include "star/platform/imgui_font_config.hpp"
 #include "star/rendering/debug_renderer.hpp"
 #include "star/rendering/passes/debug_render_pass.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
+#include "star/scene/scene_manager.hpp"
 
 namespace star::editor {
     EditorUILayer::EditorUILayer(EditorWindow* editor_window)
@@ -36,9 +39,30 @@ namespace star::editor {
         render_system.get_render_pass<rendering::DebugRenderPass>()->set_viewport(m_viewport.get());
         render_system.debug_renderer()->set_enabled(true);
 
+        EditorEventBus::instance().subscribe(EditorEventType::EntitySelected, [this](const EditorEvent& event) {
+            if (const auto* data = event.get_data<NodeSelectedEvent>())
+                m_gizmo_system.set_entity(data->node);
+        });
+        EditorEventBus::instance().subscribe(EditorEventType::EntityDeselected,
+                                             [this](const EditorEvent&) { m_gizmo_system.set_entity(std::nullopt); });
+
         initialize_panels();
 
         m_component_inspector.set_resource_manager(&m_editor_window->resources());
+
+        m_input_manager.initialize(application::Application::instance().input_manager());
+
+        auto* active_scene = m_editor_window->scene_manager().get_active_scene();
+        if (active_scene) {
+            const auto camera_entity = active_scene->find_entity("EditorCamera");
+            if (camera_entity.is_valid()) {
+                if (const auto* transform = camera_entity.try_get<components::Transform>()) {
+                    m_camera_system.initialize(*transform);
+                }
+            }
+        }
+
+        m_camera_system.attach(m_input_manager, &m_editor_window->window());
 
         return true;
     }
@@ -51,23 +75,38 @@ namespace star::editor {
         m_panel_manager.register_panel<MetricsPanel>();
 
         scene->set_viewport(m_viewport.get());
+        scene->set_input_manager(&m_input_manager);
+        scene->set_gizmo_system(&m_gizmo_system);
     }
 
     void EditorUILayer::shutdown() {
         STAR_LOG_INFO(LogCategory::Editor, "Shutting down editor UI layer");
+        m_camera_system.detach();
         m_panel_manager.shutdown();
+        m_input_manager.shutdown();
         m_viewport.reset();
     }
 
     void EditorUILayer::update(const f32 dt) {
         m_panel_manager.update_all(dt);
 
-        constexpr auto grid_size = 1.0f;
-        constexpr auto grid_color = Color4{0.5f, 0.5f, 0.5f, 0.25f};
-        m_editor_window->renderer().debug_renderer()->draw_grid({0.0f, 0.0f, 0.0f}, 100, grid_size, grid_color);
+        auto* active_scene = m_editor_window->scene_manager().get_active_scene();
+        m_camera_system.update(dt, active_scene->world());
+    }
+
+    void EditorUILayer::pre_render(const f32 /*dt*/) {
+        auto& dr = *m_editor_window->renderer().debug_renderer();
+
+        constexpr Color4 grid_color{0.5f, 0.5f, 0.5f, 0.25f};
+        dr.draw_grid({0.0f, 0.0f, 0.0f}, 100, 1.0f, grid_color);
+    }
+
+    void EditorUILayer::render() {
+        Layer::render();
     }
 
     void EditorUILayer::on_imgui_render() {
+        ImGuizmo::BeginFrame();
         setup_dockspace();
         render_main_menu_bar();
         m_panel_manager.render_all();
@@ -173,5 +212,4 @@ namespace star::editor {
 
         platform::ImGuiFontManager::load_font(font_config);
     }
-
 } // namespace star::editor

@@ -161,7 +161,14 @@ namespace star::application {
             return;
         }
 
-        m_renderer->render_frame(delta_time);
+        m_renderer->pre_render_passes(delta_time);
+
+        if (m_layer_stack) {
+            for (const auto& layer : *m_layer_stack) {
+                layer->pre_render(delta_time);
+            }
+        }
+        m_renderer->submit_passes(delta_time);
 
         on_render();
 
@@ -170,6 +177,8 @@ namespace star::application {
                 layer->render();
             }
         }
+
+        m_renderer->post_render_passes(delta_time);
     }
 
     void AppWindow::push_layer(std::unique_ptr<Layer> layer) {

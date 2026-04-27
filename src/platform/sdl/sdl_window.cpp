@@ -69,7 +69,10 @@ namespace star::platform::sdl {
         SDL_Event event;
 
         while (SDL_PollEvent(&event)) {
-            ImGui_ImplSDL3_ProcessEvent(&event); // TODO: temp fix, move to ImGui backend later with proper checks
+            const bool in_relative_mode = SDL_GetWindowRelativeMouseMode(m_window);
+            const bool is_release = event.type == SDL_EVENT_MOUSE_BUTTON_UP || event.type == SDL_EVENT_KEY_UP;
+            if (!in_relative_mode || is_release)
+                ImGui_ImplSDL3_ProcessEvent(&event); // TODO: temp fix, move to ImGui backend later with proper checks
 
             if (m_input_manager) {
                 m_input_manager->process_event(event);
@@ -228,5 +231,9 @@ namespace star::platform::sdl {
 
     void SDLWindow::set_input_manager(Input* input_manager) {
         m_input_manager = dynamic_cast<SDLInput*>(input_manager);
+    }
+
+    void SDLWindow::set_relative_mouse_mode(const bool enabled) {
+        SDL_SetWindowRelativeMouseMode(m_window, enabled);
     }
 } // namespace star::platform::sdl

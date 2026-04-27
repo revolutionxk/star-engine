@@ -17,6 +17,13 @@ namespace star {
         virtual void update(f32 delta_time) = 0;
     };
 
+    class IPreRenderable {
+      public:
+        virtual ~IPreRenderable() = default;
+
+        virtual void pre_render(f32 delta_time) = 0;
+    };
+
     class IRenderable {
       public:
         virtual ~IRenderable() = default;

@@ -12,6 +12,10 @@ namespace star::rendering {
     void SceneRenderPass::pre_render(const f32 delta_time) {}
 
     void SceneRenderPass::render(graphics::DeviceContext& context, const u32 view_id) {
+        if (m_viewport) {
+            m_viewport->bind(context, view_id);
+        }
+
         if (!m_scene || !m_scene->is_active()) {
             return;
         }

@@ -6,7 +6,8 @@
 #include "star/core/types.hpp"
 
 namespace star::application {
-    class STAR_EXPORT Layer : public IInitializable, public IUpdatable, public IRenderable, public IImGuiRenderable {
+    class STAR_EXPORT Layer : public IInitializable, public IUpdatable, public IPreRenderable, public IRenderable,
+                              public IImGuiRenderable {
       public:
         explicit Layer(std::string_view name = "Layer");
         ~Layer() override = default;
@@ -19,6 +20,8 @@ namespace star::application {
 
         void update(f32 delta_time) override {}
 
+        void pre_render(f32 delta_time) override {}
+
         void render() override {}
 
         void on_imgui_render() override {}
@@ -28,9 +31,6 @@ namespace star::application {
         virtual void on_detach() {}
 
         virtual void on_imgui_init() {}
-
-        // TODO: Add event handling
-        // virtual void on_event(Event& event) {}
 
         [[nodiscard]] const std::string& name() const {
             return m_name;

@@ -55,33 +55,39 @@ namespace star::rendering {
         m_initialized = false;
     }
 
+    void Renderer::pre_render_passes(const f32 delta_time) const {
+        for (const auto& pass : m_render_passes) {
+            if (pass->is_enabled())
+                pass->pre_render(delta_time);
+        }
+    }
+
+    void Renderer::submit_passes(const f32 delta_time) const {
+        const auto context = m_device->context();
+        context->begin_frame();
+        u32 view_id = 0;
+        for (const auto& pass : m_render_passes) {
+            if (pass->is_enabled())
+                pass->render(*m_device->context(), view_id++);
+        }
+        context->end_frame();
+    }
+
+    void Renderer::post_render_passes(const f32 delta_time) const {
+        for (const auto& pass : m_render_passes) {
+            if (pass->is_enabled())
+                pass->post_render(delta_time);
+        }
+    }
+
     void Renderer::render_frame(const f32 delta_time) const {
         if (!m_initialized) {
             return;
         }
 
-        const auto context = m_device->context();
-
-        for (const auto& pass : m_render_passes) {
-            if (pass->is_enabled()) {
-                pass->pre_render(delta_time);
-            }
-        }
-
-        context->begin_frame();
-        u32 view_id = 0;
-        for (const auto& pass : m_render_passes) {
-            if (pass->is_enabled()) {
-                pass->render(*m_device->context(), view_id++);
-            }
-        }
-        context->end_frame();
-
-        for (const auto& pass : m_render_passes) {
-            if (pass->is_enabled()) {
-                pass->post_render(delta_time);
-            }
-        }
+        pre_render_passes(delta_time);
+        submit_passes(delta_time);
+        post_render_passes(delta_time);
     }
 
     void Renderer::add_render_pass(std::unique_ptr<IRenderPass> render_pass) {

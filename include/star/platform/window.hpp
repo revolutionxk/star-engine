@@ -45,6 +45,8 @@ namespace star::platform {
 
         virtual void set_input_manager(Input* input_manager) {}
 
+        virtual void set_relative_mouse_mode(bool enabled) {}
+
         using ResizeCallback = std::function<void(u32, u32)>;
 
         virtual void set_resize_callback(ResizeCallback callback) {

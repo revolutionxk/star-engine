@@ -92,6 +92,11 @@ namespace star::rendering {
         Renderer& operator=(const Renderer&) = delete;
 
         void render_frame(f32 delta_time) const;
+        
+        void pre_render_passes(f32 delta_time) const;
+        void submit_passes(f32 delta_time) const;
+        void post_render_passes(f32 delta_time) const;
+
         void add_render_pass(std::unique_ptr<IRenderPass> render_pass);
         void remove_render_pass(const char* name);
 

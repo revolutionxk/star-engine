@@ -38,6 +38,7 @@ namespace star::platform::sdl {
         std::unique_ptr<IImGuiPlatformBackend> create_imgui_backend() const override;
 
         void set_input_manager(Input* input_manager) override;
+        void set_relative_mouse_mode(bool enabled) override;
 
       private:
         SDL_Window* m_window = nullptr;

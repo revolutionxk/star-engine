@@ -53,6 +53,8 @@ namespace star::rendering {
         if (m_has_camera) {
             context.set_view_transform(view_id, m_view_matrix, m_projection_matrix);
         }
+        
+        context.touch(view_id);
     }
 
     void Viewport::bind_overlay(graphics::DeviceContext& context, const u32 view_id) const {

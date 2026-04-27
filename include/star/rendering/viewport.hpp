@@ -71,6 +71,8 @@ namespace star::rendering {
             return m_framebuffer_enabled;
         }
 
+        [[nodiscard]] static bool needs_uv_y_flip();
+
       private:
         void create_render_target();
         void destroy_render_target();

@@ -130,6 +130,10 @@ namespace star::rendering {
         }
     }
 
+    bool Viewport::needs_uv_y_flip() {
+        return bgfx::getCaps()->originBottomLeft;
+    }
+
     void Viewport::update_camera_matrices(const components::Camera& camera, const components::Transform& transform) {
         m_camera_position = transform.position;
 

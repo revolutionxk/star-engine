@@ -1,8 +1,11 @@
 #include "sdl_window.hpp"
 
 #include "backends/imgui_impl_sdl3.h"
-#include "imgui_sdl3_backend.hpp"
 #include "sdl_input.hpp"
+
+#ifdef STAR_PLATFORM_WINDOWS
+#  include "star/core/platform_win32.hpp"
+#endif
 
 namespace star::platform::sdl {
     SDLWindow::SDLWindow() {
@@ -223,10 +226,6 @@ namespace star::platform::sdl {
         if (m_device_context) {
             m_device_context->resize(static_cast<u32>(width), static_cast<u32>(height));
         }
-    }
-
-    std::unique_ptr<IImGuiPlatformBackend> SDLWindow::create_imgui_backend() const {
-        return std::make_unique<ImGuiSDL3Backend>();
     }
 
     void SDLWindow::set_input_manager(Input* input_manager) {

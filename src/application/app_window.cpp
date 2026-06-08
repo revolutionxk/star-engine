@@ -4,8 +4,9 @@
 
 #include "star/application/application.hpp"
 #include "star/graphics/device.hpp"
+#include "star/imgui/imgui_default_pass.hpp"
+#include "star/imgui/imgui_render_pass.hpp"
 #include "star/platform/window.hpp"
-#include "star/rendering/passes/imgui_render_pass.hpp"
 #include "star/rendering/renderer.hpp"
 #include "star/resources/resource_manager.hpp"
 #include "star/scene/scene_manager.hpp"
@@ -95,20 +96,18 @@ namespace star::application {
         m_window->set_resize_callback([this](const u32 width, const u32 height) { on_window_resize(width, height); });
 
         m_scene_manager->set_scene_changed_callback([this](scene::Scene* scene) {
-            if (m_renderer) {
-                m_renderer->set_active_scene(scene);
-            }
+            m_active_scene = scene;
         });
 
-        if (const auto imgui_render_pass = m_renderer->get_render_pass<rendering::ImGuiRenderPass>()) {
-            imgui_render_pass->add_imgui_callback([this] {
-                if (m_layer_stack) {
-                    for (const auto& layer : *m_layer_stack) {
-                        layer->on_imgui_render();
-                    }
+        auto imgui_pass = imgui::create_default_imgui_pass();
+        imgui_pass->add_imgui_callback([this] {
+            if (m_layer_stack) {
+                for (const auto& layer : *m_layer_stack) {
+                    layer->on_imgui_render();
                 }
-            });
-        }
+            }
+        });
+        m_renderer->add_render_pass(std::move(imgui_pass));
 
         STAR_LOG_INFO(LogCategory::Application, "Window subsystems initialized");
         return true;
@@ -161,14 +160,23 @@ namespace star::application {
             return;
         }
 
-        m_renderer->pre_render_passes(delta_time);
+        if (m_active_scene) {
+            m_scene_extractor.extract(*m_active_scene, m_render_scene);
+            m_renderer->set_render_scene(&m_render_scene);
+        } else {
+            m_renderer->set_render_scene(nullptr);
+        }
+
+        const rendering::FrameContext frame = m_renderer->make_frame_context(delta_time);
+
+        m_renderer->pre_render_passes(frame);
 
         if (m_layer_stack) {
             for (const auto& layer : *m_layer_stack) {
                 layer->pre_render(delta_time);
             }
         }
-        m_renderer->submit_passes(delta_time);
+        m_renderer->submit_passes(frame);
 
         on_render();
 
@@ -178,7 +186,7 @@ namespace star::application {
             }
         }
 
-        m_renderer->post_render_passes(delta_time);
+        m_renderer->post_render_passes(frame);
     }
 
     void AppWindow::push_layer(std::unique_ptr<Layer> layer) {

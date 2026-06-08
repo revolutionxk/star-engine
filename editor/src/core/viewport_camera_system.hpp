@@ -5,7 +5,7 @@
 #include "editor_input_manager.hpp"
 #include "star/ecs/components/transform.hpp"
 #include "star/platform/window.hpp"
-#include "star/scene/components/camera.hpp"
+#include "star/ecs/components/camera.hpp"
 
 namespace star::editor {
     class ViewportCameraSystem {

@@ -1,7 +1,6 @@
 #pragma once
 #include <functional>
 
-#include "imgui_platform_backend.hpp"
 #include "platform_data.hpp"
 #include "star/core/common.hpp"
 #include "star/graphics/device_context.hpp"
@@ -38,10 +37,6 @@ namespace star::platform {
         virtual Vector2 size() const = 0;
         virtual void set_title(const std::string& title) const = 0;
         virtual void set_size(int width, int height) = 0;
-
-        virtual std::unique_ptr<IImGuiPlatformBackend> create_imgui_backend() const {
-            return nullptr;
-        }
 
         virtual void set_input_manager(Input* input_manager) {}
 

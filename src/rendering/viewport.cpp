@@ -8,7 +8,7 @@
 #include "star/graphics/device_context.hpp"
 #include "star/graphics/texture.hpp"
 #include "star/rendering/render_target.hpp"
-#include "star/scene/components/camera.hpp"
+#include "star/ecs/components/camera.hpp"
 
 namespace star::rendering {
     Viewport::Viewport(graphics::Device& device) : m_device(&device) {
@@ -141,7 +141,8 @@ namespace star::rendering {
         m_view_matrix = Matrix4::inverse(transform_matrix);
 
         const f32 aspect = aspect_ratio();
-        m_projection_matrix = Matrix4::perspective(camera.fov_y, aspect, camera.near_plane, camera.far_plane);
+        m_projection_matrix = Matrix4::perspective(radians(camera.fov_y), aspect, camera.near_plane,
+                                                   camera.far_plane);
 
         STAR_LOG_TRACE(LogCategory::Rendering, "Viewport camera updated: pos({}, {}, {}), aspect={}",
                        m_camera_position.x, m_camera_position.y, m_camera_position.z, aspect);

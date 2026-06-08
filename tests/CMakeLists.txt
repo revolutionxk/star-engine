@@ -6,7 +6,7 @@ enable_testing()
 
 set(TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
-file(GLOB_RECURSE TEST_SRC_FILES
+file(GLOB_RECURSE TEST_SRC_FILES CONFIGURE_DEPENDS
     "${TEST_DIR}/src/**.cpp"
     "${TEST_DIR}/src/**.hpp"
     "${TEST_DIR}/src/**.h"
@@ -16,7 +16,11 @@ set(TEST_TARGET "star_engine_tests")
 
 add_executable(${TEST_TARGET} ${TEST_SRC_FILES})
 
-set_property(TARGET ${TEST_TARGET} PROPERTY CXX_STANDARD 26)
+set_target_properties(${TEST_TARGET} PROPERTIES
+    CXX_STANDARD 23
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+)
 
 target_include_directories(${TEST_TARGET} PRIVATE
     "${SRC_DIR}"

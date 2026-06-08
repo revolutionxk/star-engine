@@ -4,11 +4,19 @@
 #include <imgui.h>
 
 namespace star::editor {
+    namespace {
+        constexpr float FIRST_USE_WIDTH = 960.0f;
+        constexpr float FIRST_USE_HEIGHT = 640.0f;
+        constexpr u32 MIN_VIEWPORT_WIDTH = 128;
+        constexpr u32 MIN_VIEWPORT_HEIGHT = 96;
+    } // namespace
+
     void ScenePanel::on_imgui_render() {
         if (!m_is_open)
             return;
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::SetNextWindowSize(ImVec2(FIRST_USE_WIDTH, FIRST_USE_HEIGHT), ImGuiCond_FirstUseEver);
         ImGui::Begin(m_name.c_str(), &m_is_open);
 
         handle_viewport_resize();
@@ -41,6 +49,8 @@ namespace star::editor {
             return;
         const auto nw = static_cast<u32>(avail.x);
         const auto nh = static_cast<u32>(avail.y);
+        if (nw < MIN_VIEWPORT_WIDTH || nh < MIN_VIEWPORT_HEIGHT)
+            return;
         if (nw != m_viewport->width() || nh != m_viewport->height())
             m_viewport->resize(nw, nh);
     }

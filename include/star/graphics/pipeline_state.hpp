@@ -15,6 +15,7 @@ namespace star::graphics {
     enum class DepthTest {
         Less,
         LessEqual,
+        Equal,
         Always,
         None
     };

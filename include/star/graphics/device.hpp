@@ -55,6 +55,15 @@ namespace star::graphics {
         virtual void destroy_shader(ResourceHandle<Shader> handle) = 0;
         virtual void destroy_framebuffer(ResourceHandle<Framebuffer> handle) = 0;
 
+        virtual ResourceHandle<Shader> reload_shader(const ResourceHandle<Shader> old_handle,
+                                                     ShaderDescriptor& descriptor) {
+            const auto new_handle = create_shader(descriptor);
+            if (new_handle.is_valid() && old_handle.is_valid()) {
+                destroy_shader(old_handle);
+            }
+            return new_handle;
+        }
+
         bool is_initialized() const {
             return m_initialized;
         }

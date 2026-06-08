@@ -2,7 +2,7 @@
 
 #include <bgfx/bgfx.h>
 
-#include "star/platform/imgui_renderer.hpp"
+#include "star/imgui/imgui_renderer.hpp"
 
 namespace star::graphics {
 

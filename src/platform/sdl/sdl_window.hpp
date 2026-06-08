@@ -3,7 +3,6 @@
 #include "star/platform/window.hpp"
 
 namespace star::platform {
-    class IImGuiPlatformBackend;
     class Input;
 } // namespace star::platform
 
@@ -34,8 +33,6 @@ namespace star::platform::sdl {
         Vector2 size() const override;
         void set_title(const std::string& title) const override;
         void set_size(int width, int height) override;
-
-        std::unique_ptr<IImGuiPlatformBackend> create_imgui_backend() const override;
 
         void set_input_manager(Input* input_manager) override;
         void set_relative_mouse_mode(bool enabled) override;

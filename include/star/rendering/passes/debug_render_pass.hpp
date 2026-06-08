@@ -3,7 +3,6 @@
 
 namespace star::rendering {
     class DebugRenderer;
-    class Viewport;
 
     class DebugRenderPass final : public IRenderPass {
         using Super = IRenderPass;
@@ -19,22 +18,16 @@ namespace star::rendering {
             return 200;
         }
 
-        void pre_render(f32 delta_time) override;
-        void render(graphics::DeviceContext& context, u32 view_id) override;
-        void post_render(f32 delta_time) override;
+        std::vector<std::string_view> dependencies() const override {
+            return {"SceneRenderPass"};
+        }
+
+        void pre_render(const FrameContext& frame) override;
+        void render(const RenderContext& ctx) override;
         u32 reset(u32 width = 0, u32 height = 0) override;
-
-        void set_viewport(Viewport* viewport) {
-            m_viewport = viewport;
-        }
-
-        [[nodiscard]] Viewport* viewport() const {
-            return m_viewport;
-        }
 
       private:
         DebugRenderer& m_debug_renderer;
-        Viewport* m_viewport{nullptr};
     };
 
 } // namespace star::rendering

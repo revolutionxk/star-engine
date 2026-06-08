@@ -5,8 +5,8 @@
 
 #include <imgui_internal.h>
 
-#include "star/platform/imgui_platform_backend.hpp"
-#include "star/platform/imgui_renderer.hpp"
+#include "star/imgui/imgui_platform_backend.hpp"
+#include "star/imgui/imgui_renderer.hpp"
 #include "star/rendering/renderer.hpp"
 
 namespace star::platform {
@@ -27,17 +27,21 @@ namespace star::rendering {
                         std::unique_ptr<platform::IImGuiRenderer> renderer);
         ~ImGuiRenderPass() override;
 
-        std::string get_name() const override {
+        [[nodiscard]] std::string get_name() const override {
             return "ImGuiRenderPass";
         }
 
-        u8 get_priority() const override {
+        [[nodiscard]] u8 get_priority() const override {
             return 255;
         }
 
-        void pre_render(f32 delta_time) override;
-        void render(graphics::DeviceContext& context, u32 view_id) override;
-        void post_render(f32 delta_time) override;
+        [[nodiscard]] std::vector<std::string_view> dependencies() const override {
+            return {"Debug"};
+        }
+
+        void pre_render(const FrameContext& frame) override;
+        void render(const RenderContext& ctx) override;
+        void post_render(const FrameContext& frame) override;
         u32 reset(u32 width, u32 height) override;
 
         using ImGuiCallback = std::function<void()>;
@@ -61,5 +65,4 @@ namespace star::rendering {
         bool m_initialized = false;
         std::vector<ImGuiCallback> m_imgui_callbacks;
     };
-
 } // namespace star::rendering

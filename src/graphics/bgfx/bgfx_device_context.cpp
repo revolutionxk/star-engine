@@ -178,6 +178,9 @@ namespace star::graphics {
             case DepthTest::LessEqual:
                 flags |= BGFX_STATE_DEPTH_TEST_LEQUAL;
                 break;
+            case DepthTest::Equal:
+                flags |= BGFX_STATE_DEPTH_TEST_EQUAL;
+                break;
             case DepthTest::Always:
                 flags |= BGFX_STATE_DEPTH_TEST_ALWAYS;
                 break;
@@ -255,8 +258,10 @@ namespace star::graphics {
 
     void BGFXDeviceContext::set_transient_vertex_buffer(const u8 stream, const void* data, const u32 num_vertices,
                                                         const VertexLayoutType layout_type) {
-        const bgfx::VertexLayout layout =
-            layout_type == VertexLayoutType::Debug ? create_debug_vertex_layout() : create_standard_vertex_layout();
+        const bgfx::VertexLayout layout = layout_type == VertexLayoutType::Debug ? create_debug_vertex_layout()
+                                          : layout_type == VertexLayoutType::ScreenPos
+                                              ? create_screen_pos_vertex_layout()
+                                              : create_standard_vertex_layout();
 
         if (bgfx::getAvailTransientVertexBuffer(num_vertices, layout) < num_vertices) {
             STAR_LOG_WARN(LogCategory::Graphics, "Not enough transient vertex buffer space for {} vertices",
@@ -264,9 +269,22 @@ namespace star::graphics {
             return;
         }
 
-        bgfx::TransientVertexBuffer tvb;
+        bgfx::TransientVertexBuffer tvb{};
         bgfx::allocTransientVertexBuffer(&tvb, num_vertices, layout);
         std::memcpy(tvb.data, data, static_cast<size_t>(num_vertices) * layout.getStride());
         bgfx::setVertexBuffer(stream, &tvb);
+    }
+
+    void BGFXDeviceContext::set_transient_index_buffer(const void* data, const u32 num_indices, const bool is_32bit) {
+        const u32 index_size = is_32bit ? 4 : 2;
+        if (bgfx::getAvailTransientIndexBuffer(num_indices, is_32bit) < num_indices) {
+            STAR_LOG_WARN(LogCategory::Graphics, "Not enough transient index buffer space for {} indices", num_indices);
+            return;
+        }
+
+        bgfx::TransientIndexBuffer tib{};
+        bgfx::allocTransientIndexBuffer(&tib, num_indices, is_32bit);
+        std::memcpy(tib.data, data, static_cast<size_t>(num_indices) * index_size);
+        bgfx::setIndexBuffer(&tib);
     }
 } // namespace star::graphics

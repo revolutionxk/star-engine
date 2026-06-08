@@ -15,7 +15,7 @@ else ()
     add_executable(${SAMPLE_TARGET} ${SAMPLE_SRC_FILES})
 endif ()
 
-set_property(TARGET ${SAMPLE_TARGET} PROPERTY CXX_STANDARD 26)
+set_property(TARGET ${SAMPLE_TARGET} PROPERTY CXX_STANDARD 23)
 
 target_include_directories(${SAMPLE_TARGET} PRIVATE 
     "${SRC_DIR}"

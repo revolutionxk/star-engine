@@ -3,9 +3,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "bgfx/embedded_shader.h"
 #include "material/material.hpp"
 #include "mesh/mesh.hpp"
+#include "shader/builtin_shaders.hpp"
 #include "star/core/types.hpp"
 #include "star/graphics/buffer.hpp"
 #include "star/graphics/device.hpp"
@@ -54,10 +54,13 @@ namespace star::resources {
     class ResourceManager {
       public:
         explicit ResourceManager(Device& device);
-        ~ResourceManager() = default;
+        ~ResourceManager();
+
+        ResourceManager(const ResourceManager&) = delete;
+        ResourceManager& operator=(const ResourceManager&) = delete;
 
         ResourceHandle<Mesh> load_mesh(const std::string& path);
-        ResourceHandle<Mesh> create_mesh(const std::string& name, std::unique_ptr<Mesh> mesh) const;
+        ResourceHandle<Mesh> create_mesh(const std::string& name, std::unique_ptr<Mesh> mesh);
         Mesh* get_mesh(const ResourceHandle<Mesh>& handle);
         void destroy_mesh(const ResourceHandle<Mesh>& handle);
 
@@ -70,13 +73,13 @@ namespace star::resources {
         void destroy_material(const ResourceHandle<Material>& handle);
 
         ResourceHandle<graphics::Shader> load_shader(const std::string& vertex_path,
-                                                     const std::string& fragment_path) const;
-        ResourceHandle<graphics::Shader> create_embedded_shader(const std::string& name,
-                                                                const bgfx::EmbeddedShader& vertex_shader,
-                                                                const bgfx::EmbeddedShader& fragment_shader);
+                                                     const std::string& fragment_path);
+        ResourceHandle<graphics::Shader> register_builtin_shader(const std::string& name, BuiltinShader id);
         Shader* get_shader(const ResourceHandle<graphics::Shader>& handle);
 
-        void destroy_all_resources() const;
+        bool reload_shader_from_disk(const ResourceHandle<graphics::Shader>& handle);
+
+        void destroy_all_resources();
         void garbage_collect();
 
         ResourceHandle<Mesh> cube_mesh() const {
@@ -113,6 +116,11 @@ namespace star::resources {
         void init_default_resources();
 
         Device& m_device;
+
+        ResourceStorage<Mesh> m_meshes;
+        ResourceStorage<Texture> m_textures;
+        ResourceStorage<Shader> m_shaders;
+        ResourceStorage<Material> m_materials;
 
         ResourceHandle<Mesh> m_cube_mesh;
         ResourceHandle<Mesh> m_sphere_mesh;

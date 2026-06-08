@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.29)
 
 set(SRC_DIR "${PROJECT_SOURCE_DIR}/editor/src")
 
-file(GLOB_RECURSE EDITOR_SRC_FILES
+file(GLOB_RECURSE EDITOR_SRC_FILES CONFIGURE_DEPENDS
         "${SRC_DIR}/**.cpp"
         "${SRC_DIR}/**.hpp"
         "${SRC_DIR}/**.h"
@@ -22,7 +22,11 @@ if (ENABLE_CONSOLE_APPLICATION)
     target_compile_definitions(${EDITOR_NAME} PUBLIC STAR_CONSOLE_APPLICATION)
 endif ()
 
-set_property(TARGET ${EDITOR_NAME} PROPERTY CXX_STANDARD 26)
+set_target_properties(${EDITOR_NAME} PROPERTIES
+        CXX_STANDARD 23
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+)
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" PREFIX "editor" FILES ${EDITOR_SRC_FILES})
 
@@ -34,7 +38,7 @@ target_link_libraries(${EDITOR_NAME} PUBLIC
         ${CMAKE_DL_LIBS}
 )
 
-target_include_directories(${EDITOR_NAME} PUBLIC
+target_include_directories(${EDITOR_NAME} PRIVATE
         "${SRC_DIR}"
         "${INCLUDE_DIR}"
         "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -42,7 +46,6 @@ target_include_directories(${EDITOR_NAME} PUBLIC
         "${BIMG_INCLUDE_DIR}"
         "${BX_INCLUDE_DIR}"
         "${SDL3_INCLUDE_DIR}"
-        "${glm_SOURCE_DIR}"
         "${spdlog_SOURCE_DIR}"
         "${imgui_SOURCE_DIR}"
         "${imgui_SOURCE_DIR}/misc/freetype"

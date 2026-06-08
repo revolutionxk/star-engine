@@ -4,9 +4,9 @@
 #include <bx/math.h>
 #include <imgui.h>
 
+#include "resources/shader/builtin_shader_registry.hpp"
 #include "star/core/common.hpp"
 #include "star/core/logger.hpp"
-#include "star/resources/shader/shaders.hpp"
 
 namespace star::graphics {
 
@@ -28,7 +28,8 @@ namespace star::graphics {
             .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
             .end();
 
-        const bgfx::EmbeddedShader embedded_shaders[] = {k_imgui_vs, k_imgui_fs, BGFX_EMBEDDED_SHADER_END()};
+        const auto pair = resources::detail::embedded_pair_for(resources::BuiltinShader::ImGui);
+        const bgfx::EmbeddedShader embedded_shaders[] = {*pair.vertex, *pair.fragment, BGFX_EMBEDDED_SHADER_END()};
 
         const auto renderer_type = bgfx::getRendererType();
         const auto vs = bgfx::createEmbeddedShader(embedded_shaders, renderer_type, "v_imgui");

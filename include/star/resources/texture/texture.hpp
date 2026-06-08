@@ -1,6 +1,10 @@
 #pragma once
+#include "star/graphics/resource_handle.hpp"
 #include "star/resources/resource.hpp"
-#include "star/resources/resource_manager.hpp"
+
+namespace star::graphics {
+    struct Texture;
+} // namespace star::graphics
 
 namespace star::resources {
     using namespace star::graphics;

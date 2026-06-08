@@ -1,100 +1,89 @@
-$input v_worldDir
+$input v_screenPos, v_viewDir
 
 #include <bgfx_shader.sh>
 
-uniform vec4 u_sunDirIntensity;
-uniform vec4 u_atmosphereParams;
-uniform vec4 u_zenithColor;
-uniform vec4 u_camPos;
+uniform vec4 u_sunDirection;
+uniform vec4 u_skyLuminanceXYZ;
+uniform vec4 u_parameters;
+uniform vec4 u_sunLuminance;
+uniform vec4 u_perezCoeff[5];
 
-// Perez sky distribution function
-float perez_func(float cos_theta, float cos_gamma, vec4 ABCDE)
+vec3 xyzToRgb(vec3 xyz)
 {
-    float A = ABCDE.x;
-    float B = ABCDE.y;
-    float C = ABCDE.z;
-    float D = ABCDE.w;
-    float E = 0.0; // unused in this simplified form
-    float gamma = acos(clamp(cos_gamma, -1.0, 1.0));
-    return (1.0 + A * exp(B / (cos_theta + 0.01))) * (1.0 + C * exp(D * gamma) + E * cos_gamma * cos_gamma);
+    return vec3(
+         3.240479 * xyz.x - 1.537150 * xyz.y - 0.498535 * xyz.z,
+        -0.969256 * xyz.x + 1.875991 * xyz.y + 0.041556 * xyz.z,
+         0.055648 * xyz.x - 0.204043 * xyz.y + 1.057311 * xyz.z
+    );
 }
 
-// Full Perez with 5 coefficients
-float perez(float cos_theta, float cos_gamma, float A, float B, float C, float D, float E)
+vec3 perez(vec3 A, vec3 B, vec3 C, vec3 D, vec3 E, float costeta, float cosgamma)
 {
-    float gamma = acos(clamp(cos_gamma, -1.0, 1.0));
-    return (1.0 + A * exp(B / max(cos_theta, 0.001)))
-         * (1.0 + C * exp(D * gamma) + E * cos_gamma * cos_gamma);
+    float _1_costeta = 1.0 / costeta;
+    float cos2gamma  = cosgamma * cosgamma;
+    float gamma      = acos(cosgamma);
+    return (vec3_splat(1.0) + A * exp(B * _1_costeta))
+         * (vec3_splat(1.0) + C * exp(D * gamma) + E * cos2gamma);
 }
 
-// NOT FINISHED
+float nrand(vec2 n)
+{
+    return fract(sin(dot(n.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float n4rand_ss(vec2 n)
+{
+    float nrnd0 = nrand(n + 0.07 * fract(u_parameters.w));
+    float nrnd1 = nrand(n + 0.11 * fract(u_parameters.w + 0.573953));
+    return 0.23 * sqrt(-log(nrnd0 + 0.00001)) * cos(6.283185 * nrnd1) + 0.5;
+}
+
 void main()
 {
-    vec3 dir = normalize(v_worldDir);
-    vec3 sunDir = normalize(u_sunDirIntensity.xyz);
-    float sunIntensity = u_sunDirIntensity.w;
-    float T = u_atmosphereParams.x; // turbidity [1..10]
+    vec3 viewDir  = normalize(v_viewDir);
+    vec3 lightDir = normalize(u_sunDirection.xyz);
+    vec3 skyDir   = vec3(0.0, 1.0, 0.0);
 
-    float cos_theta = max(dir.y, 0.001);
-    float cos_gamma = dot(dir, sunDir);
+    vec3 A = u_perezCoeff[0].xyz;
+    vec3 B = u_perezCoeff[1].xyz;
+    vec3 C = u_perezCoeff[2].xyz;
+    vec3 D = u_perezCoeff[3].xyz;
+    vec3 E = u_perezCoeff[4].xyz;
 
-    // Preetham coefficients for Y (luminance)
-    float aY =  0.17872 * T - 1.46303;
-    float bY = -0.35540 * T + 0.42749;
-    float cY = -0.02266 * T + 5.32505;
-    float dY =  0.12064 * T - 2.57705;
-    float eY = -0.06696 * T + 0.37027;
+    float costeta   = max(dot(viewDir, skyDir), 0.001);
+    float cosgamma  = clamp(dot(viewDir, lightDir), -0.9999, 0.9999);
+    float cosgammas = clamp(dot(skyDir, lightDir), -0.9999, 0.9999);
 
-    // Preetham coefficients for x chromaticity
-    float ax =  0.00209 * T - 0.01647;
-    float bx = -0.00375 * T + 0.00209;
-    float cx = -0.02165 * T + 0.21552;
-    float dx = -0.01247 * T - 0.08970;
-    float ex = -0.00515 * T + 0.04517;
+    vec3 P  = perez(A, B, C, D, E, costeta,  cosgamma);
+    vec3 P0 = perez(A, B, C, D, E, 1.0,      cosgammas);
 
-    // Preetham coefficients for y chromaticity
-    float ay =  0.00317 * T - 0.02181;
-    float by = -0.00610 * T + 0.00875;
-    float cy = -0.01728 * T + 0.36215;
-    float dy = -0.02211 * T - 0.03118;
-    float ey = -0.00508 * T + 0.05953;
+    float rSum = 1.0 / max(u_skyLuminanceXYZ.x + u_skyLuminanceXYZ.y + u_skyLuminanceXYZ.z, 0.001);
+    vec3 skyColorxyY = vec3(
+        u_skyLuminanceXYZ.x * rSum,
+        u_skyLuminanceXYZ.y * rSum,
+        u_skyLuminanceXYZ.y
+    );
 
-    // Sun zenith angle (angle between sun and vertical)
-    float cos_sun_theta = max(sunDir.y, 0.001);
-    float cos_sun_gamma_zenith = cos_sun_theta; // cos of angle to zenith from sun
+    vec3 Yp  = skyColorxyY * P / max(P0, vec3_splat(0.001));
+    float rY = 1.0 / max(Yp.y, 0.001);
+    vec3 skyColorXYZ = vec3(
+        Yp.x * Yp.z * rY,
+        Yp.z,
+        (1.0 - Yp.x - Yp.y) * Yp.z * rY
+    );
 
-    float F_zenith_Y = perez(1.0, cos_sun_gamma_zenith, aY, bY, cY, dY, eY);
-    float F_zenith_x = perez(1.0, cos_sun_gamma_zenith, ax, bx, cx, dx, ex);
-    float F_zenith_y = perez(1.0, cos_sun_gamma_zenith, ay, by, cy, dy, ey);
+    vec3 skyColor = max(xyzToRgb(skyColorXYZ * u_parameters.z), vec3_splat(0.0));
 
-    float F_point_Y = perez(cos_theta, cos_gamma, aY, bY, cY, dY, eY);
-    float F_point_x = perez(cos_theta, cos_gamma, ax, bx, cx, dx, ex);
-    float F_point_y = perez(cos_theta, cos_gamma, ay, by, cy, dy, ey);
+    float size2 = u_parameters.x * u_parameters.x;
+    float dist  = 2.0 * (1.0 - dot(viewDir, lightDir));
+    float sun   = exp(-dist / u_parameters.y / size2) + step(dist, size2);
+    float sun2  = min(sun * sun, 1.0);
 
-    // xyY at this sky point
-    float Yp = u_zenithColor.z * F_point_Y / max(F_zenith_Y, 0.0001);
-    float xp = u_zenithColor.x * F_point_x / max(F_zenith_x, 0.0001);
-    float yp = u_zenithColor.y * F_point_y / max(F_zenith_y, 0.0001);
+    vec3 color = skyColor + sun2 * u_sunLuminance.xyz;
+    color = pow(max(color, vec3_splat(0.0)), vec3_splat(1.0 / 2.2));
 
-    // xyY -> XYZ
-    float X = (yp > 0.0001) ? (xp / yp) * Yp : 0.0;
-    float Z = (yp > 0.0001) ? ((1.0 - xp - yp) / yp) * Yp : 0.0;
-    vec3 xyy_to_xyz = vec3(X, Yp, Z);
+    float r = n4rand_ss(v_screenPos);
+    color += vec3_splat(r) / 40.0;
 
-    // XYZ -> linear RGB (Rec. 709)
-    float r =  3.240479 * xyy_to_xyz.x - 1.537150 * xyy_to_xyz.y - 0.498535 * xyy_to_xyz.z;
-    float g = -0.969256 * xyy_to_xyz.x + 1.875991 * xyy_to_xyz.y + 0.041556 * xyy_to_xyz.z;
-    float b =  0.055648 * xyy_to_xyz.x - 0.204043 * xyy_to_xyz.y + 1.057311 * xyy_to_xyz.z;
-    vec3 sky_color = max(vec3(r, g, b), vec3_splat(0.0));
-
-    // Sun disc
-    float sun_disc = smoothstep(0.9995, 0.9999, cos_gamma);
-    sky_color += sun_disc * vec3(1.0, 0.9, 0.7) * sunIntensity * 10.0;
-
-    // Horizon fade: below horizon just show horizon color
-    float horizon = smoothstep(-0.05, 0.0, dir.y);
-    vec3 horizon_color = sky_color * 0.4 + vec3(0.6, 0.5, 0.4) * 0.1;
-    sky_color = mix(horizon_color, sky_color, horizon);
-
-    gl_FragColor = vec4(sky_color, 1.0);
+    gl_FragColor = vec4(color, 1.0);
 }

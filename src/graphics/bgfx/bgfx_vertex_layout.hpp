@@ -26,5 +26,13 @@ namespace star::graphics {
         return layout;
     }
 
+    inline bgfx::VertexLayout create_screen_pos_vertex_layout() {
+        bgfx::VertexLayout layout;
+        layout.begin()
+            .add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
+            .end();
+        return layout;
+    }
+
     static_assert(sizeof(Vertex) == sizeof(Vector3) * 4 + sizeof(Vector2), "Vertex struct size doesn't match layout");
 } // namespace star::graphics

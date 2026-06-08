@@ -1,4 +1,4 @@
-#include "star/rendering/passes/imgui_render_pass.hpp"
+#include "star/imgui/imgui_render_pass.hpp"
 
 #include <imgui.h>
 
@@ -78,7 +78,7 @@ namespace star::rendering {
         Super::set_enabled(false);
     }
 
-    void ImGuiRenderPass::pre_render(f32 delta_time) {
+    void ImGuiRenderPass::pre_render(const FrameContext& /*frame*/) {
         if (!m_initialized) {
             return;
         }
@@ -98,17 +98,17 @@ namespace star::rendering {
         ImGui::Render();
     }
 
-    void ImGuiRenderPass::render(graphics::DeviceContext& context, const u32 view_id) {
+    void ImGuiRenderPass::render(const RenderContext& ctx) {
         if (!m_initialized) {
             return;
         }
 
         if (m_renderer) {
-            m_renderer->render(view_id);
+            m_renderer->render(ctx.view_id);
         }
     }
 
-    void ImGuiRenderPass::post_render(f32 delta_time) {
+    void ImGuiRenderPass::post_render(const FrameContext& /*frame*/) {
         if (!m_initialized) {
             return;
         }

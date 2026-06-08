@@ -7,15 +7,15 @@
 #include "star/graphics/device_context.hpp"
 #include "star/graphics/pipeline_state.hpp"
 #include "star/resources/resource_manager.hpp"
+#include "star/resources/shader/builtin_shaders.hpp"
 #include "star/resources/shader/shader.hpp"
-#include "star/resources/shader/shaders.hpp"
 
 namespace star::rendering {
 
     DebugRenderer::DebugRenderer(resources::ResourceManager& rm) : m_resource_manager(rm) {
         m_verts.reserve(4096);
 
-        if (const auto slot = rm.create_embedded_shader("__debug_shader", k_debug_vs, k_debug_fs); slot.is_valid()) {
+        if (const auto slot = rm.register_builtin_shader("__debug_shader", resources::BuiltinShader::Debug); slot.is_valid()) {
             if (const auto* shader = rm.get_shader(slot)) {
                 m_shader = shader->handle;
                 STAR_LOG_INFO(LogCategory::Rendering, "DebugRenderer shader loaded");

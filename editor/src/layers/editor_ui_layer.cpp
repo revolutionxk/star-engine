@@ -12,10 +12,11 @@
 #include "star/application/application.hpp"
 #include "star/ecs/components/transform.hpp"
 #include "star/graphics/device.hpp"
-#include "star/platform/imgui_font_config.hpp"
+#include "star/imgui/imgui_font_config.hpp"
 #include "star/rendering/debug_renderer.hpp"
 #include "star/rendering/passes/debug_render_pass.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
+#include "star/rendering/passes/sky_render_pass.hpp"
 #include "star/scene/scene_manager.hpp"
 
 namespace star::editor {
@@ -32,11 +33,8 @@ namespace star::editor {
         m_viewport->set_framebuffer_enabled(true);
         m_viewport->resize(1280, 720);
 
-        const auto& render_system = m_editor_window->renderer();
-        const auto scene = render_system.get_render_pass<rendering::SceneRenderPass>();
-        scene->set_viewport(m_viewport.get());
-
-        render_system.get_render_pass<rendering::DebugRenderPass>()->set_viewport(m_viewport.get());
+        auto& render_system = m_editor_window->renderer();
+        render_system.set_active_viewport(m_viewport.get());
         render_system.debug_renderer()->set_enabled(true);
 
         EditorEventBus::instance().subscribe(EditorEventType::EntitySelected, [this](const EditorEvent& event) {

@@ -38,12 +38,12 @@ namespace star::resources {
         };
 
         mesh.indices = {
-            0,  1,  2,  2,  3,  0,  // Front face
-            4,  5,  6,  6,  7,  4,  // Back face
-            8,  9,  10, 10, 11, 8,  // Left face
-            12, 13, 14, 14, 15, 12, // Right face
-            16, 17, 18, 18, 19, 16, // Top face
-            20, 21, 22, 22, 23, 20  // Bottom face
+            0,  2,  1,  2,  0,  3,  // Front face
+            4,  6,  5,  6,  4,  7,  // Back face
+            8,  10, 9,  10, 8,  11, // Left face
+            12, 14, 13, 14, 12, 15, // Right face
+            16, 18, 17, 18, 16, 19, // Top face
+            20, 22, 21, 22, 20, 23  // Bottom face
         };
 
         return mesh;

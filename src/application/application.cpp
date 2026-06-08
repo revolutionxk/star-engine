@@ -1,6 +1,5 @@
 #include "star/application/application.hpp"
 
-#include "graphics/bgfx/imgui_bgfx_renderer.hpp"
 #include "star/application/command_line_args.hpp"
 #include "star/application/window_manager.hpp"
 #include "star/graphics/command_buffer.hpp"

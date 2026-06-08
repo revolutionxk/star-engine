@@ -9,6 +9,9 @@ namespace star::resources {
     struct Shader : Resource {
         ResourceHandle<graphics::Shader> handle{};
 
+        std::string disk_vertex_path;
+        std::string disk_fragment_path;
+
         bool is_valid() const {
             return handle.is_valid();
         }

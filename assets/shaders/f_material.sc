@@ -9,23 +9,21 @@ void main()
     mat.baseColor = u_baseColor;
     mat.metallic = u_materialParams.x;
     mat.roughness = u_materialParams.y;
-    mat.normal = normalize(v_normal);
+    mat.normal = safeNormalize(v_normal, vec3(0.0, 1.0, 0.0));
     mat.emissive = u_emissive.xyz;
 
     mat = initMaterial(mat);
 
-    vec3 lightDir = normalize(-u_lightDir.xyz);
-    vec3 viewDir = normalize(v_viewDir);
+    vec3 view_dir = safeNormalize(u_camPos.xyz - v_position, vec3(0.0, 0.0, 1.0));
+    vec3 direct_lighting = evaluateLighting(v_position, mat.normal, view_dir, mat);
+    vec3 sky_irradiance = u_ambientColor.xyz * u_ambientColor.w;
+    vec3 ground_irradiance = u_groundColor.xyz * u_ambientColor.w * 0.5;
+    vec3 ambient_lighting = evaluateAmbient(mat.normal, view_dir, mat, sky_irradiance, ground_irradiance);
 
-    vec3 radiance = u_lightColor.xyz;
-    vec3 Lo = cookTorrance(mat.normal, viewDir, lightDir, mat);
+    float exposure = u_groundColor.w > 0.0 ? u_groundColor.w : 1.0;
 
-    vec3 ambient = u_ambientColor.xyz * u_ambientColor.w * mat.baseColor.rgb;
-
-    vec3 color = ambient + Lo * radiance + mat.emissive;
-
-    color = color / (color + vec3(1.0, 1.0, 1.0));
+    vec3 color = sanitizeColor(ambient_lighting + direct_lighting + mat.emissive, 4096.0) * exposure;
+    color = acesTonemap(color);
     color = pow(max(color, vec3(0.0, 0.0, 0.0)), vec3(1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2));
-
     gl_FragColor = vec4(color, mat.baseColor.a);
 }

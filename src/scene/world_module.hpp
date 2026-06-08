@@ -4,7 +4,7 @@
 #include "star/ecs/components/transform.hpp"
 #include "star/rendering/components/material_instance.hpp"
 #include "star/rendering/components/mesh_renderer.hpp"
-#include "star/scene/components/camera.hpp"
+#include "star/ecs/components/camera.hpp"
 
 namespace star::scene {
     struct WorldModule {

@@ -18,19 +18,18 @@ namespace star::scene {
         shutdown();
     }
 
-    flecs::entity Scene::create_entity(const std::string& name) const {
+    Entity Scene::create_entity(const std::string& name) const {
         const auto entity = m_world.entity(name.c_str());
         entity.child_of(m_root);
-        return entity;
+        return Entity{entity};
     }
 
-    flecs::entity Scene::find_entity(const std::string& name) const {
-        const auto entity = m_world.lookup(name.c_str());
-        return entity;
+    Entity Scene::find_entity(const std::string& name) const {
+        return Entity{m_world.lookup(name.c_str())};
     }
 
-    flecs::entity Scene::find_by_path(const std::string& path) const {
-        return m_world.lookup(path.c_str());
+    Entity Scene::find_by_path(const std::string& path) const {
+        return Entity{m_world.lookup(path.c_str())};
     }
 
     void Scene::ready() {

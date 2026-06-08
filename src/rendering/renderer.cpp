@@ -1,16 +1,14 @@
 #include "star/rendering/renderer.hpp"
 
-#include "graphics/bgfx/imgui_bgfx_renderer.hpp"
-#include "platform/sdl/imgui_sdl3_backend.hpp"
 #include "star/core/logger.hpp"
 #include "star/graphics/device.hpp"
 #include "star/platform/window.hpp"
 #include "star/rendering/debug_renderer.hpp"
 #include "star/rendering/passes/debug_render_pass.hpp"
-#include "star/rendering/passes/imgui_render_pass.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
+#include "star/rendering/passes/sky_render_pass.hpp"
+#include "star/rendering/render_scene.hpp"
 #include "star/rendering/systems/render_system.hpp"
-#include "star/scene/scene.hpp"
 
 namespace star::rendering {
     Renderer::Renderer(graphics::Device& device, platform::Window& window, resources::ResourceManager& resource_manager)
@@ -22,14 +20,9 @@ namespace star::rendering {
         m_render_system = std::make_unique<systems::RenderSystem>(*m_device, *m_resource_manager);
         m_debug_renderer = std::make_unique<DebugRenderer>(*m_resource_manager);
 
-        auto scene_pass = std::make_unique<SceneRenderPass>(*m_render_system);
-        auto debug_pass = std::make_unique<DebugRenderPass>(*m_debug_renderer);
-        auto imgui_pass = std::make_unique<ImGuiRenderPass>(std::make_unique<platform::sdl::ImGuiSDL3Backend>(),
-                                                            std::make_unique<graphics::ImGuiBGFXRenderer>());
-
-        add_render_pass(std::move(scene_pass));
-        add_render_pass(std::move(debug_pass));
-        add_render_pass(std::move(imgui_pass));
+        add_render_pass(std::make_unique<SceneRenderPass>(*m_render_system));
+        add_render_pass(std::make_unique<SkyRenderPass>(*m_render_system, *m_resource_manager));
+        add_render_pass(std::make_unique<DebugRenderPass>(*m_debug_renderer));
 
         STAR_LOG_INFO(LogCategory::Rendering, "Window rendering setup complete");
 
@@ -44,102 +37,66 @@ namespace star::rendering {
 
         STAR_LOG_INFO(LogCategory::Rendering, "Shutting down Renderer");
 
-        for (const auto& pass : m_render_passes) {
-            pass->post_render(0.0f);
+        const FrameContext empty{*m_device, *m_resource_manager, nullptr, nullptr, 0.0f, m_frame_index};
+        for (auto* pass : m_graph.ordered_view()) {
+            pass->post_render(empty);
         }
 
-        m_render_passes.clear();
+        m_graph.clear();
 
         m_render_system.reset();
         m_debug_renderer.reset();
         m_initialized = false;
     }
 
-    void Renderer::pre_render_passes(const f32 delta_time) const {
-        for (const auto& pass : m_render_passes) {
-            if (pass->is_enabled())
-                pass->pre_render(delta_time);
-        }
+    void Renderer::pre_render_passes(const FrameContext& frame) {
+        m_graph.pre_render(frame);
     }
 
-    void Renderer::submit_passes(const f32 delta_time) const {
+    void Renderer::submit_passes(const FrameContext& frame) {
         const auto context = m_device->context();
         context->begin_frame();
-        u32 view_id = 0;
-        for (const auto& pass : m_render_passes) {
-            if (pass->is_enabled())
-                pass->render(*m_device->context(), view_id++);
-        }
+        m_graph.execute(frame, *context);
         context->end_frame();
     }
 
-    void Renderer::post_render_passes(const f32 delta_time) const {
-        for (const auto& pass : m_render_passes) {
-            if (pass->is_enabled())
-                pass->post_render(delta_time);
-        }
+    void Renderer::post_render_passes(const FrameContext& frame) {
+        m_graph.post_render(frame);
     }
 
-    void Renderer::render_frame(const f32 delta_time) const {
+    void Renderer::render_frame(const f32 delta_time) {
         if (!m_initialized) {
             return;
         }
 
-        pre_render_passes(delta_time);
-        submit_passes(delta_time);
-        post_render_passes(delta_time);
+        const FrameContext frame = make_frame_context(delta_time);
+
+        pre_render_passes(frame);
+        submit_passes(frame);
+        post_render_passes(frame);
+    }
+
+    FrameContext Renderer::make_frame_context(const f32 delta_time) {
+        ++m_frame_index;
+        return FrameContext{
+            *m_device,
+            *m_resource_manager,
+            m_active_scene,
+            m_active_viewport,
+            delta_time,
+            m_frame_index,
+        };
     }
 
     void Renderer::add_render_pass(std::unique_ptr<IRenderPass> render_pass) {
-        if (!render_pass) {
-            STAR_LOG_WARN(LogCategory::Rendering, "Attempted to add null render pass");
-            return;
-        }
-
-        auto name = render_pass->get_name();
-        STAR_LOG_INFO(LogCategory::Rendering, "Adding render pass: {} (priority: {})", name,
-                      render_pass->get_priority());
-
-        m_render_passes.push_back(std::move(render_pass));
-        sort_render_passes();
+        m_graph.add_pass(std::move(render_pass));
     }
 
     void Renderer::remove_render_pass(const char* name) {
-        const auto it = std::ranges::remove_if(m_render_passes, [name](const std::unique_ptr<IRenderPass>& pass) {
-                            return pass->get_name() == name;
-                        }).begin();
-
-        if (it != m_render_passes.end()) {
-            STAR_LOG_INFO(LogCategory::Rendering, "Removing render pass: {}", name);
-            m_render_passes.erase(it, m_render_passes.end());
-        } else {
-            STAR_LOG_WARN(LogCategory::Rendering, "Render pass not found: {}", name);
-        }
+        m_graph.remove_pass(name);
     }
 
-    void Renderer::sort_render_passes() {
-        std::ranges::sort(m_render_passes,
-                          [](const std::unique_ptr<IRenderPass>& a, const std::unique_ptr<IRenderPass>& b) {
-                              return a->get_priority() < b->get_priority();
-                          });
-
-        STAR_LOG_DEBUG(LogCategory::Rendering, "Render pass execution order:");
-        for (const auto& pass : m_render_passes) {
-            STAR_LOG_DEBUG(LogCategory::Rendering, "  - {} (priority: {})", pass->get_name(), pass->get_priority());
-        }
-    }
-
-    void Renderer::set_active_scene(scene::Scene* scene) {
-        m_active_scene = scene;
-
-        if (auto* scene_pass = get_render_pass<SceneRenderPass>()) {
-            scene_pass->set_scene(scene);
-            STAR_LOG_DEBUG(LogCategory::Rendering, "Scene '{}' set on SceneRenderPass",
-                           scene ? scene->name() : "nullptr");
-        }
-    }
-
-    void Renderer::reset_render_passes(const u32 width, const u32 height) const {
+    void Renderer::reset_render_passes(const u32 width, const u32 height) {
         if (!m_initialized) {
             STAR_LOG_WARN(LogCategory::Rendering, "Cannot reset render passes - renderer not initialized");
             return;
@@ -147,14 +104,7 @@ namespace star::rendering {
 
         STAR_LOG_INFO(LogCategory::Rendering, "Resetting render passes with size: {}x{}", width, height);
 
-        for (const auto& pass : m_render_passes) {
-            if (pass) {
-                const auto view_id = pass->reset(width, height);
-                const auto context = m_device->context();
-                context->set_view_clear(view_id, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
-                context->set_view_rect(view_id, 0, 0, width, height);
-            }
-        }
+        m_graph.reset(width, height, *m_device->context());
 
         STAR_LOG_INFO(LogCategory::Rendering, "All render passes reset successfully");
     }

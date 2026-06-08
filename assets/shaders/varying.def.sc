@@ -12,3 +12,4 @@ vec3 v_tangent     : TANGENT;
 vec3 v_bitangent   : TEXCOORD2;
 vec3 v_viewDir     : TEXCOORD3;
 vec3 v_worldDir    : TEXCOORD4;
+vec2 v_screenPos   : TEXCOORD5;

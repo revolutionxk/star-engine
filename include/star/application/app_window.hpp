@@ -8,6 +8,8 @@
 #include "star/core/types.hpp"
 #include "star/platform/window.hpp"
 #include "star/platform/window_config.hpp"
+#include "star/rendering/render_scene.hpp"
+#include "star/scene/scene_render_extractor.hpp"
 #include "window_manager.hpp"
 
 namespace star::graphics {
@@ -24,6 +26,7 @@ namespace star::resources {
 } // namespace star::resources
 
 namespace star::scene {
+    class Scene;
     class SceneManager;
 } // namespace star::scene
 
@@ -108,6 +111,9 @@ namespace star::application {
         std::unique_ptr<rendering::Renderer> m_renderer;
 
         std::unique_ptr<scene::SceneManager> m_scene_manager;
+        scene::Scene* m_active_scene{nullptr};
+        scene::SceneRenderExtractor m_scene_extractor;
+        rendering::RenderScene m_render_scene{};
 
         std::unique_ptr<LayerStack> m_layer_stack;
 

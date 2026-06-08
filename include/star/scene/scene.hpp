@@ -5,15 +5,17 @@
 
 #include <flecs.h>
 
+#include "star/scene/entity.hpp"
+
 namespace star::scene {
     class STAR_EXPORT Scene {
       public:
         explicit Scene(const std::string& name);
         ~Scene();
 
-        [[nodiscard]] flecs::entity create_entity(const std::string& name = "") const;
-        [[nodiscard]] flecs::entity find_entity(const std::string& name) const;
-        [[nodiscard]] flecs::entity find_by_path(const std::string& path) const;
+        [[nodiscard]] Entity create_entity(const std::string& name = "") const;
+        [[nodiscard]] Entity find_entity(const std::string& name) const;
+        [[nodiscard]] Entity find_by_path(const std::string& path) const;
 
         void ready();
         void update(float dt) const;

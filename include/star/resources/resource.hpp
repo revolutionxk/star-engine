@@ -30,8 +30,9 @@ namespace star::resources {
             return m_state == ResourceState::Loaded;
         }
 
-      protected:
         std::string m_path{};
+
+      protected:
         ResourceState m_state{ResourceState::Unloaded};
         u32 m_generation{0};
     };

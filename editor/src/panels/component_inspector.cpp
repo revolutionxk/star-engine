@@ -29,12 +29,12 @@ namespace star::editor {
 
             ImGui::PushID(type_info.name.data());
             if (void* ptr = ecs->get_mut_ptr(entity)) {
-                ui::draw_fields(type_info, ptr);
+                ui::fields(type_info, ptr);
 
                 if (type_info.name == "MaterialInstance") {
                     auto* inst = static_cast<components::MaterialInstance*>(ptr);
                     const resources::Material* mat = resolve_material(entity, *inst);
-                    ui::draw_material_instance(*inst, mat);
+                    ui::material_instance(*inst, mat);
                 }
             }
             ImGui::PopID();

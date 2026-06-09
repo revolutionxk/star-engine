@@ -4,6 +4,7 @@
 #include "application_config.hpp"
 #include "application_context.hpp"
 #include "game_loop.hpp"
+#include "star/core/platform_win32.hpp"
 #include "star/rendering/renderer.hpp"
 #include "star/resources/resource_manager.hpp"
 

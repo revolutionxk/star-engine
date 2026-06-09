@@ -10,9 +10,11 @@ FetchContent_Declare(
 message("ImGuizmo")
 FetchContent_MakeAvailable(imguizmo)
 
-add_library(imguizmo STATIC
-        "${imguizmo_SOURCE_DIR}/ImGuizmo.cpp"
-)
+if (NOT TARGET imguizmo)
+    add_library(imguizmo STATIC
+            "${imguizmo_SOURCE_DIR}/ImGuizmo.cpp"
+    )
+endif ()
 
 target_include_directories(imguizmo PUBLIC
         "${imguizmo_SOURCE_DIR}"

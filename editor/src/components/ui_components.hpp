@@ -18,6 +18,32 @@ namespace star::editor::ui {
         return min_out + (value - min_in) * (max_out - min_out) / (max_in - min_in);
     }
 
+    inline bool begin_property_row(const char* label) {
+        ImGuiContext& g = *GImGui;
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+
+        if (!ImGui::BeginTable(label, 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoSavedSettings))
+            return false;
+
+        ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthStretch, 0.35f);
+        ImGui::TableSetupColumn("Control", ImGuiTableColumnFlags_WidthStretch, 0.65f);
+        ImGui::TableNextRow();
+
+        ImGui::TableSetColumnIndex(0);
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted(label);
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::PushItemWidth(-FLT_MIN);
+
+        return true;
+    }
+
+    inline void end_property_row() {
+        ImGui::PopItemWidth();
+        ImGui::EndTable();
+    }
+
     inline bool toggle(const char* label, bool* v) {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems)
@@ -127,7 +153,106 @@ namespace star::editor::ui {
         return pressed;
     }
 
-    inline void draw_field_runtime(const star::reflection::RuntimeField& field, void* comp) {
+    inline bool vector3_control(const char* label, float values[3], float reset_value = 0.f, float speed = 0.1f) {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems)
+            return false;
+
+        ImGuiContext& g = *GImGui;
+        ImGui::PushID(label);
+
+        ImGui::TextUnformatted(label);
+        ImGui::SameLine(ImGui::GetContentRegionAvail().x * 0.3f);
+
+        const float total_width = ImGui::GetContentRegionAvail().x;
+        const float spacing = g.Style.ItemSpacing.x;
+        const float block_width = (total_width - (spacing * 2.0f)) / 3.0f;
+
+        bool value_changed = false;
+
+        const char* axes_labels[] = {"X", "Y", "Z"};
+
+        constexpr ImU32 bg_colors[] = {IM_COL32(180, 45, 45, 255), IM_COL32(45, 140, 45, 255),
+                                       IM_COL32(35, 95, 180, 255)};
+
+        const float frame_height = ImGui::GetFrameHeight();
+        const float label_width = frame_height * 0.85f;
+        const float rounding = g.Style.FrameRounding;
+
+        for (int i = 0; i < 3; ++i) {
+            ImGui::PushID(i);
+            ImGui::BeginGroup();
+
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, rounding);
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, g.Style.Colors[ImGuiCol_FrameBg]);
+
+            ImGui::SetCursorScreenPos(ImVec2(pos.x + label_width, pos.y));
+            ImGui::PushItemWidth(block_width - label_width);
+
+            if (ImGui::DragFloat("##value", &values[i], speed, 0.0f, 0.0f, "%.2f")) {
+                value_changed = true;
+            }
+
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+                values[i] = reset_value;
+                value_changed = true;
+            }
+
+            const ImU32 frame_bg_color = ImGui::GetColorU32(
+                ImGui::IsItemActive() ? ImGuiCol_FrameBgActive
+                                      : (ImGui::IsItemHovered() ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg));
+            draw_list->AddRectFilled(ImVec2(pos.x + label_width, pos.y),
+                                     ImVec2(pos.x + label_width + rounding * 2.0f, pos.y + frame_height),
+                                     frame_bg_color);
+
+            draw_list->AddRectFilled(pos, ImVec2(pos.x + label_width, pos.y + frame_height), bg_colors[i], rounding,
+                                     ImDrawFlags_RoundCornersLeft);
+
+            if (g.Style.FrameBorderSize > 0.0f) {
+                const ImU32 border_color = ImGui::GetColorU32(ImGuiCol_Border);
+                draw_list->AddRect(pos, ImVec2(pos.x + label_width, pos.y + frame_height), border_color, rounding,
+                                   ImDrawFlags_RoundCornersLeft, g.Style.FrameBorderSize);
+
+                draw_list->AddRect(ImVec2(pos.x + label_width, pos.y),
+                                   ImVec2(pos.x + block_width, pos.y + frame_height), border_color, rounding,
+                                   ImDrawFlags_RoundCornersRight, g.Style.FrameBorderSize);
+            }
+
+            const ImVec2 text_size = ImGui::CalcTextSize(axes_labels[i]);
+            auto text_pos =
+                ImVec2(pos.x + (label_width - text_size.x) * 0.5f, pos.y + (frame_height - text_size.y) * 0.5f);
+            draw_list->AddText(text_pos, IM_COL32(245, 245, 245, 255), axes_labels[i]);
+
+            ImGui::PopItemWidth();
+            ImGui::PopStyleColor();
+            ImGui::PopStyleVar();
+
+            ImGui::EndGroup();
+
+            ImGui::PopID();
+            if (i < 2)
+                ImGui::SameLine(0.0f, spacing);
+        }
+
+        ImGui::PopID();
+        return value_changed;
+    }
+
+    inline bool float_control(const char* label, float* value, const float speed = 0.1f, const float min = 0.0f,
+                              const float max = 0.0f, const char* format = "%.3f") {
+        if (!begin_property_row(label))
+            return false;
+
+        const bool changed = ImGui::DragFloat("##value", value, speed, min, max, format);
+
+        end_property_row();
+        return changed;
+    }
+
+    inline void field_runtime(const star::reflection::RuntimeField& field, void* comp) {
         auto ref = field.get_mut(comp);
         if (!ref.is_valid())
             return;
@@ -148,7 +273,7 @@ namespace star::editor::ui {
         const bool color = field.has_attr<star::reflection::attr::Color>();
 
         if (const auto ty = field.value_type; ty == typeid(f32)) {
-            ImGui::DragFloat(label, ref.as<f32>(), sp, min, max, "%.3f");
+            float_control(label, ref.as<f32>(), sp, min, max, "%.3f");
         } else if (ty == typeid(f64)) {
             float fv = static_cast<float>(*ref.as<f64>());
             if (ImGui::DragFloat(label, &fv, sp, min, max, "%.4f"))
@@ -180,7 +305,7 @@ namespace star::editor::ui {
             if (color)
                 ImGui::ColorEdit3(label, v->data);
             else
-                ImGui::DragFloat3(label, v->data, sp, min, max, "%.3f");
+                vector3_control(label, v->data, 0.f, sp);
         } else if (ty == typeid(Vector4)) {
             auto* v = ref.as<Vector4>();
             if (color)
@@ -192,7 +317,7 @@ namespace star::editor::ui {
             auto euler = q->to_euler() * math::Constants<f32>::rad_to_deg;
             const auto sp2 =
                 field.find_attr<star::reflection::attr::Speed>().value_or(star::reflection::attr::Speed{0.5f}).value;
-            if (ImGui::DragFloat3(label, euler.data, sp2, 0.f, 0.f, "%.2f deg"))
+            if (vector3_control(label, euler.data, 0.f, sp2))
                 *q = Quaternion::from_euler(radians(euler.x), radians(euler.y), radians(euler.z));
         } else if (!field.enum_labels.empty()) {
             int current = 0;
@@ -219,10 +344,10 @@ namespace star::editor::ui {
         }
     }
 
-    inline void draw_fields(const star::reflection::RuntimeTypeInfo& type_info, void* comp) {
+    inline void fields(const star::reflection::RuntimeTypeInfo& type_info, void* comp) {
         ImGui::PushItemWidth(-140.0f);
         for (const auto& field : type_info.fields)
-            draw_field_runtime(field, comp);
+            field_runtime(field, comp);
         ImGui::PopItemWidth();
     }
 
@@ -233,7 +358,7 @@ namespace star::editor::ui {
         ImGui::PopItemWidth();
     }
 
-    inline void draw_material_instance(components::MaterialInstance& inst, const resources::Material* mat) {
+    inline void material_instance(components::MaterialInstance& inst, const resources::Material* mat) {
         ImGui::PushItemWidth(-140.f);
 
         auto find = [&](std::string_view name) -> rendering::MaterialProperty* {

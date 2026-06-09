@@ -2,6 +2,7 @@
 
 #include "platform.hpp"
 
+// clang-format off
 #ifdef STAR_PLATFORM_WINDOWS
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -31,3 +32,4 @@
 #endif
 
 #endif // STAR_PLATFORM_WINDOWS
+// clang-format off

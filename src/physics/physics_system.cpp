@@ -19,6 +19,7 @@ namespace star::physics {
             desc.shape = collider.shape;
             desc.half_extents = collider.half_extents;
             desc.radius = collider.radius;
+            desc.half_height = collider.half_height;
             desc.position = transform.position;
             desc.rotation = transform.rotation;
             desc.motion = rigid_body.motion;
@@ -41,5 +42,17 @@ namespace star::physics {
                 transform.rotation = rotation;
             }
         });
+    }
+
+    void PhysicsSystem::apply_impulse(const BodyHandle body, const Vector3& impulse) const {
+        m_world.apply_impulse(body, impulse);
+    }
+
+    void PhysicsSystem::set_linear_velocity(const BodyHandle body, const Vector3& velocity) const {
+        m_world.set_linear_velocity(body, velocity);
+    }
+
+    Vector3 PhysicsSystem::linear_velocity(const BodyHandle body) const {
+        return m_world.linear_velocity(body);
     }
 } // namespace star::physics

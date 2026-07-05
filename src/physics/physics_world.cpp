@@ -12,6 +12,7 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/RegisterTypes.h>
@@ -126,6 +127,8 @@ namespace star::physics {
         RefConst<Shape> shape;
         if (desc.shape == ColliderShape::Sphere)
             shape = new SphereShape(desc.radius);
+        else if (desc.shape == ColliderShape::Capsule)
+            shape = new CapsuleShape(desc.half_height, desc.radius);
         else
             shape = new BoxShape(Vec3(desc.half_extents.x, desc.half_extents.y, desc.half_extents.z));
 
@@ -186,5 +189,25 @@ namespace star::physics {
         BodyInterface& bodies = m_impl->physics_system.GetBodyInterface();
         bodies.SetPositionAndRotation(BodyID(handle), RVec3(position.x, position.y, position.z),
                                       Quat(rotation.x, rotation.y, rotation.z, rotation.w), EActivation::Activate);
+    }
+
+    Vector3 PhysicsWorld::linear_velocity(const BodyHandle handle) const {
+        if (handle == INVALID_BODY)
+            return {};
+        const Vec3 velocity = m_impl->physics_system.GetBodyInterface().GetLinearVelocity(BodyID(handle));
+        return {velocity.GetX(), velocity.GetY(), velocity.GetZ()};
+    }
+
+    void PhysicsWorld::set_linear_velocity(const BodyHandle handle, const Vector3& velocity) const {
+        if (handle == INVALID_BODY)
+            return;
+        m_impl->physics_system.GetBodyInterface().SetLinearVelocity(BodyID(handle),
+                                                                    Vec3(velocity.x, velocity.y, velocity.z));
+    }
+
+    void PhysicsWorld::apply_impulse(const BodyHandle handle, const Vector3& impulse) const {
+        if (handle == INVALID_BODY)
+            return;
+        m_impl->physics_system.GetBodyInterface().AddImpulse(BodyID(handle), Vec3(impulse.x, impulse.y, impulse.z));
     }
 } // namespace star::physics

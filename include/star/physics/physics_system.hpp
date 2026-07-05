@@ -11,6 +11,10 @@ namespace star::physics {
 
         void update(ecs::World& world, f32 fixed_dt);
 
+        void apply_impulse(BodyHandle body, const Vector3& impulse) const;
+        void set_linear_velocity(BodyHandle body, const Vector3& velocity) const;
+        [[nodiscard]] Vector3 linear_velocity(BodyHandle body) const;
+
       private:
         PhysicsWorld m_world;
     };

@@ -15,6 +15,7 @@ namespace star::physics {
     enum class ColliderShape {
         Box,
         Sphere,
+        Capsule,
     };
 
     using BodyHandle = u32;
@@ -24,6 +25,7 @@ namespace star::physics {
         ColliderShape shape = ColliderShape::Box;
         Vector3 half_extents{0.5f, 0.5f, 0.5f};
         f32 radius = 0.5f;
+        f32 half_height = 0.5f;
 
         Vector3 position{};
         Quaternion rotation{0.0f, 0.0f, 0.0f, 1.0f};
@@ -48,6 +50,10 @@ namespace star::physics {
 
         [[nodiscard]] bool body_transform(BodyHandle handle, Vector3& out_position, Quaternion& out_rotation) const;
         void set_body_transform(BodyHandle handle, const Vector3& position, const Quaternion& rotation) const;
+
+        [[nodiscard]] Vector3 linear_velocity(BodyHandle handle) const;
+        void set_linear_velocity(BodyHandle handle, const Vector3& velocity) const;
+        void apply_impulse(BodyHandle handle, const Vector3& impulse) const;
 
       private:
         struct Impl;

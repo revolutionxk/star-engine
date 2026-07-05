@@ -282,7 +282,7 @@ float computeShadow(vec4 shadowCoord)
 
     vec3 proj = shadowCoord.xyz / shadowCoord.w;
     vec2 uv = proj.xy * 0.5 + 0.5;
-    if (u_shadowParams.w > 0.5)
+    if (u_shadowParams.w < 0.5)
         uv.y = 1.0 - uv.y;
 
     float receiver = proj.z * 0.5 + 0.5;

@@ -3,9 +3,9 @@
 #include <unordered_set>
 
 #include "editor_input_manager.hpp"
+#include "star/ecs/components/camera.hpp"
 #include "star/ecs/components/transform.hpp"
 #include "star/platform/window.hpp"
-#include "star/ecs/components/camera.hpp"
 
 namespace star::editor {
     class ViewportCameraSystem {
@@ -21,7 +21,7 @@ namespace star::editor {
         void initialize(const components::Transform& transform);
         void attach(EditorInputManager& input, platform::Window* window = nullptr);
         void detach();
-        void update(f32 dt, const flecs::world& world);
+        void update(f32 dt, components::Transform& transform);
 
       private:
         enum class Mode {

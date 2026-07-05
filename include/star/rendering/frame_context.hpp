@@ -14,6 +14,7 @@ namespace star::resources {
 namespace star::rendering {
     class Viewport;
     struct RenderScene;
+    struct RenderView;
 
     struct FrameContext {
         graphics::Device& device;
@@ -22,6 +23,7 @@ namespace star::rendering {
         const RenderScene* scene{nullptr};
 
         Viewport* viewport{nullptr};
+        const RenderView* view{nullptr};
 
         f32 delta_time{0.0f};
         u64 frame_index{0};

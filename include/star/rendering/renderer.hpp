@@ -8,6 +8,7 @@
 #include "star/core/types.hpp"
 #include "star/rendering/frame_context.hpp"
 #include "star/rendering/render_graph.hpp"
+#include "star/rendering/render_view.hpp"
 
 namespace star::graphics {
     class Device;
@@ -22,7 +23,7 @@ namespace star::rendering {
     class DebugRenderer;
     struct RenderScene;
     class Viewport;
-}
+} // namespace star::rendering
 
 namespace star::resources {
     class ResourceManager;
@@ -49,6 +50,10 @@ namespace star::rendering {
 
         virtual std::string get_name() const = 0;
         virtual u8 get_priority() const = 0;
+
+        [[nodiscard]] virtual PassScope scope() const {
+            return PassScope::PerView;
+        }
 
         virtual std::vector<std::string_view> dependencies() const {
             return {};
@@ -96,7 +101,7 @@ namespace star::rendering {
 
         void pre_render_passes(const FrameContext& frame);
         void submit_passes(const FrameContext& frame);
-        void post_render_passes(const FrameContext& frame);
+        void post_render_passes(const FrameContext& frame) const;
 
         void add_render_pass(std::unique_ptr<IRenderPass> render_pass);
         void remove_render_pass(const char* name);
@@ -122,6 +127,11 @@ namespace star::rendering {
             m_active_scene = scene;
         }
 
+        ViewId add_view(const RenderView& view);
+        void remove_view(ViewId id);
+        [[nodiscard]] RenderView* view(ViewId id);
+        void clear_views();
+
         void set_active_viewport(Viewport* viewport) noexcept {
             m_active_viewport = viewport;
         }
@@ -137,6 +147,13 @@ namespace star::rendering {
         void reset_render_passes(u32 width, u32 height);
 
       private:
+        struct ViewEntry {
+            ViewId id;
+            RenderView view;
+        };
+        
+        static void resolve_view_camera(const RenderView& view, const RenderScene* scene);
+
         graphics::Device* m_device;
         platform::Window* m_window;
         resources::ResourceManager* m_resource_manager;
@@ -147,6 +164,8 @@ namespace star::rendering {
 
         const RenderScene* m_active_scene{nullptr};
         Viewport* m_active_viewport{nullptr};
+        std::vector<ViewEntry> m_views;
+        ViewId m_next_view_id{1};
         u64 m_frame_index{0};
 
         bool m_initialized = false;

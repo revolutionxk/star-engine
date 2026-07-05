@@ -9,6 +9,7 @@
 
 #include "../panels/console_panel.hpp"
 #include "../panels/content_browser_panel.hpp"
+#include "../panels/game_panel.hpp"
 #include "../panels/hierarchy_panel.hpp"
 #include "../panels/inspector_panel.hpp"
 #include "../panels/metrics_panel.hpp"
@@ -38,13 +39,21 @@ namespace star::editor {
         EditorTheme::apply_theme();
 
         auto& device = m_editor_window->device();
-        m_viewport = std::make_unique<rendering::Viewport>(device);
-        m_viewport->set_framebuffer_enabled(true);
-        m_viewport->resize(1280, 720);
 
-        auto& render_system = m_editor_window->renderer();
-        render_system.set_active_viewport(m_viewport.get());
-        render_system.debug_renderer()->set_enabled(true);
+        m_scene_viewport = std::make_unique<rendering::Viewport>(device);
+        m_scene_viewport->set_framebuffer_enabled(true);
+        m_scene_viewport->resize(1280, 720);
+
+        m_game_viewport = std::make_unique<rendering::Viewport>(device);
+        m_game_viewport->set_framebuffer_enabled(true);
+        m_game_viewport->resize(1280, 720);
+
+        auto& renderer = m_editor_window->renderer();
+        renderer.set_active_viewport(m_scene_viewport.get());
+
+        m_scene_view = renderer.add_view({m_scene_viewport.get(), &m_editor_cam, &m_editor_cam_xf, true, true});
+        m_game_view = renderer.add_view({m_game_viewport.get(), nullptr, nullptr, false, true});
+        renderer.debug_renderer()->set_enabled(true);
 
         EditorEventBus::instance().subscribe(EditorEventType::EntitySelected, [this](const EditorEvent& event) {
             if (const auto* data = event.get_data<NodeSelectedEvent>())
@@ -59,16 +68,8 @@ namespace star::editor {
 
         m_input_manager.initialize(application::Application::instance().input_manager());
 
-        auto* active_scene = m_editor_window->scene_manager().get_active_scene();
-        if (active_scene) {
-            const auto camera_entity = active_scene->find_entity("EditorCamera");
-            if (camera_entity.is_valid()) {
-                if (const auto* transform = camera_entity.try_get<components::Transform>()) {
-                    m_camera_system.initialize(*transform);
-                }
-            }
-        }
-
+        m_editor_cam_xf.position = Vector3{6.0f, 4.0f, 9.0f};
+        m_camera_system.initialize(m_editor_cam_xf);
         m_camera_system.attach(m_input_manager, &m_editor_window->window());
 
         return true;
@@ -78,28 +79,36 @@ namespace star::editor {
         auto* hierarchy = m_panel_manager.register_panel<HierarchyPanel>(m_editor_window);
         auto* inspector = m_panel_manager.register_panel<InspectorPanel>(&m_component_inspector);
         auto* scene = m_panel_manager.register_panel<ScenePanel>();
+        auto* game = m_panel_manager.register_panel<GamePanel>();
         auto* console = m_panel_manager.register_panel<ConsolePanel>();
         m_panel_manager.register_panel<MetricsPanel>();
         m_panel_manager.register_panel<ContentBrowserPanel>(m_editor_window);
 
-        scene->set_viewport(m_viewport.get());
+        scene->set_viewport(m_scene_viewport.get());
         scene->set_input_manager(&m_input_manager);
         scene->set_gizmo_system(&m_gizmo_system);
+        game->set_viewport(m_game_viewport.get());
     }
 
     void EditorUILayer::shutdown() {
         STAR_LOG_INFO(LogCategory::Editor, "Shutting down editor UI layer");
         m_camera_system.detach();
+
+        if (m_editor_window) {
+            auto& renderer = m_editor_window->renderer();
+            renderer.clear_views();
+            renderer.set_active_viewport(nullptr);
+        }
+
         m_panel_manager.shutdown();
         m_input_manager.shutdown();
-        m_viewport.reset();
+        m_scene_viewport.reset();
+        m_game_viewport.reset();
     }
 
     void EditorUILayer::update(const f32 dt) {
         m_panel_manager.update_all(dt);
-
-        auto* active_scene = m_editor_window->scene_manager().get_active_scene();
-        m_camera_system.update(dt, active_scene->world().native());
+        m_camera_system.update(dt, m_editor_cam_xf);
     }
 
     void EditorUILayer::pre_render(const f32 /*dt*/) {
@@ -213,6 +222,7 @@ namespace star::editor {
         ImGui::DockBuilderDockWindow("Inspector", right);
         ImGui::DockBuilderDockWindow("Metrics", right);
         ImGui::DockBuilderDockWindow("Scene", center);
+        ImGui::DockBuilderDockWindow("Game", center);
         ImGui::DockBuilderDockWindow("Console", bottom);
         ImGui::DockBuilderDockWindow("Content Browser", bottom);
         ImGui::DockBuilderFinish(dockspace_id);

@@ -2,6 +2,7 @@
 
 #include "star/graphics/device_context.hpp"
 #include "star/rendering/debug_renderer.hpp"
+#include "star/rendering/render_view.hpp"
 #include "star/rendering/viewport.hpp"
 
 namespace star::rendering {
@@ -12,7 +13,10 @@ namespace star::rendering {
     }
 
     void DebugRenderPass::render(const RenderContext& ctx) {
-        Viewport* viewport = ctx.frame.viewport;
+        if (!ctx.frame.view || !ctx.frame.view->draw_debug)
+            return;
+
+        const Viewport* viewport = ctx.frame.viewport;
         if (!viewport || !viewport->has_camera())
             return;
 

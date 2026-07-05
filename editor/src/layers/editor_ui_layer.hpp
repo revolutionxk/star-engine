@@ -10,6 +10,9 @@
 #include "../panels/component_inspector.hpp"
 #include "editor_window.hpp"
 #include "star/application/layer.hpp"
+#include "star/ecs/components/camera.hpp"
+#include "star/ecs/components/transform.hpp"
+#include "star/rendering/render_view.hpp"
 #include "star/rendering/viewport.hpp"
 
 namespace star::editor {
@@ -47,7 +50,15 @@ namespace star::editor {
         char m_open_project_path[512]{};
 
         EditorWindow* m_editor_window = nullptr;
-        std::unique_ptr<rendering::Viewport> m_viewport;
+
+        std::unique_ptr<rendering::Viewport> m_scene_viewport;
+        std::unique_ptr<rendering::Viewport> m_game_viewport;
+
+        components::Transform m_editor_cam_xf;
+        components::Camera m_editor_cam;
+        rendering::ViewId m_scene_view = rendering::INVALID_VIEW;
+        rendering::ViewId m_game_view = rendering::INVALID_VIEW;
+
         PanelManager m_panel_manager;
         ComponentInspector m_component_inspector;
         EditorInputManager m_input_manager;

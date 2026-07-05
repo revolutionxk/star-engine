@@ -161,6 +161,18 @@ namespace star::rendering {
         }
     }
 
+    u32 RenderGraph::execute_scope(const PassScope scope, const FrameContext& frame,
+                                   graphics::DeviceContext& context, u32 start_view_id) {
+        compile();
+        for (auto* pass : m_ordered) {
+            if (!pass->is_enabled() || pass->scope() != scope)
+                continue;
+            const RenderContext ctx{frame, context, start_view_id++};
+            pass->render(ctx);
+        }
+        return start_view_id;
+    }
+
     void RenderGraph::post_render(const FrameContext& frame) const {
         for (auto* pass : m_ordered) {
             if (pass->is_enabled()) {

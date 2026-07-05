@@ -18,8 +18,8 @@
 
 namespace star::editor {
     void build_empty_scene(const scene::Scene& scene) {
-        scene.create_entity("EditorCamera")
-            .set<components::Transform>({.position = Vector3{6.0f, 4.0f, 9.0f}})
+        scene.create_entity("Main Camera")
+            .set<components::Transform>({.position = Vector3{0.0f, 2.5f, 8.0f}})
             .set<components::Camera>({})
             .add<components::PrimaryCamera>();
 

@@ -35,6 +35,10 @@ namespace star::rendering {
             return 255;
         }
 
+        [[nodiscard]] PassScope scope() const override {
+            return PassScope::Global;
+        }
+
         [[nodiscard]] std::vector<std::string_view> dependencies() const override {
             return {"Debug"};
         }

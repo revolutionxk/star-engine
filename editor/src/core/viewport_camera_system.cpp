@@ -49,30 +49,28 @@ namespace star::editor {
         m_window = nullptr;
     }
 
-    void ViewportCameraSystem::update(const f32 dt, const flecs::world& world) {
-        world.each([this, dt](components::Camera, components::PrimaryCamera, components::Transform& transform) {
-            if (m_sync_on_entry) {
-                m_sync_on_entry = false;
-                re_sync_from(transform);
-            }
+    void ViewportCameraSystem::update(const f32 dt, components::Transform& transform) {
+        if (m_sync_on_entry) {
+            m_sync_on_entry = false;
+            re_sync_from(transform);
+        }
 
-            switch (m_mode) {
-                case Mode::Fly:
-                    apply_look(transform);
-                    apply_movement(dt, transform);
-                    break;
-                case Mode::Orbit:
-                    apply_orbit(transform);
-                    break;
-                case Mode::Pan:
-                    apply_pan(transform);
-                    break;
-                case Mode::Idle:
-                    break;
-            }
-            if (m_scroll != 0.0f)
-                transform.position = transform.position + transform.forward() * (m_scroll * zoom_speed);
-        });
+        switch (m_mode) {
+            case Mode::Fly:
+                apply_look(transform);
+                apply_movement(dt, transform);
+                break;
+            case Mode::Orbit:
+                apply_orbit(transform);
+                break;
+            case Mode::Pan:
+                apply_pan(transform);
+                break;
+            case Mode::Idle:
+                break;
+        }
+        if (m_scroll != 0.0f)
+            transform.position = transform.position + transform.forward() * (m_scroll * zoom_speed);
 
         m_frame_delta = {};
         m_scroll = 0.0f;

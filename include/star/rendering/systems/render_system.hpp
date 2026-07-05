@@ -41,7 +41,6 @@ namespace star::systems {
 
       private:
         void collect_renderables(const rendering::RenderScene& scene, const rendering::Viewport* viewport);
-        void setup_camera(const rendering::CameraSnapshot& camera, rendering::Viewport* viewport) const;
         void collect_lights(const rendering::RenderScene& scene);
         void submit_lighting(graphics::DeviceContext& context) const;
         void execute_render_queue(graphics::DeviceContext& context, u32 view_id, const rendering::Viewport* viewport) const;

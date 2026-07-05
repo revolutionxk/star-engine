@@ -246,9 +246,6 @@ namespace star::systems {
 
         m_render_queue.clear();
 
-        if (scene.primary_camera.has_value()) {
-            setup_camera(*scene.primary_camera, viewport);
-        }
         collect_lights(scene);
 
         if (!viewport || !viewport->has_camera()) {
@@ -260,28 +257,6 @@ namespace star::systems {
         m_render_queue.sort();
 
         execute_render_queue(context, view_id, viewport);
-    }
-
-    void RenderSystem::setup_camera(const rendering::CameraSnapshot& camera, rendering::Viewport* viewport) const {
-        if (!viewport) {
-            return;
-        }
-
-        components::Camera cam;
-        cam.fov_y = camera.fov_y;
-        cam.near_plane = camera.near_plane;
-        cam.far_plane = camera.far_plane;
-        cam.aspect_ratio = camera.aspect_ratio;
-
-        components::Transform xf;
-        xf.position = camera.position;
-        xf.rotation = camera.rotation;
-        xf.scale = camera.scale;
-
-        viewport->set_camera(cam, xf);
-
-        STAR_LOG_TRACE(LogCategory::Rendering, "Camera setup: pos({}, {}, {})", xf.position.x, xf.position.y,
-                       xf.position.z);
     }
 
     void RenderSystem::collect_renderables(const rendering::RenderScene& scene, const rendering::Viewport* viewport) {

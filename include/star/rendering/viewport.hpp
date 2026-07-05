@@ -3,9 +3,9 @@
 #include <memory>
 
 #include "star/core/types.hpp"
+#include "star/ecs/components/camera.hpp"
 #include "star/ecs/components/transform.hpp"
 #include "star/graphics/resource_handle.hpp"
-#include "star/ecs/components/camera.hpp"
 
 namespace star::graphics {
     class Device;

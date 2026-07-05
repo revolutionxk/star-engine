@@ -16,6 +16,11 @@ namespace star::rendering {
     class IRenderPass;
     struct FrameContext;
 
+    enum class PassScope : u8 {
+        PerView,
+        Global,
+    };
+
     class RenderGraph {
       public:
         RenderGraph();
@@ -44,6 +49,9 @@ namespace star::rendering {
 
         void pre_render(const FrameContext& frame);
         void execute(const FrameContext& frame, graphics::DeviceContext& context);
+        u32 execute_scope(PassScope scope, const FrameContext& frame, graphics::DeviceContext& context,
+                          u32 start_view_id);
+
         void post_render(const FrameContext& frame) const;
 
         void reset(u32 width, u32 height, graphics::DeviceContext& context);

@@ -41,6 +41,7 @@ namespace star::application {
         bool initialize() override;
         void shutdown() override;
         void update(f32 delta_time);
+        void fixed_update(f32 fixed_dt);
         void render(f32 delta_time);
 
         void push_layer(std::unique_ptr<Layer> layer);
@@ -95,6 +96,8 @@ namespace star::application {
         virtual void on_shutdown() {}
 
         virtual void on_update(f32 delta_time) {}
+
+        virtual void on_fixed_update(f32 fixed_dt) {}
 
         virtual void on_render() {}
 

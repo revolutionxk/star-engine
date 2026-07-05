@@ -99,7 +99,7 @@ namespace star::application {
                 return -1;
             }
 
-            m_game_loop->run([this](const f32 fixed_dt) { on_fixed_update(fixed_dt); },
+            m_game_loop->run([this](const f32 fixed_dt) { fixed_update_frame(fixed_dt); },
                              [this](const f32 delta_time) { update_frame(delta_time); },
                              [this](const f32) { render_frame(); },
                              [this] {
@@ -135,6 +135,16 @@ namespace star::application {
 
         on_update(delta_time);
         on_post_update(delta_time);
+    }
+
+    void Application::fixed_update_frame(const f32 fixed_dt) {
+        for (const auto& app_window : m_app_windows) {
+            if (app_window && app_window->is_open()) {
+                app_window->fixed_update(fixed_dt);
+            }
+        }
+
+        on_fixed_update(fixed_dt);
     }
 
     void Application::render_frame() const {

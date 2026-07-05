@@ -110,6 +110,7 @@ namespace star::application {
         bool initialize_subsystems();
         void shutdown_subsystems();
         void update_frame(f32 delta_time);
+        void fixed_update_frame(f32 fixed_dt);
         void render_frame() const;
 
       protected:

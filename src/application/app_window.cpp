@@ -154,6 +154,14 @@ namespace star::application {
         }
     }
 
+    void AppWindow::fixed_update(const f32 fixed_dt) {
+        if (!m_initialized || !m_window) {
+            return;
+        }
+
+        on_fixed_update(fixed_dt);
+    }
+
     void AppWindow::render(const f32 delta_time) {
         if (!m_initialized || !m_window) {
             return;

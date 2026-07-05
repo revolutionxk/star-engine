@@ -2,6 +2,8 @@
 
 #include "layers/editor_ui_layer.hpp"
 #include "star/ecs/components/camera.hpp"
+#include "star/physics/components/collider.hpp"
+#include "star/physics/components/rigid_body.hpp"
 #include "star/rendering/components/atmosphere.hpp"
 #include "star/rendering/components/light.hpp"
 #include "star/rendering/components/material_instance.hpp"
@@ -9,6 +11,7 @@
 #include "star/rendering/material_property.hpp"
 #include "star/rendering/shader_uniforms.hpp"
 #include "star/resources/resource_manager.hpp"
+#include "star/scene/scene.hpp"
 #include "star/scene/scene_manager.hpp"
 
 namespace star::editor {
@@ -99,6 +102,20 @@ namespace star::editor {
             })
             .set<components::MeshRenderer>({.mesh = cube_mesh, .material = default_mat})
             .set<components::MaterialInstance>(pbr_instance(Vector4{0.85f, 0.2f, 0.18f, 1.0f}, 0.0f, 0.35f));
+
+        scene->create_entity("PhysicsGround")
+            .set<components::Transform>({.position = Vector3{0.0f, -1.5f, 0.0f}})
+            .set<components::RigidBody>({.motion = physics::MotionType::Static})
+            .set<components::Collider>(
+                {.shape = physics::ColliderShape::Box, .half_extents = Vector3{20.0f, 0.5f, 20.0f}});
+
+        scene->create_entity("PhysicsCube")
+            .set<components::Transform>({.position = Vector3{0.0f, 6.0f, 3.0f}, .scale = Vector3{0.8f, 0.8f, 0.8f}})
+            .set<components::MeshRenderer>({.mesh = cube_mesh, .material = default_mat})
+            .set<components::MaterialInstance>(pbr_instance(Vector4{0.25f, 0.85f, 0.35f, 1.0f}, 0.0f, 0.4f))
+            .set<components::RigidBody>({.motion = physics::MotionType::Dynamic})
+            .set<components::Collider>(
+                {.shape = physics::ColliderShape::Box, .half_extents = Vector3{0.4f, 0.4f, 0.4f}});
 
         constexpr Vector3 room_center{6.0f, 0.0f, 2.0f};
         constexpr f32 room_size = 2.0f;
@@ -199,4 +216,10 @@ namespace star::editor {
     }
 
     void EditorWindow::on_update(const f32 delta_time) {}
+
+    void EditorWindow::on_fixed_update(const f32 fixed_dt) {
+        if (auto* scene = scene_manager().get_active_scene()) {
+            m_physics.update(scene->world(), fixed_dt);
+        }
+    }
 } // namespace star::editor

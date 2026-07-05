@@ -13,6 +13,7 @@
 #include "../panels/hierarchy_panel.hpp"
 #include "../panels/inspector_panel.hpp"
 #include "../panels/metrics_panel.hpp"
+#include "../panels/render_settings_panel.hpp"
 #include "../panels/scene_panel.hpp"
 #include "../theme/editor_theme.hpp"
 #include "star/application/application.hpp"
@@ -85,6 +86,7 @@ namespace star::editor {
         auto* console = m_panel_manager.register_panel<ConsolePanel>();
         m_panel_manager.register_panel<MetricsPanel>();
         m_panel_manager.register_panel<ContentBrowserPanel>(m_editor_window);
+        m_panel_manager.register_panel<RenderSettingsPanel>(m_editor_window);
 
         scene->set_viewport(m_scene_viewport.get());
         scene->set_input_manager(&m_input_manager);

@@ -22,7 +22,7 @@ namespace star::rendering {
 
     bool ShadowPass::find_sun_direction(const RenderScene& scene, Vector3& out_travel_dir) {
         for (const auto& light : scene.lights) {
-            if (light.type == LightSnapshot::Type::Directional) {
+            if (light.type == LightSnapshot::Type::Directional && light.cast_shadows) {
                 out_travel_dir = light.direction;
                 return true;
             }
@@ -30,26 +30,38 @@ namespace star::rendering {
         return false;
     }
 
-    void ShadowPass::compute_light_matrices(const Vector3& sun_travel_dir, const Vector3& center,
+    void ShadowPass::compute_light_matrices(const Vector3& sun_travel_dir, const Vector3& center, const f32 coverage,
                                             const bool homogeneous_depth, Matrix4& out_view, Matrix4& out_proj) {
         Vector3 light_dir = sun_travel_dir;
         if (light_dir.length_squared() < 1e-6f)
             light_dir = Vector3{0.0f, -1.0f, 0.0f};
         light_dir = light_dir.normalized();
 
+        const f32 distance = coverage * 2.5f;
+        constexpr f32 near_plane = 1.0f;
+        const f32 far_plane = coverage * 5.0f;
+
         const Vector3 up = std::abs(light_dir.y) > 0.99f ? Vector3{0.0f, 0.0f, 1.0f} : Vector3{0.0f, 1.0f, 0.0f};
-        const Vector3 eye = center - light_dir * LIGHT_DISTANCE;
+        const Vector3 eye = center - light_dir * distance;
         out_view = Matrix4::look_at(eye, center, up);
 
         if (homogeneous_depth) {
-            out_proj = Matrix4::orthographic(-ORTHO_HALF, ORTHO_HALF, -ORTHO_HALF, ORTHO_HALF, SHADOW_NEAR, SHADOW_FAR);
+            out_proj = Matrix4::orthographic(-coverage, coverage, -coverage, coverage, near_plane, far_plane);
         } else {
             out_proj = Matrix4::identity();
-            out_proj(0, 0) = 1.0f / ORTHO_HALF;
-            out_proj(1, 1) = 1.0f / ORTHO_HALF;
-            out_proj(2, 2) = -1.0f / (SHADOW_FAR - SHADOW_NEAR);
-            out_proj(3, 2) = -SHADOW_NEAR / (SHADOW_FAR - SHADOW_NEAR);
+            out_proj(0, 0) = 1.0f / coverage;
+            out_proj(1, 1) = 1.0f / coverage;
+            out_proj(2, 2) = -1.0f / (far_plane - near_plane);
+            out_proj(3, 2) = -near_plane / (far_plane - near_plane);
         }
+
+        const Matrix4 light_vp = out_proj * out_view;
+        const Vector4 origin = light_vp * Vector4{center.x, center.y, center.z, 1.0f};
+        constexpr f32 half_size = static_cast<f32>(SHADOW_MAP_SIZE) * 0.5f;
+        const f32 tx = origin.x / origin.w * half_size;
+        const f32 ty = origin.y / origin.w * half_size;
+        out_proj(3, 0) += (std::round(tx) - tx) / half_size;
+        out_proj(3, 1) += (std::round(ty) - ty) / half_size;
     }
 
     void ShadowPass::render(const RenderContext& ctx) {
@@ -58,7 +70,7 @@ namespace star::rendering {
 
         const RenderScene* scene = ctx.frame.scene;
         const Viewport* viewport = ctx.frame.viewport;
-        if (!scene || !scene->active || !viewport || !viewport->has_camera()) {
+        if (!m_settings.enabled || !scene || !scene->active || !viewport || !viewport->has_camera()) {
             m_render_system.set_shadow(state);
             return;
         }
@@ -88,8 +100,8 @@ namespace star::rendering {
 
         Matrix4 light_view;
         Matrix4 light_proj;
-        compute_light_matrices(sun_travel_dir, viewport->camera_position(), m_device.caps().homogeneous_depth,
-                               light_view, light_proj);
+        compute_light_matrices(sun_travel_dir, viewport->camera_position(), m_settings.coverage,
+                               m_device.caps().homogeneous_depth, light_view, light_proj);
 
         auto& gpu = ctx.gpu;
         const u32 view = ctx.view_id;
@@ -114,7 +126,7 @@ namespace star::rendering {
         state.map = m_target.color_texture(0);
         state.light_view_proj = light_proj * light_view;
         state.enabled = true;
-        state.bias = SHADOW_BIAS;
+        state.bias = m_settings.depth_bias;
         state.texel_size = 1.0f / static_cast<f32>(SHADOW_MAP_SIZE);
         state.origin_bottom_left = m_device.caps().origin_bottom_left;
         m_render_system.set_shadow(state);

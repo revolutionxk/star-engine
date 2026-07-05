@@ -36,17 +36,22 @@ namespace star::rendering {
 
         void render(const RenderContext& ctx) override;
 
+        struct Settings {
+            bool enabled = true;
+            f32 depth_bias = 0.0015f;
+            f32 coverage = 30.0f;
+        };
+
+        [[nodiscard]] Settings& settings() noexcept {
+            return m_settings;
+        }
+
       private:
         static constexpr u32 SHADOW_MAP_SIZE = 2048;
-        static constexpr f32 ORTHO_HALF = 30.0f;
-        static constexpr f32 LIGHT_DISTANCE = 60.0f;
-        static constexpr f32 SHADOW_NEAR = 5.0f;
-        static constexpr f32 SHADOW_FAR = 120.0f;
-        static constexpr f32 SHADOW_BIAS = 0.002f;
 
         static bool find_sun_direction(const RenderScene& scene, Vector3& out_travel_dir);
-        static void compute_light_matrices(const Vector3& sun_travel_dir, const Vector3& center, bool homogeneous_depth,
-                                           Matrix4& out_view, Matrix4& out_proj);
+        static void compute_light_matrices(const Vector3& sun_travel_dir, const Vector3& center, f32 coverage,
+                                           bool homogeneous_depth, Matrix4& out_view, Matrix4& out_proj);
 
         graphics::Device& m_device;
         resources::ResourceManager& m_resources;
@@ -54,5 +59,7 @@ namespace star::rendering {
 
         graphics::ResourceHandle<graphics::Shader> m_shadow_shader;
         RenderTarget m_target;
+        Settings m_settings;
+        u64 m_last_render_frame = ~0ull; // shadow map is rendered once per frame, shared by all views
     };
 } // namespace star::rendering

@@ -275,7 +275,7 @@ vec3 evaluateLighting(vec3 worldPos, vec3 N, vec3 V, Material mat)
     return evaluateLightingFiltered(worldPos, N, V, mat, -1.0, 3.0);
 }
 
-float computeShadow(vec4 shadowCoord)
+float computeShadow(vec4 shadowCoord, float NdL)
 {
     if (u_shadowParams.x < 0.5)
         return 1.0;
@@ -289,7 +289,7 @@ float computeShadow(vec4 shadowCoord)
     if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0 || receiver > 1.0)
         return 1.0;
 
-    float bias = u_shadowParams.y;
+    float bias = u_shadowParams.y * (1.0 + 2.5 * clamp(1.0 - NdL, 0.0, 1.0));
     float texel = u_shadowParams.z;
 
     float shadow = 0.0;

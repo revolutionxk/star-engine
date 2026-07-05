@@ -95,9 +95,7 @@ namespace star::application {
 
         m_window->set_resize_callback([this](const u32 width, const u32 height) { on_window_resize(width, height); });
 
-        m_scene_manager->set_scene_changed_callback([this](scene::Scene* scene) {
-            m_active_scene = scene;
-        });
+        m_scene_manager->set_scene_changed_callback([this](scene::Scene* scene) { m_active_scene = scene; });
 
         auto imgui_pass = imgui::create_default_imgui_pass();
         imgui_pass->add_imgui_callback([this] {
@@ -119,6 +117,8 @@ namespace star::application {
             m_layer_stack.reset();
         }
 
+        m_scene_extractor.reset();
+
         if (m_scene_manager) {
             m_scene_manager.reset();
         }
@@ -132,8 +132,8 @@ namespace star::application {
             m_window_id = INVALID_WINDOW_ID;
         }
 
-        m_device = nullptr;
         m_resource_manager = nullptr;
+        m_device = nullptr;
 
         STAR_LOG_INFO(LogCategory::Application, "Window subsystems shut down");
     }
@@ -142,8 +142,6 @@ namespace star::application {
         if (!m_initialized || !m_window) {
             return;
         }
-
-        m_window->pool_events();
 
         m_scene_manager->update(delta_time);
         on_update(delta_time);

@@ -1,7 +1,9 @@
 #include "star/application/command_line_args.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <sstream>
+#include <string_view>
 
 namespace star::application {
     CommandLineArgs::CommandLineArgs(const int argc, const char* argv[]) {
@@ -39,15 +41,22 @@ namespace star::application {
                     std::string value = key.substr(equals_pos + 1);
                     key = key.substr(0, equals_pos);
                     m_key_value_args[key] = value;
-                    m_flags[key] = true;
                 } else {
-                    if (i + 1 < argc && argv[i + 1][0] != '-') {
-                        m_key_value_args[key] = argv[i + 1];
-                        m_flags[key] = true;
-                        ++i; // Skip next argument as it's the value
-                        m_all_args.push_back(argv[i]);
-                    } else {
-                        // Just a flag: --flag
+                    bool consumed_value = false;
+                    if (i + 1 < argc) {
+                        // A leading '-' followed by a digit or '.' is a negative number, not another option.
+                        const std::string_view next = argv[i + 1];
+                        const bool next_is_option =
+                            !next.empty() && next[0] == '-' &&
+                            !(next.size() > 1 && (std::isdigit(static_cast<unsigned char>(next[1])) || next[1] == '.'));
+                        if (!next_is_option) {
+                            m_key_value_args[key] = next;
+                            ++i; // consume the value token
+                            m_all_args.emplace_back(argv[i]);
+                            consumed_value = true;
+                        }
+                    }
+                    if (!consumed_value) {
                         m_flags[key] = true;
                     }
                 }
@@ -101,7 +110,8 @@ namespace star::application {
 
         // Convert string to lowercase for comparison
         std::string value = it->second;
-        std::ranges::transform(value, value.begin(), tolower);
+        std::ranges::transform(value, value.begin(),
+                               [](const unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
         if (value == "true" || value == "1" || value == "yes" || value == "on") {
             return true;

@@ -16,7 +16,6 @@ namespace star::rendering {
         graphics::ResourceHandle<resources::Mesh> mesh;
         graphics::ResourceHandle<resources::Material> material;
         std::vector<MaterialProperty> parameters;
-        u64 sort_key{0};
         f32 distance_sq{0.0f};
         u8 layer{0};
         bool is_transparent{false};
@@ -42,8 +41,6 @@ namespace star::rendering {
         size_t command_count() const {
             return m_opaque_commands.size() + m_transparent_commands.size();
         }
-
-        static u64 calculate_sort_key(const DrawCall& draw_call);
 
       private:
         std::vector<DrawCall> m_opaque_commands;

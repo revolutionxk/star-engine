@@ -312,7 +312,6 @@ namespace star::systems {
 
             draw_call.distance_sq = camera_position.distance_squared_to(item.world_position);
             draw_call.is_transparent = item.is_transparent;
-            draw_call.sort_key = rendering::RenderQueue::calculate_sort_key(draw_call);
 
             m_render_queue.submit(draw_call);
         }

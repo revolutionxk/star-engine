@@ -14,8 +14,11 @@ namespace star::editor {
     void ConsolePanel::on_detach() {
         if (!m_sink)
             return;
-        auto& sinks = spdlog::default_logger()->sinks();
-        sinks.erase(std::ranges::remove(sinks, m_sink).begin(), sinks.end());
+
+        if (const auto logger = spdlog::default_logger()) {
+            auto& sinks = logger->sinks();
+            sinks.erase(std::ranges::remove(sinks, m_sink).begin(), sinks.end());
+        }
         m_sink.reset();
     }
 

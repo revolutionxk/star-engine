@@ -124,6 +124,7 @@ namespace star::application {
         std::shared_ptr<resources::ResourceManager> m_resource_manager;
 
         bool m_running = false;
+        bool m_subsystems_shut_down = false;
         static Application* s_instance;
     };
 } // namespace star::application

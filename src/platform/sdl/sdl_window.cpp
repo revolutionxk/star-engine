@@ -156,6 +156,7 @@ namespace star::platform::sdl {
             return surface;
         }
 #endif
+        return nullptr;
     }
 
     void* SDLWindow::display_handle() const {

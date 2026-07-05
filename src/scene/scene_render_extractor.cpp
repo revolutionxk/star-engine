@@ -44,6 +44,10 @@ namespace star::scene {
     SceneRenderExtractor::SceneRenderExtractor() : m_cache(std::make_unique<QueryCache>()) {}
 
     SceneRenderExtractor::~SceneRenderExtractor() = default;
+
+    void SceneRenderExtractor::reset() {
+        m_cache = std::make_unique<QueryCache>();
+    }
     SceneRenderExtractor::SceneRenderExtractor(SceneRenderExtractor&&) noexcept = default;
     SceneRenderExtractor& SceneRenderExtractor::operator=(SceneRenderExtractor&&) noexcept = default;
 

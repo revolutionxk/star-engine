@@ -65,7 +65,6 @@ namespace star::platform {
         void reset();
 
     private:
-        Clock m_clock;
         TimePoint m_last_frame_time;
 
         f32 m_delta_time{0.0f};

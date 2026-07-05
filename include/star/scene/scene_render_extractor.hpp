@@ -23,6 +23,8 @@ namespace star::scene {
 
         void extract(Scene& scene, rendering::RenderScene& out) const;
 
+        void reset();
+
       private:
         struct QueryCache;
         std::unique_ptr<QueryCache> m_cache;

@@ -163,6 +163,29 @@ TEST_CASE("CommandLineArgs - mixed flags, key-values, and positionals", "[applic
     REQUIRE(args.get_positional()[0] == "scene.json");
 }
 
+TEST_CASE("CommandLineArgs - negative numeric values are treated as values, not options", "[application][args]") {
+    SECTION("negative integer") {
+        const char* argv[] = {"app", "--speed", "-5"};
+        const CommandLineArgs args(3, argv);
+        REQUIRE(args.get_value("speed") == "-5");
+        REQUIRE(args.get_int("speed") == -5);
+        REQUIRE(args.get_positional().empty());
+    }
+    SECTION("negative float") {
+        const char* argv[] = {"app", "--offset", "-2.5"};
+        const CommandLineArgs args(3, argv);
+        REQUIRE(args.get_float("offset") == Catch::Approx(-2.5f));
+    }
+}
+
+TEST_CASE("CommandLineArgs - a following option is not swallowed as a value", "[application][args]") {
+    const char* argv[] = {"app", "--mode", "--fast"};
+    const CommandLineArgs args(3, argv);
+    REQUIRE(args.has_flag("mode"));
+    REQUIRE(args.has_flag("fast"));
+    REQUIRE(args.get_value("mode", "none") == "none");
+}
+
 TEST_CASE("CommandLineArgs - parse clears previous state", "[application][args]") {
     const char* argv1[] = {"app", "--a"};
     const char* argv2[] = {"app", "--b"};

@@ -40,9 +40,7 @@ namespace star::platform {
 
         const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(current_time - m_last_frame_time);
         m_delta_time = static_cast<f32>(duration.count()) / 1'000'000.0f;
-
-        constexpr f32 MAX_DELTA_TIME = 0.1f;
-        m_delta_time = std::min(m_delta_time, MAX_DELTA_TIME);
+        
         m_smoothed_delta_time =
             m_smoothed_delta_time * (1.0f - DELTA_TIME_SMOOTHING) + m_delta_time * DELTA_TIME_SMOOTHING;
 
@@ -89,7 +87,6 @@ namespace star::platform {
     }
 
     void FrameTimer::reset() {
-        m_clock.reset();
         m_last_frame_time = std::chrono::steady_clock::now();
         m_delta_time = 0.0f;
         m_smoothed_delta_time = 0.0f;

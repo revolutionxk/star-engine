@@ -64,9 +64,10 @@ namespace star::application {
     }
 
     void Application::shutdown_subsystems() {
-        if (!m_running) {
+        if (m_subsystems_shut_down) {
             return;
         }
+        m_subsystems_shut_down = true;
 
         STAR_LOG_INFO(LogCategory::Application, "Shutting down subsystems");
 

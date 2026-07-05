@@ -89,12 +89,12 @@ namespace star::platform {
         m_timer.stop();
     }
 
-    bool Countdown::update(const f32 dt) {
+    bool Countdown::update(f32) {
         if (!m_running) {
             return false;
         }
 
-        if (const bool was_finished = is_finished(); !was_finished && is_finished()) {
+        if (m_timer.elapsed() >= m_duration) {
             m_running = false;
             return true;
         }

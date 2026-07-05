@@ -1,5 +1,4 @@
 #pragma once
-#include "node3d.hpp"
 #include "star/core/reflection/type_registry.hpp"
 #include "star/ecs/component_registry.hpp"
 

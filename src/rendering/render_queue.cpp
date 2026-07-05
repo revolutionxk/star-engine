@@ -51,24 +51,4 @@ namespace star::rendering {
         m_opaque_commands.clear();
         m_transparent_commands.clear();
     }
-
-    u64 RenderQueue::calculate_sort_key(const DrawCall& draw_call) {
-        u64 key = 0;
-
-        key |= static_cast<u64>(draw_call.layer) << 56;
-
-        const u32 material_hash = draw_call.material.id & 0xFFFFFF;
-        key |= static_cast<u64>(material_hash) << 32;
-
-        u32 distance_bits;
-        std::memcpy(&distance_bits, &draw_call.distance_sq, sizeof(u32));
-
-        if (draw_call.is_transparent) {
-            distance_bits = ~distance_bits;
-        }
-
-        key |= distance_bits;
-
-        return key;
-    }
 } // namespace star::rendering

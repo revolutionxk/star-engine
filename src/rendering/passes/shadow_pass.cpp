@@ -65,6 +65,10 @@ namespace star::rendering {
     }
 
     void ShadowPass::render(const RenderContext& ctx) {
+        if (ctx.frame.frame_index == m_last_render_frame)
+            return;
+        m_last_render_frame = ctx.frame.frame_index;
+
         systems::RenderSystem::ShadowState state;
         state.enabled = false;
 

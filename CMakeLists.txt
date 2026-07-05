@@ -26,6 +26,7 @@ include(scripts/freetype.cmake)
 include(scripts/imgui.cmake)
 include(scripts/imguizmo.cmake)
 include(scripts/nlohmann.cmake)
+include(scripts/jolt.cmake)
 
 message(STATUS "Compiling shaders...")
 file(GLOB VERTEX_SHADER_FILES "assets/shaders/v_*.sc")
@@ -97,7 +98,8 @@ file(GLOB_RECURSE STAR_UTILS_SRC CONFIGURE_DEPENDS
         "${INCLUDE_DIR}/star/utils/*.hpp" "${INCLUDE_DIR}/star/utils/*.h"
 )
 
-file(GLOB_RECURSE STAR_PHYSICS_HEADERS CONFIGURE_DEPENDS
+file(GLOB_RECURSE STAR_PHYSICS_SRC CONFIGURE_DEPENDS
+        "${SRC_DIR}/physics/*.cpp" "${SRC_DIR}/physics/*.hpp" "${SRC_DIR}/physics/*.h"
         "${INCLUDE_DIR}/star/physics/*.hpp" "${INCLUDE_DIR}/star/physics/*.h"
 )
 
@@ -204,8 +206,12 @@ star_add_module(star_application
         DEPS star_core star_platform star_graphics star_rendering star_resources star_ecs star_scene star_imgui
 )
 
+star_add_module(star_physics
+        SOURCES ${STAR_PHYSICS_SRC}
+        DEPS star_core star_ecs star_math Jolt
+)
+
 add_library(${PROJECT_NAME} STATIC
-        ${STAR_PHYSICS_HEADERS}
         $<TARGET_OBJECTS:star_core>
         $<TARGET_OBJECTS:star_platform>
         $<TARGET_OBJECTS:star_graphics>
@@ -215,6 +221,7 @@ add_library(${PROJECT_NAME} STATIC
         $<TARGET_OBJECTS:star_imgui>
         $<TARGET_OBJECTS:star_scene>
         $<TARGET_OBJECTS:star_application>
+        $<TARGET_OBJECTS:star_physics>
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -233,6 +240,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         star_imgui
         star_scene
         star_application
+        star_physics
         ${CMAKE_DL_LIBS}
 )
 
@@ -254,8 +262,8 @@ set(_STAR_ALL_MODULE_FILES
         ${STAR_CORE_SRC} ${STAR_UTILS_SRC} ${STAR_PLATFORM_SRC} ${STAR_GRAPHICS_SRC}
         ${STAR_RESOURCES_SRC} ${STAR_ECS_SRC} ${STAR_RENDERING_SRC}
         ${STAR_IMGUI_SRC}
-        ${STAR_SCENE_SRC} ${STAR_APPLICATION_SRC}
-        ${STAR_MATH_HEADERS} ${STAR_PHYSICS_HEADERS}
+        ${STAR_SCENE_SRC} ${STAR_APPLICATION_SRC} ${STAR_PHYSICS_SRC}
+        ${STAR_MATH_HEADERS}
 )
 set(_STAR_SRC_TREE_FILES "")
 set(_STAR_INCLUDE_TREE_FILES "")

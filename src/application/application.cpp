@@ -54,9 +54,7 @@ namespace star::application {
 
         m_window_manager->set_input_manager(m_input_manager.get());
 
-        GameLoopConfig loop_config{.fixed_timestep = m_config.fixed_timestep,
-                                   .use_fixed_timestep = m_config.fixed_timestep > 0.0f,
-                                   .target_fps = m_config.max_fps};
+        const GameLoopConfig loop_config{.fixed_timestep = m_config.fixed_timestep, .target_fps = m_config.max_fps};
         m_game_loop = std::make_unique<GameLoop>(loop_config);
 
         STAR_LOG_INFO(LogCategory::Application, "All subsystems initialized successfully");
@@ -101,7 +99,9 @@ namespace star::application {
                 return -1;
             }
 
-            m_game_loop->run([this](const f32 delta_time) { update_frame(delta_time); }, [this] { render_frame(); },
+            m_game_loop->run([this](const f32 fixed_dt) { on_fixed_update(fixed_dt); },
+                             [this](const f32 delta_time) { update_frame(delta_time); },
+                             [this](const f32) { render_frame(); },
                              [this] {
                                  if (!m_window_manager->has_open_windows()) {
                                      STAR_LOG_INFO(LogCategory::Application, "All windows closed, shutting down");

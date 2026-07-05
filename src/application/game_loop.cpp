@@ -8,19 +8,36 @@ namespace star::application {
         }
     }
 
-    void GameLoop::run(const UpdateCallback& update_fn, const RenderCallback& render_fn,
-                       const std::function<bool()>& should_continue) {
+    void GameLoop::run(const FixedUpdateCallback& fixed_update, const UpdateCallback& update,
+                       const RenderCallback& render, const std::function<bool()>& should_continue) {
         while (should_continue()) {
             const f32 dt = tick();
 
-            if (m_config.use_fixed_timestep) {
-                execute_fixed_updates(update_fn);
-            } else {
-                update_fn(dt);
+            if (update) {
+                update(dt);
             }
 
-            if (render_fn) {
-                render_fn();
+            if (m_config.fixed_timestep > 0.0f) {
+                m_accumulator += dt;
+
+                u32 steps = 0;
+                while (m_accumulator >= m_config.fixed_timestep && steps < m_config.max_fixed_steps) {
+                    if (fixed_update) {
+                        fixed_update(m_config.fixed_timestep);
+                    }
+                    m_accumulator -= m_config.fixed_timestep;
+                    ++steps;
+                }
+                
+                if (steps >= m_config.max_fixed_steps) {
+                    m_accumulator = 0.0f;
+                }
+
+                m_alpha = m_accumulator / m_config.fixed_timestep;
+            }
+
+            if (render) {
+                render(m_alpha);
             }
         }
     }
@@ -33,21 +50,6 @@ namespace star::application {
         }
 
         return m_delta_time;
-    }
-
-    void GameLoop::execute_fixed_updates(const UpdateCallback& update_fn) {
-        m_fixed_time_accumulator += m_delta_time;
-
-        u32 update_count = 0;
-        while (m_fixed_time_accumulator >= m_config.fixed_timestep && update_count < m_config.max_updates_per_frame) {
-            update_fn(m_config.fixed_timestep);
-            m_fixed_time_accumulator -= m_config.fixed_timestep;
-            ++update_count;
-        }
-
-        if (update_count >= m_config.max_updates_per_frame) {
-            m_fixed_time_accumulator = 0.0f;
-        }
     }
 
     f32 GameLoop::fps() const {

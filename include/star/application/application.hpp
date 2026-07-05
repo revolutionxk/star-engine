@@ -100,6 +100,8 @@ namespace star::application {
 
         virtual void on_shutdown() {}
 
+        virtual void on_fixed_update(f32 fixed_dt) {}
+
         virtual void on_update(f32 delta_time) {}
 
         virtual void on_post_update(f32 delta_time) {}

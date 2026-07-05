@@ -3,6 +3,8 @@
 #include <exception>
 #include <fstream>
 
+#include <stb_image.h>
+
 #include "shader/builtin_shader_registry.hpp"
 #include "star/core/common.hpp"
 #include "star/graphics/buffer.hpp"
@@ -237,9 +239,35 @@ namespace star::resources {
             return ResourceHandle<Texture>{it->second, entry.generation};
         }
 
-        // TODO: Load texture from file
-        STAR_LOG_WARN(LogCategory::Resources, "Texture loading from file not yet implemented: {}", path);
-        return {};
+        const std::filesystem::path full = m_asset_root.empty() ? std::filesystem::path{path} : m_asset_root / path;
+
+        int width = 0;
+        int height = 0;
+        int channels = 0;
+        stbi_uc* pixels = stbi_load(full.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
+        if (!pixels) {
+            STAR_LOG_ERROR(LogCategory::Resources, "Failed to load texture '{}': {}", full.string(),
+                           stbi_failure_reason());
+            return {};
+        }
+
+        auto texture = std::make_unique<Texture>();
+        texture->desc.width = static_cast<u32>(width);
+        texture->desc.height = static_cast<u32>(height);
+        texture->desc.format = TextureFormat::RGBA8;
+        texture->desc.generate_mipmaps = false;
+        texture->data.assign(pixels, pixels + static_cast<size_t>(width) * height * 4);
+        stbi_image_free(pixels);
+
+        return create_texture(path, std::move(texture));
+    }
+
+    ResourceHandle<Texture> ResourceManager::get_or_load_texture(const std::string& name) {
+        if (name.empty())
+            return {};
+        if (const auto handle = texture_by_name(name); handle.is_valid())
+            return handle;
+        return load_texture(name);
     }
 
     ResourceHandle<Texture> ResourceManager::create_texture(const std::string& name, std::unique_ptr<Texture> texture) {
@@ -578,9 +606,25 @@ namespace star::resources {
         mesh.bounds = mesh.bounding_box();
     }
 
-    void ResourceManager::upload_texture_to_gpu(Texture& /*texture*/) {
-        // TODO: Implement texture upload
-        STAR_ASSERT(false, "Texture upload not yet implemented");
+    void ResourceManager::upload_texture_to_gpu(Texture& texture) {
+        if (texture.data.empty() || texture.desc.width == 0 || texture.desc.height == 0) {
+            STAR_LOG_WARN(LogCategory::Resources, "Skipping GPU upload of empty texture");
+            return;
+        }
+
+        graphics::TextureDescriptor desc{};
+        desc.width = texture.desc.width;
+        desc.height = texture.desc.height;
+        desc.mip_levels = 1;
+        desc.format = graphics::TextureFormat::RGBA8;
+        desc.initial_data = texture.data.data();
+        desc.size_in_bytes = texture.data.size();
+        desc.usage = graphics::TextureUsage::Sampled;
+
+        texture.handle = m_device.create_texture(desc);
+        if (!texture.handle.is_valid())
+            STAR_LOG_ERROR(LogCategory::Resources, "Failed to upload texture to GPU ({}x{})", texture.desc.width,
+                           texture.desc.height);
     }
 
     void ResourceManager::init_default_resources() {
@@ -597,6 +641,18 @@ namespace star::resources {
         auto sphere = std::make_unique<Mesh>();
         *sphere = Mesh::create_sphere(1.0f, 32, 32);
         m_sphere_mesh = create_mesh("__default_sphere", std::move(sphere));
+        
+        const auto solid_texture = [this](const std::string& name, const u8 r, const u8 g, const u8 b, const u8 a) {
+            auto tex = std::make_unique<Texture>();
+            tex->desc.width = 1;
+            tex->desc.height = 1;
+            tex->desc.format = TextureFormat::RGBA8;
+            tex->desc.generate_mipmaps = false;
+            tex->data = {r, g, b, a};
+            return create_texture(name, std::move(tex));
+        };
+        m_white_texture = solid_texture("__white", 255, 255, 255, 255);
+        m_black_texture = solid_texture("__black", 0, 0, 0, 255);
 
         m_default_shader = register_builtin_shader("__simple_shader", BuiltinShader::Material);
 

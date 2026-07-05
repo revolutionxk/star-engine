@@ -27,6 +27,7 @@ include(scripts/imgui.cmake)
 include(scripts/imguizmo.cmake)
 include(scripts/nlohmann.cmake)
 include(scripts/jolt.cmake)
+include(scripts/stb.cmake)
 
 message(STATUS "Compiling shaders...")
 file(GLOB VERTEX_SHADER_FILES "assets/shaders/v_*.sc")
@@ -181,7 +182,7 @@ star_add_module(star_ecs
 
 star_add_module(star_resources
         SOURCES ${STAR_RESOURCES_SRC}
-        DEPS star_core star_graphics nlohmann_json::nlohmann_json
+        DEPS star_core star_graphics nlohmann_json::nlohmann_json stb
 )
 
 star_add_module(star_rendering

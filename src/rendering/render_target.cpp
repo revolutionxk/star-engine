@@ -49,7 +49,8 @@ namespace star::rendering {
                                                    .mip_levels = 1,
                                                    .format = color_formats[i],
                                                    .initial_data = nullptr,
-                                                   .size_in_bytes = 0};
+                                                   .size_in_bytes = 0,
+                                                   .usage = graphics::TextureUsage::RenderTarget};
 
             auto color_texture = m_device->create_texture(color_desc);
             if (!color_texture.is_valid()) {
@@ -70,7 +71,8 @@ namespace star::rendering {
                                                    .mip_levels = 1,
                                                    .format = graphics::TextureFormat::D24S8,
                                                    .initial_data = nullptr,
-                                                   .size_in_bytes = 0};
+                                                   .size_in_bytes = 0,
+                                                   .usage = graphics::TextureUsage::RenderTarget};
 
             m_depth_texture = m_device->create_texture(depth_desc);
             if (!m_depth_texture.is_valid()) {

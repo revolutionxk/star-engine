@@ -37,7 +37,7 @@ namespace star::resources {
         return document;
     }
 
-    void material_from_json(const nlohmann::json& document, Material& material, const ResourceManager& resources) {
+    void material_from_json(const nlohmann::json& document, Material& material, ResourceManager& resources) {
         const nlohmann::json& body = document.contains(MATERIAL_KEY) ? document[MATERIAL_KEY] : document;
 
         const auto shader = resources.shader_by_name(body.value("shader", std::string{}));
@@ -51,6 +51,6 @@ namespace star::resources {
         material.roughness = body.value("roughness", material.roughness);
 
         if (const auto texture = body.value("albedo_texture", std::string{}); !texture.empty())
-            material.albedo_texture = resources.texture_by_name(texture);
+            material.albedo_texture = resources.get_or_load_texture(texture);
     }
 } // namespace star::resources

@@ -2,7 +2,6 @@
 
 #include "star/application/command_line_args.hpp"
 #include "star/application/window_manager.hpp"
-#include "star/graphics/command_buffer.hpp"
 #include "star/graphics/device.hpp"
 #include "star/platform/input/input.hpp"
 #include "star/rendering/renderer.hpp"

@@ -99,7 +99,7 @@ namespace star::graphics {
         if (!m_initialized) {
             return;
         }
-        
+
         m_context.reset();
 
         bgfx::shutdown();
@@ -156,8 +156,8 @@ namespace star::graphics {
                     return ResourceHandle<Buffer>{};
                 }
 
-                handle_id = encode_buffer(is_dynamic ? BufferKind::DynamicVertex : BufferKind::StaticVertex,
-                                          bgfx_handle.idx);
+                handle_id =
+                    encode_buffer(is_dynamic ? BufferKind::DynamicVertex : BufferKind::StaticVertex, bgfx_handle.idx);
                 break;
             }
 
@@ -209,13 +209,17 @@ namespace star::graphics {
             mem = bgfx::copy(texture_descriptor.initial_data, texture_descriptor.size_in_bytes);
         }
 
-        bgfx::TextureFormat::Enum bgfx_format = to_bgfx_format(texture_descriptor.format);
+        const bgfx::TextureFormat::Enum bgfx_format = to_bgfx_format(texture_descriptor.format);
 
-        bgfx::TextureHandle bgfx_handle =
+        u64 flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
+        if (has_flag(texture_descriptor.usage, TextureUsage::RenderTarget))
+            flags |= BGFX_TEXTURE_RT;
+
+        const bgfx::TextureHandle bgfx_handle =
             bgfx::createTexture2D(static_cast<u16>(texture_descriptor.width),
                                   static_cast<u16>(texture_descriptor.height), texture_descriptor.mip_levels > 1,
                                   1, // Layers
-                                  bgfx_format, BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE | BGFX_TEXTURE_RT, mem);
+                                  bgfx_format, flags, mem);
 
         if (!bgfx::isValid(bgfx_handle)) {
             STAR_LOG_ERROR(LogCategory::Graphics, "Failed to create texture ({}x{})", texture_descriptor.width,

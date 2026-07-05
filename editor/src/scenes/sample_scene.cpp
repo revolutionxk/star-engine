@@ -98,12 +98,22 @@ namespace star::editor {
         }
 
         const auto hero_mat = material("HeroRed", Vector4{0.85f, 0.2f, 0.18f, 1.0f}, 0.0f, 0.35f);
-        scene.create_entity("HeroCube")
-            .set<components::Transform>({
-                .position = Vector3{0.0f, 0.0f, 1.5f},
-                .scale = Vector3{0.8f, 0.8f, 0.8f},
-            })
-            .set<components::MeshRenderer>({.mesh = cube_mesh, .material = hero_mat});
+        const auto hero = scene.create_entity("HeroCube")
+                              .set<components::Transform>({
+                                  .position = Vector3{0.0f, 0.0f, 1.5f},
+                                  .scale = Vector3{0.8f, 0.8f, 0.8f},
+                              })
+                              .set<components::MeshRenderer>({.mesh = cube_mesh, .material = hero_mat});
+        
+        const auto satellite_mat = material("HeroSatellite", Vector4{0.95f, 0.85f, 0.2f, 1.0f}, 1.0f, 0.25f);
+        scene.create_entity("Satellite_L")
+            .set<components::Transform>({.position = Vector3{-1.6f, 1.4f, 0.0f}, .scale = Vector3{0.35f, 0.35f, 0.35f}})
+            .set<components::MeshRenderer>({.mesh = sphere_mesh, .material = satellite_mat})
+            .child_of(hero);
+        scene.create_entity("Satellite_R")
+            .set<components::Transform>({.position = Vector3{1.6f, 1.4f, 0.0f}, .scale = Vector3{0.35f, 0.35f, 0.35f}})
+            .set<components::MeshRenderer>({.mesh = sphere_mesh, .material = satellite_mat})
+            .child_of(hero);
 
         scene.create_entity("PhysicsGround")
             .set<components::Transform>({.position = Vector3{0.0f, -1.5f, 0.0f}})

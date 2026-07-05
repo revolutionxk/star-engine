@@ -63,6 +63,11 @@ namespace star::graphics {
         virtual void set_state(u64 state) = 0;
 
         virtual u32 submit(u32 view_id, ResourceHandle<Shader> program) = 0;
+        
+        virtual void blit(u32 view_id, ResourceHandle<Texture> dst, u16 dst_x, u16 dst_y, ResourceHandle<Texture> src,
+                          u16 src_x, u16 src_y, u16 width, u16 height) = 0;
+        virtual u32 read_texture(ResourceHandle<Texture> texture, void* data) = 0;
+        [[nodiscard]] virtual u32 current_frame() const = 0;
 
         void* native_window_handle() const {
             return m_native_window_handle;

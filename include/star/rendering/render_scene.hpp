@@ -27,7 +27,11 @@ namespace star::rendering {
     };
 
     struct LightSnapshot {
-        enum class Type : u8 { Directional, Point, Spot };
+        enum class Type : u8 {
+            Directional,
+            Point,
+            Spot
+        };
 
         Type type{Type::Directional};
         Vector3 position{0.f, 0.f, 0.f};
@@ -55,6 +59,7 @@ namespace star::rendering {
         graphics::ResourceHandle<resources::Mesh> mesh{};
         graphics::ResourceHandle<resources::Material> material{};
         std::vector<MaterialProperty> parameters{};
+        u64 entity_id{0};
         u32 layer{0};
         bool is_transparent{false};
     };

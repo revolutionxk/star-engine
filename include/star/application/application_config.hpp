@@ -14,6 +14,5 @@ namespace star::application {
         f32 fixed_timestep = 1.0f / 60.0f;
         u32 max_fps = 0;
         bool allow_multiple_windows = true;
-        bool vsync = true;
     };
 } // namespace star::application

@@ -20,8 +20,8 @@ namespace star::scene {
         SceneRenderExtractor& operator=(const SceneRenderExtractor&) = delete;
         SceneRenderExtractor(SceneRenderExtractor&&) noexcept;
         SceneRenderExtractor& operator=(SceneRenderExtractor&&) noexcept;
-
-        void extract(Scene& scene, rendering::RenderScene& out) const;
+        
+        void extract(Scene& scene, rendering::RenderScene& out, f32 alpha = 1.0f) const;
 
         void reset();
 

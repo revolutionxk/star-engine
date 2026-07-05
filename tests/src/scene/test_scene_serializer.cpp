@@ -32,3 +32,27 @@ TEST_CASE("serialize_scene / load_scene round-trips entities, transforms and tag
     REQUIRE(sphere.is_valid());
     REQUIRE(sphere.try_get<components::Transform>()->position.x == Catch::Approx(-5.0f));
 }
+
+TEST_CASE("serialize_scene preserves parent/child hierarchy", "[scene][serialize]") {
+    scene::Scene scene("Tree");
+
+    auto parent = scene.create_entity("Parent");
+    parent.set<components::Transform>({.position = Vector3{5.0f, 0.0f, 0.0f}});
+    auto child = scene.create_entity("Child");
+    child.set<components::Transform>({.position = Vector3{1.0f, 0.0f, 0.0f}});
+    child.child_of(parent);
+
+    const nlohmann::json document = scene::serialize_scene(scene);
+
+    REQUIRE(document["entities"].size() == 1);
+    REQUIRE(document["entities"][0]["name"] == "Parent");
+    REQUIRE(document["entities"][0].contains("children"));
+    REQUIRE(document["entities"][0]["children"].size() == 1);
+    CHECK(document["entities"][0]["children"][0]["name"] == "Child");
+    
+    scene::Scene reloaded("TreeReloaded");
+    scene::load_scene(reloaded, document);
+    const nlohmann::json round_tripped = scene::serialize_scene(reloaded);
+
+    CHECK(round_tripped["entities"] == document["entities"]);
+}

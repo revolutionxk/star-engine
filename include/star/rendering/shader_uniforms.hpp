@@ -26,8 +26,12 @@ namespace star::rendering::uniforms {
 
     inline constexpr std::string_view CAM_POS = "u_camPos";
 
+    inline constexpr std::string_view LIGHT_VIEW_PROJ = "u_lightViewProj";
+    inline constexpr std::string_view SHADOW_PARAMS = "u_shadowParams";
+
     inline constexpr u8 STAGE_ALBEDO = 0;
     inline constexpr u8 STAGE_NORMAL = 1;
     inline constexpr u8 STAGE_METALLIC = 2;
     inline constexpr u8 STAGE_ROUGHNESS = 3;
+    inline constexpr u8 STAGE_SHADOW = 4;
 } // namespace star::rendering::uniforms

@@ -24,6 +24,7 @@ namespace star::graphics {
 
         ResourceHandle<Buffer> create_buffer(BufferDescriptor& buffer_descriptor) override;
         ResourceHandle<Texture> create_texture(TextureDescriptor& texture_descriptor) override;
+        ResourceHandle<Texture> create_readback_texture(u16 width, u16 height) override;
         ResourceHandle<Shader> create_shader(ShaderDescriptor& shader_descriptor) override;
         ResourceHandle<Framebuffer> create_framebuffer(FramebufferDescriptor& framebuffer_descriptor) override;
 

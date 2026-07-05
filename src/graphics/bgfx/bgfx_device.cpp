@@ -69,7 +69,8 @@ namespace star::graphics {
         init.resolution.height = static_cast<u32>(size.y);
         init.debug = config.debug;
         init.profile = config.profile;
-        init.resolution.reset = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X4;
+        const u32 reset_flags = (config.vsync ? BGFX_RESET_VSYNC : 0u) | BGFX_RESET_MSAA_X4;
+        init.resolution.reset = reset_flags;
 
         if (!bgfx::init(init)) {
             STAR_LOG_ERROR(LogCategory::Graphics, "Failed to initialize bgfx");
@@ -88,7 +89,7 @@ namespace star::graphics {
         m_initialized = true;
         m_config = config;
 
-        m_context = std::make_unique<BGFXDeviceContext>(this, config.platform.native_window_handle);
+        m_context = std::make_unique<BGFXDeviceContext>(this, config.platform.native_window_handle, reset_flags);
         m_context->resize(static_cast<u32>(size.x), static_cast<u32>(size.y));
 
         const auto caps = bgfx::getCaps();
@@ -115,6 +116,8 @@ namespace star::graphics {
             .max_texture_size = static_cast<int>(caps->limits.maxTextureSize),
             .max_texture_units = static_cast<int>(caps->limits.maxTextureSamplers),
             .supports_compute_shaders = (caps->supported & BGFX_CAPS_COMPUTE) != 0,
+            .origin_bottom_left = caps->originBottomLeft,
+            .homogeneous_depth = caps->homogeneousDepth,
         };
 
         return device_caps;
@@ -228,6 +231,16 @@ namespace star::graphics {
         }
 
         return ResourceHandle<Texture>{bgfx_handle.idx, 0};
+    }
+
+    ResourceHandle<Texture> BGFXDevice::create_readback_texture(const u16 width, const u16 height) {
+        const bgfx::TextureHandle handle = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::RGBA8,
+                                                                 BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK);
+        if (!bgfx::isValid(handle)) {
+            STAR_LOG_ERROR(LogCategory::Graphics, "Failed to create read-back texture ({}x{})", width, height);
+            return ResourceHandle<Texture>{};
+        }
+        return ResourceHandle<Texture>{handle.idx, 0};
     }
 
     ResourceHandle<Shader> BGFXDevice::create_shader(ShaderDescriptor& shader_descriptor) {

@@ -9,5 +9,7 @@ namespace star::resources {
         ImGui,
         Atmosphere,
         Debug,
+        Picking,
+        Shadow,
     };
 } // namespace star::resources

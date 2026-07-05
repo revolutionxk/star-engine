@@ -21,10 +21,13 @@ uniform vec4 u_lightsColorInt[MAX_LIGHTS];
 uniform vec4 u_lightsCone[MAX_LIGHTS];
 uniform vec4 u_lightsCount;
 
+uniform vec4 u_shadowParams;
+
 SAMPLER2D(s_texColor, 0);
 SAMPLER2D(s_texNormal, 1);
 SAMPLER2D(s_texMetallicRoughness, 2);
 SAMPLER2D(s_texEmissive, 3);
+SAMPLER2D(s_shadowMap, 4);
 
 struct Material
 {
@@ -270,6 +273,36 @@ vec3 evaluateLightingFiltered(vec3 worldPos, vec3 N, vec3 V, Material mat, float
 vec3 evaluateLighting(vec3 worldPos, vec3 N, vec3 V, Material mat)
 {
     return evaluateLightingFiltered(worldPos, N, V, mat, -1.0, 3.0);
+}
+
+float computeShadow(vec4 shadowCoord)
+{
+    if (u_shadowParams.x < 0.5)
+        return 1.0;
+
+    vec3 proj = shadowCoord.xyz / shadowCoord.w;
+    vec2 uv = proj.xy * 0.5 + 0.5;
+    if (u_shadowParams.w > 0.5)
+        uv.y = 1.0 - uv.y;
+
+    float receiver = proj.z * 0.5 + 0.5;
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0 || receiver > 1.0)
+        return 1.0;
+
+    float bias = u_shadowParams.y;
+    float texel = u_shadowParams.z;
+
+    float shadow = 0.0;
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            vec2 offset = vec2(float(x), float(y)) * texel;
+            float occluder = texture2DLod(s_shadowMap, uv + offset, 0.0).r;
+            shadow += (receiver - bias > occluder) ? 0.0 : 1.0;
+        }
+    }
+    return shadow / 9.0;
 }
 float acesTonemapScalar(float x)
 {

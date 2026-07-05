@@ -42,7 +42,11 @@ namespace star::application {
         void shutdown() override;
         void update(f32 delta_time);
         void fixed_update(f32 fixed_dt);
-        void render(f32 delta_time);
+        void render(f32 delta_time, f32 alpha);
+        
+        void set_render_interpolation(const bool enabled) {
+            m_render_interpolation = enabled;
+        }
 
         void push_layer(std::unique_ptr<Layer> layer);
         void push_overlay(std::unique_ptr<Layer> overlay);
@@ -122,5 +126,6 @@ namespace star::application {
 
         bool m_initialized{false};
         bool m_imgui_initialized{false};
+        bool m_render_interpolation{true};
     };
 } // namespace star::application

@@ -15,6 +15,10 @@
 #include "star/rendering/render_view.hpp"
 #include "star/rendering/viewport.hpp"
 
+namespace star::rendering {
+    class PickingPass;
+} // namespace star::rendering
+
 namespace star::editor {
     class EditorUILayer final : public application::Layer {
       public:
@@ -40,6 +44,7 @@ namespace star::editor {
         void render_main_menu_bar();
         void render_toolbar() const;
         void render_project_browser();
+        void resolve_pending_pick() const;
         void initialize_panels();
 
         bool m_rebuild_layout = false;
@@ -58,6 +63,7 @@ namespace star::editor {
         components::Camera m_editor_cam;
         rendering::ViewId m_scene_view = rendering::INVALID_VIEW;
         rendering::ViewId m_game_view = rendering::INVALID_VIEW;
+        rendering::PickingPass* m_picking_pass = nullptr;
 
         PanelManager m_panel_manager;
         ComponentInspector m_component_inspector;

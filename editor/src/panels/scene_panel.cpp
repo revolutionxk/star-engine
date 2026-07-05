@@ -3,6 +3,9 @@
 
 #include <imgui.h>
 
+#include "star/rendering/passes/picking_pass.hpp"
+#include "star/rendering/viewport.hpp"
+
 namespace star::editor {
     namespace {
         constexpr float FIRST_USE_WIDTH = 960.0f;
@@ -26,6 +29,7 @@ namespace star::editor {
             m_gizmo && m_viewport && m_gizmo->draw_and_process(m_image_pos, m_image_size, *m_viewport);
         update_focus_state(gizmo_used);
 
+        handle_click_pick();
         render_gizmo_toolbar();
 
         ImGui::End();
@@ -77,6 +81,27 @@ namespace star::editor {
         ImGui::Image(color_texture.id, avail, uv0, uv1);
         m_image_pos = ImGui::GetItemRectMin();
         m_image_size = ImGui::GetItemRectSize();
+    }
+
+    void ScenePanel::handle_click_pick() const {
+        if (!m_hovered || !m_viewport || !m_picking_pass)
+            return;
+        if (m_image_size.x <= 0.0f || m_image_size.y <= 0.0f)
+            return;
+        if (GizmoSystem::is_over() || GizmoSystem::is_using())
+            return;
+
+        if (!ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::GetIO().KeyAlt)
+            return;
+
+        const ImVec2 mouse = ImGui::GetMousePos();
+        const f32 u = (mouse.x - m_image_pos.x) / m_image_size.x;
+        const f32 v = (mouse.y - m_image_pos.y) / m_image_size.y;
+        if (u < 0.0f || u > 1.0f || v < 0.0f || v > 1.0f)
+            return;
+        
+        m_picking_pass->request(static_cast<u32>(u * static_cast<f32>(m_viewport->width())),
+                                static_cast<u32>(v * static_cast<f32>(m_viewport->height())));
     }
 
     void ScenePanel::render_gizmo_toolbar() const {

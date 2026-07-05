@@ -100,7 +100,7 @@ namespace star::application {
 
             m_game_loop->run([this](const f32 fixed_dt) { fixed_update_frame(fixed_dt); },
                              [this](const f32 delta_time) { update_frame(delta_time); },
-                             [this](const f32) { render_frame(); },
+                             [this](const f32 alpha) { render_frame(alpha); },
                              [this] {
                                  if (!m_window_manager->has_open_windows()) {
                                      STAR_LOG_INFO(LogCategory::Application, "All windows closed, shutting down");
@@ -146,12 +146,12 @@ namespace star::application {
         on_fixed_update(fixed_dt);
     }
 
-    void Application::render_frame() const {
+    void Application::render_frame(const f32 alpha) const {
         const auto delta_time = m_game_loop->delta_time();
 
         for (auto& app_window : m_app_windows) {
             if (app_window && app_window->is_open()) {
-                app_window->render(delta_time);
+                app_window->render(delta_time, alpha);
             }
         }
     }

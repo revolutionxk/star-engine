@@ -236,6 +236,15 @@ namespace star::systems {
                                     m_light_env.sun_luminance_rgb.z, 0.0f};
         context.set_uniform(std::string(rendering::uniforms::ENV_SUN_COLOR), &env_sun_color, 1,
                             graphics::UniformType::Vec4);
+
+        const Vector4 shadow_params{m_shadow.enabled ? 1.0f : 0.0f, m_shadow.bias, m_shadow.texel_size,
+                                    m_shadow.origin_bottom_left ? 1.0f : 0.0f};
+        context.set_uniform(std::string(rendering::uniforms::SHADOW_PARAMS), &shadow_params, 1,
+                            graphics::UniformType::Vec4);
+        context.set_uniform(std::string(rendering::uniforms::LIGHT_VIEW_PROJ), &m_shadow.light_view_proj, 1,
+                            graphics::UniformType::Mat4);
+        if (m_shadow.map.is_valid())
+            context.set_texture(rendering::uniforms::STAGE_SHADOW, m_shadow.map);
     }
 
     void RenderSystem::render(const rendering::RenderScene& scene, graphics::DeviceContext& context, const u32 view_id,

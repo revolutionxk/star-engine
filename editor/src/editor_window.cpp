@@ -22,7 +22,7 @@ namespace star::editor {
         build_empty_scene(*scene);
 
         push_overlay(std::make_unique<EditorUILayer>(this));
-        
+
         if (!m_projects.recent().empty())
             open_project(m_projects.recent().front());
         else
@@ -36,7 +36,9 @@ namespace star::editor {
         STAR_LOG_INFO(LogCategory::Editor, "Editor window shutting down");
     }
 
-    void EditorWindow::on_update(const f32 delta_time) {}
+    void EditorWindow::on_update(const f32 delta_time) {
+        set_render_interpolation(m_play_state == PlayState::Playing);
+    }
 
     void EditorWindow::on_fixed_update(const f32 fixed_dt) {
         if (m_play_state != PlayState::Playing) {

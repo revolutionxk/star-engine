@@ -169,17 +169,17 @@ namespace star::reflection {
             });
 
             const std::string name_key{info.name};
-            m_by_name[name_key] = info;
-            m_by_id[id] = std::move(info);
+            RuntimeTypeInfo& stored = (m_by_id[id] = std::move(info));
+            m_by_name[name_key] = &stored;
         }
 
         using Result = std::expected<const RuntimeTypeInfo*, RegistryError>;
 
-        [[nodiscard]] Result find(std::string_view name) const noexcept {
+        [[nodiscard]] Result find(const std::string_view name) const noexcept {
             const auto it = m_by_name.find(std::string{name});
             if (it == m_by_name.end())
                 return std::unexpected(RegistryError::TypeNotFound);
-            return &it->second;
+            return it->second;
         }
 
         [[nodiscard]] Result find(std::type_index id) const noexcept {
@@ -212,22 +212,19 @@ namespace star::reflection {
         }
 
         [[nodiscard]] auto all_types() const noexcept {
-            return m_by_name | std::views::values;
+            return m_by_id | std::views::values;
         }
 
         [[nodiscard]] std::size_t registered_count() const noexcept {
-            return m_by_name.size();
+            return m_by_id.size();
         }
 
         template<typename Ext>
-        void extend(std::type_index id, Ext ext) {
+        void extend(const std::type_index id, Ext ext) {
             auto it = m_by_id.find(id);
             if (it == m_by_id.end())
                 return;
-            const std::string key{it->second.name};
-            it->second.extensions[typeid(Ext)] = ext;
-            if (auto nit = m_by_name.find(key); nit != m_by_name.end())
-                nit->second.extensions[typeid(Ext)] = std::move(ext);
+            it->second.extensions[typeid(Ext)] = std::move(ext);
         }
 
         template<typename Ext>
@@ -248,19 +245,19 @@ namespace star::reflection {
 
       private:
         TypeRegistry() = default;
-
-        std::unordered_map<std::string, RuntimeTypeInfo> m_by_name;
+        
         std::unordered_map<std::type_index, RuntimeTypeInfo> m_by_id;
+        std::unordered_map<std::string, const RuntimeTypeInfo*> m_by_name;
     };
 } // namespace star::reflection
 
 #define STAR_META_CONCAT_IMPL(a, b) a##b
 #define STAR_META_CONCAT(a, b) STAR_META_CONCAT_IMPL(a, b)
 #define STAR_REGISTER_TYPE(T)                                                                                          \
-    namespace star::reflection::detail {                                                                                     \
+    namespace star::reflection::detail {                                                                               \
         namespace {                                                                                                    \
             [[maybe_unused]] const bool STAR_META_CONCAT(_reg_, __COUNTER__) = [] {                                    \
-                ::star::reflection::TypeRegistry::instance().register_type<T>();                                             \
+                ::star::reflection::TypeRegistry::instance().register_type<T>();                                       \
                 return true;                                                                                           \
             }();                                                                                                       \
         }                                                                                                              \

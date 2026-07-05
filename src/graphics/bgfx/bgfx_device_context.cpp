@@ -5,8 +5,8 @@
 #include "star/core/common.hpp"
 
 namespace star::graphics {
-    BGFXDeviceContext::BGFXDeviceContext(Device* device, void* native_window_handle)
-        : DeviceContext(device, native_window_handle) {}
+    BGFXDeviceContext::BGFXDeviceContext(Device* device, void* native_window_handle, const u32 reset_flags)
+        : DeviceContext(device, native_window_handle), m_reset_flags(reset_flags) {}
 
     BGFXDeviceContext::~BGFXDeviceContext() {
         for (const auto& handle : m_uniform_cache | std::views::values) {
@@ -26,7 +26,22 @@ namespace star::graphics {
     void BGFXDeviceContext::present() {}
 
     void BGFXDeviceContext::end_frame() {
-        bgfx::frame();
+        m_frame_number = bgfx::frame();
+    }
+
+    void BGFXDeviceContext::blit(const u32 view_id, const ResourceHandle<Texture> dst, const u16 dst_x,
+                                 const u16 dst_y, const ResourceHandle<Texture> src, const u16 src_x, const u16 src_y,
+                                 const u16 width, const u16 height) {
+        bgfx::blit(static_cast<bgfx::ViewId>(view_id), bgfx::TextureHandle{static_cast<u16>(dst.id)}, dst_x, dst_y,
+                   bgfx::TextureHandle{static_cast<u16>(src.id)}, src_x, src_y, width, height);
+    }
+
+    u32 BGFXDeviceContext::read_texture(const ResourceHandle<Texture> texture, void* data) {
+        return bgfx::readTexture(bgfx::TextureHandle{static_cast<u16>(texture.id)}, data);
+    }
+
+    u32 BGFXDeviceContext::current_frame() const {
+        return m_frame_number;
     }
 
     void BGFXDeviceContext::resize(const u32 width, const u32 height) {
@@ -35,9 +50,7 @@ namespace star::graphics {
             return;
         }
 
-        constexpr u32 reset_flags = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X4;
-
-        bgfx::reset(width, height, reset_flags);
+        bgfx::reset(width, height, m_reset_flags);
         bgfx::setViewRect(m_current_view, 0, 0, width, height);
 
         STAR_LOG_DEBUG(LogCategory::Graphics, "Device context resized to {}x{}", width, height);

@@ -7,7 +7,7 @@
 namespace star::graphics {
     class BGFXDeviceContext : public DeviceContext {
       public:
-        explicit BGFXDeviceContext(Device* device, void* native_window_handle);
+        BGFXDeviceContext(Device* device, void* native_window_handle, u32 reset_flags);
         ~BGFXDeviceContext() override;
 
         void begin_frame() override;
@@ -38,11 +38,18 @@ namespace star::graphics {
 
         u32 submit(u32 view_id, ResourceHandle<Shader> program) override;
 
+        void blit(u32 view_id, ResourceHandle<Texture> dst, u16 dst_x, u16 dst_y, ResourceHandle<Texture> src,
+                  u16 src_x, u16 src_y, u16 width, u16 height) override;
+        u32 read_texture(ResourceHandle<Texture> texture, void* data) override;
+        [[nodiscard]] u32 current_frame() const override;
+
       private:
         bgfx::UniformHandle get_or_create_uniform(const std::string& name, UniformType type, u16 num);
 
         u32 m_current_view{0};
         u64 m_next_state{0};
+        u32 m_frame_number{0};
+        u32 m_reset_flags{0};
         std::unordered_map<std::string, bgfx::UniformHandle> m_uniform_cache;
     };
 } // namespace star::graphics

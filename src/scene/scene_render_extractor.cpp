@@ -1,8 +1,11 @@
 #include "star/scene/scene_render_extractor.hpp"
 
+#include <unordered_map>
+
 #include "star/core/common.hpp"
 #include "star/ecs/components/camera.hpp"
 #include "star/ecs/components/transform.hpp"
+#include "star/ecs/components/transform_interpolation.hpp"
 #include "star/rendering/components/atmosphere.hpp"
 #include "star/rendering/components/light.hpp"
 #include "star/rendering/components/material_instance.hpp"
@@ -39,6 +42,35 @@ namespace star::scene {
             atmospheres = w.query<const components::Atmosphere>();
             renderables = w.query<const components::MeshRenderer, const components::Transform>();
         }
+
+        static Matrix4 local_matrix(const flecs::entity e, const f32 alpha) {
+            const auto* xf = e.try_get<components::Transform>();
+            if (!xf)
+                return Matrix4::identity();
+
+            const auto* interp = alpha < 1.0f ? e.try_get<components::TransformInterpolation>() : nullptr;
+            if (!interp)
+                return xf->to_matrix();
+
+            const Vector3 position = interp->previous_position.lerp(xf->position, alpha);
+            const Quaternion rotation = interp->previous_rotation.slerp(xf->rotation, alpha);
+            const Vector3 scale = interp->previous_scale.lerp(xf->scale, alpha);
+            return Matrix4::translate(position) * Matrix4::from_quaternion(rotation) * Matrix4::scale(scale);
+        }
+
+        static Matrix4 world_matrix(const flecs::entity e, const f32 alpha, std::unordered_map<u64, Matrix4>& cache) {
+            if (const auto it = cache.find(e.id()); it != cache.end())
+                return it->second;
+
+            const Matrix4 local = local_matrix(e, alpha);
+
+            Matrix4 world = local;
+            if (const flecs::entity parent = e.parent(); parent.is_valid() && parent.has<components::Transform>())
+                world = world_matrix(parent, alpha, cache) * local;
+
+            cache.emplace(e.id(), world);
+            return world;
+        }
     };
 
     SceneRenderExtractor::SceneRenderExtractor() : m_cache(std::make_unique<QueryCache>()) {}
@@ -48,10 +80,11 @@ namespace star::scene {
     void SceneRenderExtractor::reset() {
         m_cache = std::make_unique<QueryCache>();
     }
+
     SceneRenderExtractor::SceneRenderExtractor(SceneRenderExtractor&&) noexcept = default;
     SceneRenderExtractor& SceneRenderExtractor::operator=(SceneRenderExtractor&&) noexcept = default;
 
-    void SceneRenderExtractor::extract(Scene& scene, rendering::RenderScene& out) const {
+    void SceneRenderExtractor::extract(Scene& scene, rendering::RenderScene& out, const f32 alpha) const {
         out.clear();
         out.name = scene.name();
         out.active = scene.is_active();
@@ -111,14 +144,18 @@ namespace star::scene {
         });
 
         out.renderables.reserve(64);
+        std::unordered_map<u64, Matrix4> world_cache;
         m_cache->renderables.each(
             [&](const flecs::entity e, const components::MeshRenderer& mr, const components::Transform& xf) {
                 if (!mr.visible || !mr.mesh.is_valid()) {
                     return;
                 }
+                const Matrix4 world = QueryCache::world_matrix(e, alpha, world_cache);
+
                 rendering::RenderableSnapshot snap;
-                snap.model_matrix = xf.to_matrix();
-                snap.world_position = xf.position;
+                snap.model_matrix = world;
+                snap.world_position = Vector3{world[3].x, world[3].y, world[3].z};
+                snap.entity_id = e.id();
                 snap.mesh = mr.mesh;
                 snap.material = mr.material;
                 snap.layer = mr.layer;

@@ -1,6 +1,7 @@
 #include "star/scene/scene_serializer.hpp"
 
 #include <fstream>
+#include <functional>
 #include <vector>
 
 #include "star/core/common.hpp"
@@ -9,14 +10,23 @@
 
 namespace star::scene {
     nlohmann::json serialize_scene(const Scene& scene) {
-        nlohmann::json entities = nlohmann::json::array();
+        std::function<nlohmann::json(flecs::entity)> serialize_node = [&](const flecs::entity entity) {
+            nlohmann::json node;
+            node["name"] = entity.name().c_str();
+            node["components"] = ecs::serialize_entity(entity);
 
+            nlohmann::json children = nlohmann::json::array();
+            entity.children([&](const flecs::entity child) { children.push_back(serialize_node(child)); });
+            if (!children.empty())
+                node["children"] = std::move(children);
+
+            return node;
+        };
+
+        nlohmann::json entities = nlohmann::json::array();
         scene.root().children([&](const flecs::entity entity) {
             try {
-                nlohmann::json entity_json;
-                entity_json["name"] = entity.name().c_str();
-                entity_json["components"] = ecs::serialize_entity(entity);
-                entities.push_back(std::move(entity_json));
+                entities.push_back(serialize_node(entity));
             } catch (const std::exception& e) {
                 STAR_LOG_WARN(LogCategory::Scene, "Skipped entity '{}' while saving: {}", entity.name().c_str(),
                               e.what());
@@ -29,7 +39,7 @@ namespace star::scene {
         return document;
     }
 
-    void load_scene(Scene& scene, const nlohmann::json& document) {
+    void load_scene(const Scene& scene, const nlohmann::json& document) {
         std::vector<flecs::entity> existing;
         scene.root().children([&](const flecs::entity entity) { existing.push_back(entity); });
         for (const auto& entity : existing) {
@@ -40,13 +50,21 @@ namespace star::scene {
             return;
         }
 
-        for (const auto& entity_json : document.at("entities")) {
-            const auto name = entity_json.value("name", std::string{});
-            const auto entity = scene.create_entity(name);
-            if (entity_json.contains("components")) {
-                ecs::deserialize_entity(entity.raw(), entity_json.at("components"));
-            }
-        }
+        std::function<void(const nlohmann::json&, const Entity*)> load_node = [&](const nlohmann::json& node,
+                                                                                  const Entity* parent) {
+            const auto name = node.value("name", std::string{});
+            Entity entity = scene.create_entity(name);
+            if (parent)
+                entity.child_of(*parent);
+            if (node.contains("components"))
+                ecs::deserialize_entity(entity.raw(), node.at("components"));
+            if (node.contains("children"))
+                for (const auto& child : node.at("children"))
+                    load_node(child, &entity);
+        };
+
+        for (const auto& node : document.at("entities"))
+            load_node(node, nullptr);
     }
 
     bool save_scene_to_file(Scene& scene, const std::filesystem::path& path) {

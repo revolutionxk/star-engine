@@ -80,9 +80,11 @@ namespace star::application {
         const auto platform_data = m_window->platform_data();
         const auto size = m_window->size();
 
-        const graphics::GraphicsDeviceConfig device_config{
-            .api = app.config().graphics_api, .platform = platform_data, .window_size = size};
-
+        const graphics::GraphicsDeviceConfig device_config{.api = app.config().graphics_api,
+                                                           .platform = platform_data,
+                                                           .window_size = size,
+                                                           .vsync = m_configuration.video_mode.vsync};
+        
         m_device = graphics::Device::create(device_config);
         if (!m_device) {
             STAR_LOG_ERROR(LogCategory::Application, "Failed to create graphics device");
@@ -162,13 +164,13 @@ namespace star::application {
         on_fixed_update(fixed_dt);
     }
 
-    void AppWindow::render(const f32 delta_time) {
+    void AppWindow::render(const f32 delta_time, const f32 alpha) {
         if (!m_initialized || !m_window) {
             return;
         }
 
         if (m_active_scene) {
-            m_scene_extractor.extract(*m_active_scene, m_render_scene);
+            m_scene_extractor.extract(*m_active_scene, m_render_scene, m_render_interpolation ? alpha : 1.0f);
             m_renderer->set_render_scene(&m_render_scene);
         } else {
             m_renderer->set_render_scene(nullptr);

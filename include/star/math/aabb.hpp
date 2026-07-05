@@ -165,6 +165,34 @@ namespace star::math {
             return result;
         }
 
+        std::optional<T> intersect_ray(const Vector3T<T>& origin, const Vector3T<T>& direction) const {
+            T tmin = T(0);
+            T tmax = std::numeric_limits<T>::max();
+
+            for (int axis = 0; axis < 3; ++axis) {
+                const T o = origin[axis];
+                const T d = direction[axis];
+                const T lo = min[axis];
+                const T hi = max[axis];
+
+                if (d > T(-1e-9) && d < T(1e-9)) {
+                    if (o < lo || o > hi)
+                        return std::nullopt;
+                } else {
+                    const T inv = T(1) / d;
+                    T t1 = (lo - o) * inv;
+                    T t2 = (hi - o) * inv;
+                    if (t1 > t2)
+                        std::swap(t1, t2);
+                    tmin = std::max(tmin, t1);
+                    tmax = std::min(tmax, t2);
+                    if (tmin > tmax)
+                        return std::nullopt;
+                }
+            }
+            return tmin;
+        }
+
         constexpr bool operator==(const AABBT& other) const {
             return min == other.min && max == other.max;
         }

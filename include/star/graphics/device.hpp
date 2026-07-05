@@ -24,6 +24,7 @@ namespace star::graphics {
         GraphicsAPI api = GraphicsAPI::Auto;
         platform::PlatformData platform{};
         Vector2 window_size{};
+        bool vsync = true;
         bool debug = false;
         bool profile = false;
     };
@@ -36,6 +37,8 @@ namespace star::graphics {
         int max_texture_size = 0;
         int max_texture_units = 0;
         bool supports_compute_shaders = false;
+        bool origin_bottom_left = false;
+        bool homogeneous_depth = false;
     };
 
     class Device {
@@ -47,6 +50,8 @@ namespace star::graphics {
 
         virtual ResourceHandle<Buffer> create_buffer(BufferDescriptor& buffer_descriptor) = 0;
         virtual ResourceHandle<Texture> create_texture(TextureDescriptor& buffer_descriptor) = 0;
+        
+        virtual ResourceHandle<Texture> create_readback_texture(u16 width, u16 height) = 0;
         virtual ResourceHandle<Shader> create_shader(ShaderDescriptor& buffer_descriptor) = 0;
         virtual ResourceHandle<Framebuffer> create_framebuffer(FramebufferDescriptor& framebuffer_descriptor) = 0;
 

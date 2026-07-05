@@ -23,6 +23,7 @@
 #include "star/rendering/components/light.hpp"
 #include "star/rendering/debug_renderer.hpp"
 #include "star/rendering/passes/debug_render_pass.hpp"
+#include "star/rendering/passes/picking_pass.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
 #include "star/rendering/passes/sky_render_pass.hpp"
 #include "star/scene/scene.hpp"
@@ -54,6 +55,7 @@ namespace star::editor {
         m_scene_view = renderer.add_view({m_scene_viewport.get(), &m_editor_cam, &m_editor_cam_xf, true, true});
         m_game_view = renderer.add_view({m_game_viewport.get(), nullptr, nullptr, false, true});
         renderer.debug_renderer()->set_enabled(true);
+        m_picking_pass = renderer.get_render_pass<rendering::PickingPass>();
 
         EditorEventBus::instance().subscribe(EditorEventType::EntitySelected, [this](const EditorEvent& event) {
             if (const auto* data = event.get_data<NodeSelectedEvent>())
@@ -87,6 +89,8 @@ namespace star::editor {
         scene->set_viewport(m_scene_viewport.get());
         scene->set_input_manager(&m_input_manager);
         scene->set_gizmo_system(&m_gizmo_system);
+        scene->set_editor_window(m_editor_window);
+        scene->set_picking_pass(m_picking_pass);
         game->set_viewport(m_game_viewport.get());
     }
 
@@ -109,6 +113,32 @@ namespace star::editor {
     void EditorUILayer::update(const f32 dt) {
         m_panel_manager.update_all(dt);
         m_camera_system.update(dt, m_editor_cam_xf);
+        resolve_pending_pick();
+    }
+
+    void EditorUILayer::resolve_pending_pick() const {
+        if (!m_picking_pass)
+            return;
+
+        const auto hit = m_picking_pass->poll();
+        if (!hit.has_value())
+            return;
+
+        if (*hit == 0) {
+            EditorEventBus::instance().publish({EditorEventType::EntityDeselected, nullptr});
+            return;
+        }
+
+        auto* scene = m_editor_window->scene_manager().get_active_scene();
+        if (!scene)
+            return;
+
+        flecs::entity entity = scene->world().native().entity(*hit);
+        if (!entity.is_valid())
+            return;
+
+        auto selected = NodeSelectedEvent{entity};
+        EditorEventBus::instance().publish({EditorEventType::EntitySelected, &selected});
     }
 
     void EditorUILayer::pre_render(const f32 /*dt*/) {

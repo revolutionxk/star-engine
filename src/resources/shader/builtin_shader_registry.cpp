@@ -10,31 +10,43 @@
 #include <essl/f_debug.sc.bin.h>
 #include <essl/f_imgui.sc.bin.h>
 #include <essl/f_material.sc.bin.h>
+#include <essl/f_pick.sc.bin.h>
+#include <essl/f_shadow.sc.bin.h>
 #include <essl/f_simple.sc.bin.h>
 #include <essl/v_atmosphere.sc.bin.h>
 #include <essl/v_debug.sc.bin.h>
 #include <essl/v_imgui.sc.bin.h>
 #include <essl/v_material.sc.bin.h>
+#include <essl/v_pick.sc.bin.h>
+#include <essl/v_shadow.sc.bin.h>
 #include <essl/v_simple.sc.bin.h>
 #include <glsl/f_atmosphere.sc.bin.h>
 #include <glsl/f_debug.sc.bin.h>
 #include <glsl/f_imgui.sc.bin.h>
 #include <glsl/f_material.sc.bin.h>
+#include <glsl/f_pick.sc.bin.h>
+#include <glsl/f_shadow.sc.bin.h>
 #include <glsl/f_simple.sc.bin.h>
 #include <glsl/v_atmosphere.sc.bin.h>
 #include <glsl/v_debug.sc.bin.h>
 #include <glsl/v_imgui.sc.bin.h>
 #include <glsl/v_material.sc.bin.h>
+#include <glsl/v_pick.sc.bin.h>
+#include <glsl/v_shadow.sc.bin.h>
 #include <glsl/v_simple.sc.bin.h>
 #include <spirv/f_atmosphere.sc.bin.h>
 #include <spirv/f_debug.sc.bin.h>
 #include <spirv/f_imgui.sc.bin.h>
 #include <spirv/f_material.sc.bin.h>
+#include <spirv/f_pick.sc.bin.h>
+#include <spirv/f_shadow.sc.bin.h>
 #include <spirv/f_simple.sc.bin.h>
 #include <spirv/v_atmosphere.sc.bin.h>
 #include <spirv/v_debug.sc.bin.h>
 #include <spirv/v_imgui.sc.bin.h>
 #include <spirv/v_material.sc.bin.h>
+#include <spirv/v_pick.sc.bin.h>
+#include <spirv/v_shadow.sc.bin.h>
 #include <spirv/v_simple.sc.bin.h>
 
 #ifdef STAR_PLATFORM_WINDOWS
@@ -42,21 +54,29 @@
     #include <dx10/f_debug.sc.bin.h>
     #include <dx10/f_imgui.sc.bin.h>
     #include <dx10/f_material.sc.bin.h>
+    #include <dx10/f_pick.sc.bin.h>
+    #include <dx10/f_shadow.sc.bin.h>
     #include <dx10/f_simple.sc.bin.h>
     #include <dx10/v_atmosphere.sc.bin.h>
     #include <dx10/v_debug.sc.bin.h>
     #include <dx10/v_imgui.sc.bin.h>
     #include <dx10/v_material.sc.bin.h>
+    #include <dx10/v_pick.sc.bin.h>
+    #include <dx10/v_shadow.sc.bin.h>
     #include <dx10/v_simple.sc.bin.h>
     #include <dx11/f_atmosphere.sc.bin.h>
     #include <dx11/f_debug.sc.bin.h>
     #include <dx11/f_imgui.sc.bin.h>
     #include <dx11/f_material.sc.bin.h>
+    #include <dx11/f_pick.sc.bin.h>
+    #include <dx11/f_shadow.sc.bin.h>
     #include <dx11/f_simple.sc.bin.h>
     #include <dx11/v_atmosphere.sc.bin.h>
     #include <dx11/v_debug.sc.bin.h>
     #include <dx11/v_imgui.sc.bin.h>
     #include <dx11/v_material.sc.bin.h>
+    #include <dx11/v_pick.sc.bin.h>
+    #include <dx11/v_shadow.sc.bin.h>
     #include <dx11/v_simple.sc.bin.h>
 #endif
 #ifdef STAR_PLATFORM_MACOS
@@ -64,11 +84,15 @@
     #include <mtl/f_debug.sc.bin.h>
     #include <mtl/f_imgui.sc.bin.h>
     #include <mtl/f_material.sc.bin.h>
+    #include <mtl/f_pick.sc.bin.h>
+    #include <mtl/f_shadow.sc.bin.h>
     #include <mtl/f_simple.sc.bin.h>
     #include <mtl/v_atmosphere.sc.bin.h>
     #include <mtl/v_debug.sc.bin.h>
     #include <mtl/v_imgui.sc.bin.h>
     #include <mtl/v_material.sc.bin.h>
+    #include <mtl/v_pick.sc.bin.h>
+    #include <mtl/v_shadow.sc.bin.h>
     #include <mtl/v_simple.sc.bin.h>
 #endif
 
@@ -85,6 +109,10 @@ namespace star::resources::detail {
         const bgfx::EmbeddedShader k_atmosphere_fs = BGFX_EMBEDDED_SHADER(f_atmosphere);
         const bgfx::EmbeddedShader k_debug_vs = BGFX_EMBEDDED_SHADER(v_debug);
         const bgfx::EmbeddedShader k_debug_fs = BGFX_EMBEDDED_SHADER(f_debug);
+        const bgfx::EmbeddedShader k_pick_vs = BGFX_EMBEDDED_SHADER(v_pick);
+        const bgfx::EmbeddedShader k_pick_fs = BGFX_EMBEDDED_SHADER(f_pick);
+        const bgfx::EmbeddedShader k_shadow_vs = BGFX_EMBEDDED_SHADER(v_shadow);
+        const bgfx::EmbeddedShader k_shadow_fs = BGFX_EMBEDDED_SHADER(f_shadow);
     } // namespace
 
     EmbeddedShaderPair embedded_pair_for(const BuiltinShader id) noexcept {
@@ -99,6 +127,10 @@ namespace star::resources::detail {
                 return {&k_atmosphere_vs, &k_atmosphere_fs};
             case BuiltinShader::Debug:
                 return {&k_debug_vs, &k_debug_fs};
+            case BuiltinShader::Picking:
+                return {&k_pick_vs, &k_pick_fs};
+            case BuiltinShader::Shadow:
+                return {&k_shadow_vs, &k_shadow_fs};
         }
         return {nullptr, nullptr};
     }

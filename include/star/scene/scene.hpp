@@ -5,6 +5,7 @@
 
 #include <flecs.h>
 
+#include "star/ecs/world.hpp"
 #include "star/scene/entity.hpp"
 
 namespace star::scene {
@@ -18,7 +19,7 @@ namespace star::scene {
         [[nodiscard]] Entity find_by_path(const std::string& path) const;
 
         void ready();
-        void update(float dt) const;
+        void update(float dt);
         void shutdown();
 
         [[nodiscard]] const std::string& name() const {
@@ -37,7 +38,7 @@ namespace star::scene {
             return m_is_ready;
         }
 
-        flecs::world& world() {
+        ecs::World& world() {
             return m_world;
         }
 
@@ -47,7 +48,7 @@ namespace star::scene {
 
       private:
         std::string m_name;
-        flecs::world m_world;
+        ecs::World m_world;
         flecs::entity m_root;
 
         bool m_active{true};

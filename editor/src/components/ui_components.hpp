@@ -7,7 +7,6 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
-#include "reflection/imgui_visitor.hpp"
 #include "star/core/reflection/reflect.hpp"
 #include "star/rendering/components/material_instance.hpp"
 #include "star/resources/material/material.hpp"
@@ -348,13 +347,6 @@ namespace star::editor::ui {
         ImGui::PushItemWidth(-140.0f);
         for (const auto& field : type_info.fields)
             field_runtime(field, comp);
-        ImGui::PopItemWidth();
-    }
-
-    template<star::reflection::Reflected T>
-    void draw_component(T& component) {
-        ImGui::PushItemWidth(-140.0f);
-        star::reflection::for_each_field(component, reflection::ImGuiVisitor{});
         ImGui::PopItemWidth();
     }
 

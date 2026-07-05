@@ -89,7 +89,7 @@ namespace star::editor {
         m_panel_manager.update_all(dt);
 
         auto* active_scene = m_editor_window->scene_manager().get_active_scene();
-        m_camera_system.update(dt, active_scene->world());
+        m_camera_system.update(dt, active_scene->world().native());
     }
 
     void EditorUILayer::pre_render(const f32 /*dt*/) {

@@ -38,9 +38,9 @@ namespace star::editor {
         }
 
         const auto root = active_scene->root();
-        active_scene->world().defer_begin();
+        active_scene->world().native().defer_begin();
         root.children([this](const flecs::entity child) { render_entity_node(child); });
-        active_scene->world().defer_end();
+        active_scene->world().native().defer_end();
 
         ImGui::EndChild();
     }
@@ -92,24 +92,24 @@ namespace star::editor {
         // TODO: filter when scene integration is complete
     }
 
-    void HierarchyPanel::create_empty_entity() {
+    void HierarchyPanel::create_empty_entity() const {
         if (!m_editor_window)
             return;
         auto* scene = m_editor_window->scene_manager().get_active_scene();
         if (!scene)
             return;
-        auto entity = scene->world().entity();
+        auto entity = scene->world().native().entity();
         entity.child_of(scene->root());
         STAR_LOG_INFO(LogCategory::Editor, "Created empty entity '{}'", entity.name().c_str());
     }
 
-    void HierarchyPanel::create_camera_entity() {
+    void HierarchyPanel::create_camera_entity() const {
         if (!m_editor_window)
             return;
         auto* scene = m_editor_window->scene_manager().get_active_scene();
         if (!scene)
             return;
-        auto entity = scene->world().entity("Camera");
+        auto entity = scene->world().native().entity("Camera");
         entity.child_of(scene->root());
         STAR_LOG_INFO(LogCategory::Editor, "Created camera entity");
     }

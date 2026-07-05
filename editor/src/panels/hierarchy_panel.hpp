@@ -21,8 +21,8 @@ namespace star::editor {
         void render_entity_node(flecs::entity entity);
         void render_context_menu();
         void filter_entities();
-        void create_empty_entity();
-        void create_camera_entity();
+        void create_empty_entity() const;
+        void create_camera_entity() const;
         static void on_entity_selected(flecs::entity& entity);
 
         std::array<char, 256> m_search_buffer{};

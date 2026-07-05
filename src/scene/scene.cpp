@@ -7,11 +7,13 @@
 namespace star::scene {
     Scene::Scene(const std::string& name) : m_name(name) {
         STAR_LOG_INFO(LogCategory::Scene, "Creating scene '{}'", m_name);
-        m_world.import <WorldModule>();
-        m_world.import <flecs::units>();
-        m_world.import <flecs::stats>();
 
-        m_root = m_world.entity((m_name + "_Root").c_str());
+        auto& world = m_world.native();
+        world.import <WorldModule>();
+        world.import <flecs::units>();
+        world.import <flecs::stats>();
+
+        m_root = world.entity((m_name + "_Root").c_str());
     }
 
     Scene::~Scene() {
@@ -19,17 +21,17 @@ namespace star::scene {
     }
 
     Entity Scene::create_entity(const std::string& name) const {
-        const auto entity = m_world.entity(name.c_str());
+        const auto entity = m_world.native().entity(name.c_str());
         entity.child_of(m_root);
         return Entity{entity};
     }
 
     Entity Scene::find_entity(const std::string& name) const {
-        return Entity{m_world.lookup(name.c_str())};
+        return Entity{m_world.native().lookup(name.c_str())};
     }
 
     Entity Scene::find_by_path(const std::string& path) const {
-        return Entity{m_world.lookup(path.c_str())};
+        return Entity{m_world.native().lookup(path.c_str())};
     }
 
     void Scene::ready() {
@@ -38,7 +40,7 @@ namespace star::scene {
             return;
         }
 
-        m_world.each([&](const flecs::entity entity, const components::Active& active) {
+        m_world.native().each([&](const flecs::entity entity, const components::Active& active) {
             if (!active)
                 return;
 
@@ -48,7 +50,7 @@ namespace star::scene {
         m_is_ready = true;
     }
 
-    void Scene::update(const float dt) const {
+    void Scene::update(const float dt) {
         if (!m_active)
             return;
 

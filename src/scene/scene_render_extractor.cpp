@@ -59,7 +59,7 @@ namespace star::scene {
             return;
         }
 
-        auto& world = scene.world();
+        auto& world = scene.world().native();
         if (m_cache->world != &world) {
             m_cache->rebuild_for(world);
         }

@@ -181,15 +181,16 @@ namespace star::resources {
         upload_mesh_to_gpu(*mesh);
 
         const u32 id = m_meshes.allocate_id();
+        const u32 generation = m_meshes.generation_of(id);
         mesh->m_path = name;
         mesh->m_state = ResourceState::Loaded;
-        mesh->m_generation = 1;
+        mesh->m_generation = generation;
 
-        m_meshes.resources[id] = {std::move(mesh), 1, 1};
+        m_meshes.resources[id] = {std::move(mesh), generation, 1};
         m_meshes.path_to_id[name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Created mesh '{}' (id: {})", name, id);
-        return ResourceHandle<Mesh>{id, 1};
+        return ResourceHandle<Mesh>{id, generation};
     }
 
     Mesh* ResourceManager::get_mesh(const ResourceHandle<Mesh>& handle) {
@@ -256,15 +257,16 @@ namespace star::resources {
         upload_texture_to_gpu(*texture);
 
         const u32 id = m_textures.allocate_id();
+        const u32 generation = m_textures.generation_of(id);
         texture->m_path = name;
         texture->m_state = ResourceState::Loaded;
-        texture->m_generation = 1;
+        texture->m_generation = generation;
 
-        m_textures.resources[id] = {std::move(texture), 1, 1};
+        m_textures.resources[id] = {std::move(texture), generation, 1};
         m_textures.path_to_id[name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Created texture '{}' (id: {})", name, id);
-        return ResourceHandle<Texture>{id, 1};
+        return ResourceHandle<Texture>{id, generation};
     }
 
     Texture* ResourceManager::get_texture(const ResourceHandle<Texture>& handle) {
@@ -349,14 +351,15 @@ namespace star::resources {
         shader->disk_vertex_path = vs_compiled;
         shader->disk_fragment_path = fs_compiled;
         shader->m_state = ResourceState::Loaded;
-        shader->m_generation = 1;
 
         const u32 id = m_shaders.allocate_id();
-        m_shaders.resources[id] = {std::move(shader), 1, 1};
+        const u32 generation = m_shaders.generation_of(id);
+        shader->m_generation = generation;
+        m_shaders.resources[id] = {std::move(shader), generation, 1};
         m_shaders.path_to_id[shader_name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Loaded shader '{}' (id: {})", shader_name, id);
-        return ResourceHandle<graphics::Shader>{id, 1};
+        return ResourceHandle<graphics::Shader>{id, generation};
     }
 
     ResourceHandle<graphics::Shader> ResourceManager::register_builtin_shader(const std::string& name,
@@ -376,14 +379,15 @@ namespace star::resources {
         shader->handle = gpu_handle;
         shader->m_path = name;
         shader->m_state = ResourceState::Loaded;
-        shader->m_generation = 1;
 
         const u32 id = m_shaders.allocate_id();
-        m_shaders.resources[id] = {std::move(shader), 1, 1};
+        const u32 generation = m_shaders.generation_of(id);
+        shader->m_generation = generation;
+        m_shaders.resources[id] = {std::move(shader), generation, 1};
         m_shaders.path_to_id[name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Registered builtin shader '{}' (id: {})", name, id);
-        return ResourceHandle<graphics::Shader>{id, 1};
+        return ResourceHandle<graphics::Shader>{id, generation};
     }
 
     Shader* ResourceManager::get_shader(const ResourceHandle<graphics::Shader>& handle) {
@@ -452,15 +456,16 @@ namespace star::resources {
         }
 
         const u32 id = m_materials.allocate_id();
+        const u32 generation = m_materials.generation_of(id);
         material->m_path = name;
         material->m_state = ResourceState::Loaded;
-        material->m_generation = 1;
+        material->m_generation = generation;
 
-        m_materials.resources[id] = {std::move(material), 1, 1};
+        m_materials.resources[id] = {std::move(material), generation, 1};
         m_materials.path_to_id[name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Created material '{}' (id: {})", name, id);
-        return ResourceHandle<Material>{id, 1};
+        return ResourceHandle<Material>{id, generation};
     }
 
     Material* ResourceManager::get_material(const ResourceHandle<Material>& handle) {

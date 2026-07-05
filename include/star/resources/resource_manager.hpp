@@ -37,6 +37,7 @@ namespace star::resources {
         std::unordered_map<u32, Entry> resources;
         std::unordered_map<std::string, u32> path_to_id;
         std::vector<u32> free_slots;
+        std::unordered_map<u32, u32> generations;
         u32 next_id = 1;
 
         u32 allocate_id() {
@@ -48,7 +49,13 @@ namespace star::resources {
             return next_id++;
         }
 
+        [[nodiscard]] u32 generation_of(const u32 id) const {
+            const auto it = generations.find(id);
+            return it != generations.end() ? it->second : 1;
+        }
+
         void release_id(const u32 id) {
+            generations[id] = generation_of(id) + 1;
             free_slots.push_back(id);
         }
     };
@@ -73,7 +80,7 @@ namespace star::resources {
         ResourceHandle<Material> create_material(const std::string& name, std::unique_ptr<Material> material);
         Material* get_material(const ResourceHandle<Material>& handle);
         void destroy_material(const ResourceHandle<Material>& handle);
-        
+
         void set_asset_root(std::filesystem::path root);
         ResourceHandle<Material> load_material(const std::string& relative_path);
         ResourceHandle<Material> get_or_load_material(const std::string& name);

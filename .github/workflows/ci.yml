@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows / MSVC
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Set up Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Cache fetched dependencies
+        uses: actions/cache@v4
+        with:
+          path: build/debug/_deps
+          key: deps-windows-${{ hashFiles('scripts/*.cmake') }}
+
+      - name: Configure
+        run: cmake --preset debug
+
+      - name: Build
+        run: cmake --build build/debug --target star_engine_tests star_engine_editor
+
+      - name: Test
+        run: ctest --test-dir build/debug --output-on-failure
+
+  # Portability check — best-effort until Linux is a supported target (see roadmap Fase 1/portability).
+  linux:
+    name: Linux / Clang (best-effort)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build clang \
+            libx11-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev \
+            libgl1-mesa-dev libwayland-dev libxkbcommon-dev
+
+      - name: Cache fetched dependencies
+        uses: actions/cache@v4
+        with:
+          path: build/debug/_deps
+          key: deps-linux-${{ hashFiles('scripts/*.cmake') }}
+
+      - name: Configure
+        run: cmake --preset debug
+
+      - name: Build tests
+        run: cmake --build build/debug --target star_engine_tests
+
+      - name: Test
+        run: ctest --test-dir build/debug --output-on-failure

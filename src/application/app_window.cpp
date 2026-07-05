@@ -207,6 +207,7 @@ namespace star::application {
             return;
         }
 
+        layer->on_attach();
         m_layer_stack->push_layer(std::move(layer));
         STAR_LOG_INFO(LogCategory::Application, "Layer pushed to window: {}", m_configuration.title);
     }
@@ -218,6 +219,7 @@ namespace star::application {
         }
 
         if (overlay->initialize()) {
+            overlay->on_attach();
             m_layer_stack->push_overlay(std::move(overlay));
             STAR_LOG_INFO(LogCategory::Application, "Overlay pushed to window: {}", m_configuration.title);
         } else {

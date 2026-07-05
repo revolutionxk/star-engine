@@ -137,7 +137,7 @@ namespace star::application {
     void WindowManager::poll_events() const {
         for (const auto window_ids = get_all_window_ids(); const WindowId id : window_ids) {
             if (auto* window = get_window(id); window && window->is_opened()) {
-                window->pool_events();
+                window->poll_events();
             }
         }
     }

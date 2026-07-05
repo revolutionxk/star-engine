@@ -32,24 +32,15 @@ static bgfx::TextureFormat::Enum to_bgfx_format(const graphics::TextureFormat fo
     }
 }
 
-namespace {
-    enum class BgfxBufferKind : u32 {
-        StaticVertex = 0,
-        DynamicVertex = 1,
-        StaticIndex = 2,
-        DynamicIndex = 3,
-    };
-
-    constexpr u32 encode_buffer_handle(const BgfxBufferKind kind, const u16 idx) {
-        return (static_cast<u32>(kind) << 16) | idx;
-    }
-
-    constexpr BgfxBufferKind decode_buffer_kind(const u32 id) {
-        return static_cast<BgfxBufferKind>((id >> 16) & 0x7u);
-    }
-} // namespace
-
 namespace star::graphics {
+    u32 BGFXDevice::encode_buffer(const BufferKind kind, const u16 index) {
+        return (static_cast<u32>(kind) << 16) | index;
+    }
+
+    BGFXDevice::BufferKind BGFXDevice::buffer_kind(const u32 id) {
+        return static_cast<BufferKind>((id >> 16) & 0x7u);
+    }
+
     BGFXDevice::BGFXDevice(const GraphicsDeviceConfig& config) {
         bgfx::Init init;
         bgfx::PlatformData platform_data{};
@@ -165,8 +156,8 @@ namespace star::graphics {
                     return ResourceHandle<Buffer>{};
                 }
 
-                handle_id = encode_buffer_handle(
-                    is_dynamic ? BgfxBufferKind::DynamicVertex : BgfxBufferKind::StaticVertex, bgfx_handle.idx);
+                handle_id = encode_buffer(is_dynamic ? BufferKind::DynamicVertex : BufferKind::StaticVertex,
+                                          bgfx_handle.idx);
                 break;
             }
 
@@ -196,8 +187,8 @@ namespace star::graphics {
                     return ResourceHandle<Buffer>{};
                 }
 
-                handle_id = encode_buffer_handle(
-                    is_dynamic ? BgfxBufferKind::DynamicIndex : BgfxBufferKind::StaticIndex, bgfx_handle.idx);
+                handle_id =
+                    encode_buffer(is_dynamic ? BufferKind::DynamicIndex : BufferKind::StaticIndex, bgfx_handle.idx);
                 break;
             }
 
@@ -315,23 +306,23 @@ namespace star::graphics {
         }
 
         const auto idx = static_cast<u16>(handle.id);
-        switch (decode_buffer_kind(handle.id)) {
-            case BgfxBufferKind::StaticVertex: {
+        switch (buffer_kind(handle.id)) {
+            case BufferKind::StaticVertex: {
                 if (const bgfx::VertexBufferHandle h{idx}; bgfx::isValid(h))
                     bgfx::destroy(h);
                 break;
             }
-            case BgfxBufferKind::DynamicVertex: {
+            case BufferKind::DynamicVertex: {
                 if (const bgfx::DynamicVertexBufferHandle h{idx}; bgfx::isValid(h))
                     bgfx::destroy(h);
                 break;
             }
-            case BgfxBufferKind::StaticIndex: {
+            case BufferKind::StaticIndex: {
                 if (const bgfx::IndexBufferHandle h{idx}; bgfx::isValid(h))
                     bgfx::destroy(h);
                 break;
             }
-            case BgfxBufferKind::DynamicIndex: {
+            case BufferKind::DynamicIndex: {
                 if (const bgfx::DynamicIndexBufferHandle h{idx}; bgfx::isValid(h))
                     bgfx::destroy(h);
                 break;

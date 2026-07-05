@@ -30,7 +30,11 @@
 #endif
 
 #ifndef STAR_DEPRECATED
-    #define STAR_DEPRECATED __declspec(deprecated)
+    #ifdef _MSC_VER
+        #define STAR_DEPRECATED __declspec(deprecated)
+    #else
+        #define STAR_DEPRECATED __attribute__((deprecated))
+    #endif
 #endif
 
 #ifndef STAR_DEPRECATED_EXPORT

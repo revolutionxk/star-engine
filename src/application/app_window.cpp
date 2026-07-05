@@ -4,6 +4,7 @@
 
 #include "star/application/application.hpp"
 #include "star/graphics/device.hpp"
+#include "star/graphics/device_context.hpp"
 #include "star/imgui/imgui_default_pass.hpp"
 #include "star/imgui/imgui_render_pass.hpp"
 #include "star/platform/window.hpp"

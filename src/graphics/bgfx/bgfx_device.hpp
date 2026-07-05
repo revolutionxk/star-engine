@@ -31,5 +31,16 @@ namespace star::graphics {
         void destroy_texture(ResourceHandle<Texture> handle) override;
         void destroy_shader(ResourceHandle<Shader> handle) override;
         void destroy_framebuffer(ResourceHandle<Framebuffer> handle) override;
+
+      private:
+        enum class BufferKind : u32 {
+            StaticVertex,
+            DynamicVertex,
+            StaticIndex,
+            DynamicIndex,
+        };
+
+        static u32 encode_buffer(BufferKind kind, u16 index);
+        static BufferKind buffer_kind(u32 id);
     };
 } // namespace star::graphics

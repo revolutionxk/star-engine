@@ -4,12 +4,13 @@
 #include "application_config.hpp"
 #include "application_context.hpp"
 #include "game_loop.hpp"
-#include "star/core/platform_win32.hpp"
-#include "star/rendering/renderer.hpp"
-#include "star/resources/resource_manager.hpp"
 
 namespace star::platform {
     class Input;
+}
+
+namespace star::resources {
+    class ResourceManager;
 }
 
 namespace star::scene {
@@ -131,18 +132,14 @@ namespace star::application {
 
 #if defined(STAR_PLATFORM_WINDOWS) && !defined(STAR_CONSOLE_APPLICATION)
     #define STAR_RUN_APPLICATION(AppClass)                                                                             \
-        int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {              \
-            int argc = __argc;                                                                                         \
-            char** argv = __argv;                                                                                      \
-            star::application::CommandLineArgs args(argc, const_cast<const char**>(argv));                             \
-            auto app = std::make_unique<AppClass>(args);                                                               \
-            return app->run();                                                                                         \
+        extern "C" int __stdcall WinMain(void*, void*, char*, int) {                                                  \
+            const star::application::CommandLineArgs args(__argc, const_cast<const char**>(__argv));                  \
+            return std::make_unique<AppClass>(args)->run();                                                           \
         }
 #else
     #define STAR_RUN_APPLICATION(AppClass)                                                                             \
-        int main(int argc, char** argv) {                                                                              \
-            star::application::CommandLineArgs args(argc, const_cast<const char**>(argv));                             \
-            auto app = std::make_unique<AppClass>(args);                                                               \
-            return app->run();                                                                                         \
+        int main(int argc, char** argv) {                                                                             \
+            const star::application::CommandLineArgs args(argc, const_cast<const char**>(argv));                      \
+            return std::make_unique<AppClass>(args)->run();                                                           \
         }
 #endif

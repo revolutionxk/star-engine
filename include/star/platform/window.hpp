@@ -3,7 +3,6 @@
 
 #include "platform_data.hpp"
 #include "star/core/common.hpp"
-#include "star/graphics/device_context.hpp"
 #include "window_config.hpp"
 
 namespace star::platform {
@@ -15,7 +14,7 @@ namespace star::platform {
 
         virtual bool create(const WindowConfiguration& config);
         virtual void destroy() = 0;
-        virtual void pool_events() = 0;
+        virtual void poll_events() = 0;
 
         virtual bool is_opened() const {
             return m_opened;
@@ -53,7 +52,6 @@ namespace star::platform {
       protected:
         bool m_opened = true;
         WindowConfiguration m_configuration{};
-        std::shared_ptr<graphics::DeviceContext> m_device_context{};
         ResizeCallback m_resize_callback;
     };
 } // namespace star::platform

@@ -21,7 +21,7 @@ namespace star::platform::sdl {
         bool create(const WindowConfiguration& config) override;
         void destroy() override;
 
-        void pool_events() override;
+        void poll_events() override;
         void set_resize_callback(ResizeCallback callback) override;
         void* handle() const override;
         void* native_handle() const override;
@@ -38,6 +38,8 @@ namespace star::platform::sdl {
         void set_relative_mouse_mode(bool enabled) override;
 
       private:
+        static int s_ref_count;
+
         SDL_Window* m_window = nullptr;
         SDLInput* m_input_manager = nullptr;
     };

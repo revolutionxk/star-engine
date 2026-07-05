@@ -8,15 +8,21 @@
 #endif
 
 namespace star::platform::sdl {
+    int SDLWindow::s_ref_count = 0;
+
     SDLWindow::SDLWindow() {
-        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD)) {
-            STAR_LOG_ERROR(LogCategory::Platform, "Failed to initialize SDL: {}", SDL_GetError());
+        if (s_ref_count++ == 0) {
+            if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD)) {
+                STAR_LOG_ERROR(LogCategory::Platform, "Failed to initialize SDL: {}", SDL_GetError());
+            }
         }
     }
 
     SDLWindow::~SDLWindow() {
         destroy();
-        SDL_Quit();
+        if (--s_ref_count == 0) {
+            SDL_Quit();
+        }
     }
 
     bool SDLWindow::create(const WindowConfiguration& config) {
@@ -64,7 +70,7 @@ namespace star::platform::sdl {
         m_resize_callback = std::move(callback);
     }
 
-    void SDLWindow::pool_events() {
+    void SDLWindow::poll_events() {
         if (!m_window) {
             return;
         }
@@ -92,10 +98,6 @@ namespace star::platform::sdl {
                     const auto width = static_cast<u32>(new_size.x);
                     const auto height = static_cast<u32>(new_size.y);
                     STAR_LOG_DEBUG(LogCategory::Platform, "Window resized to {}x{}", width, height);
-
-                    if (m_device_context) {
-                        m_device_context->resize(width, height);
-                    }
 
                     if (m_resize_callback) {
                         m_resize_callback(width, height);
@@ -223,10 +225,6 @@ namespace star::platform::sdl {
         }
 
         SDL_SetWindowSize(m_window, width, height);
-
-        if (m_device_context) {
-            m_device_context->resize(static_cast<u32>(width), static_cast<u32>(height));
-        }
     }
 
     void SDLWindow::set_input_manager(Input* input_manager) {

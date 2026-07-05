@@ -4,7 +4,6 @@
 #include <typeindex>
 
 #include "field_info.hpp"
-#include "star/platform/input/input.hpp"
 
 namespace star::reflection {
     template<typename T>

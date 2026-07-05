@@ -7,8 +7,8 @@
 #include <nlohmann/json.hpp>
 
 #include "star/core/reflection/reflect.hpp"
-#include "star/core/reflection/visitors/json_serializer.hpp"
 #include "star/core/types.hpp"
+#include "star/ecs/serialization.hpp"
 
 namespace star::ecs {
     enum class RegistrationFlags : u32 {
@@ -58,13 +58,13 @@ namespace star::ecs {
         };
         info.serialize = [](flecs::entity e) -> nlohmann::json {
             if (const auto* c = e.try_get<T>())
-                return reflection::to_json(*c);
+                return to_json(*c);
             return nullptr;
         };
         info.deserialize = [](flecs::entity e, const nlohmann::json& j) {
             if (!e.has<T>())
                 e.add<T>();
-            reflection::from_json(j, *e.try_get_mut<T>());
+            from_json(j, *e.try_get_mut<T>());
         };
         info.register_world = [](flecs::world& w, std::string_view name) { w.component<T>(name.data()); };
 

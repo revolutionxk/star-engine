@@ -7,7 +7,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../reflect.hpp"
+#include "star/core/reflection/reflect.hpp"
 #include "star/math/math.hpp"
 #include "star/math/quaternion.hpp"
 #include "star/math/vector2.hpp"
@@ -80,13 +80,13 @@ namespace star::math {
 
 } // namespace star::math
 
-namespace star::reflection {
+namespace star::ecs {
 
     namespace detail {
         template<typename FD>
         [[nodiscard]] constexpr std::string_view serial_key(const FD& d) noexcept {
-            if constexpr (FD::template has_attr<attr::SerialName>()) {
-                if (auto sn = d.template get_attr<attr::SerialName>())
+            if constexpr (FD::template has_attr<reflection::attr::SerialName>()) {
+                if (auto sn = d.template get_attr<reflection::attr::SerialName>())
                     return sn->name;
             }
             return d.name;
@@ -99,7 +99,7 @@ namespace star::reflection {
 
         template<typename FD, typename Value>
         void operator()(const FD& d, const Value& v) const {
-            if constexpr (FD::template has_attr<attr::Transient>())
+            if constexpr (FD::template has_attr<reflection::attr::Transient>())
                 return;
 
             const auto key = std::string{detail::serial_key(d)};
@@ -119,7 +119,7 @@ namespace star::reflection {
 
         template<typename FD, typename Value>
         void operator()(const FD& d, Value& v) const {
-            if constexpr (FD::template has_attr<attr::Transient>())
+            if constexpr (FD::template has_attr<reflection::attr::Transient>())
                 return;
 
             const auto key = std::string{detail::serial_key(d)};
@@ -139,16 +139,16 @@ namespace star::reflection {
         const nlohmann::json& m_in;
     };
 
-    template<Reflected T>
+    template<reflection::Reflected T>
     [[nodiscard]] nlohmann::json to_json(const T& component) {
         nlohmann::json j;
-        for_each_field(component, JsonWriteVisitor{j});
+        reflection::for_each_field(component, JsonWriteVisitor{j});
         return j;
     }
 
-    template<Reflected T>
+    template<reflection::Reflected T>
     void from_json(const nlohmann::json& j, T& component) {
-        for_each_field(component, JsonReadVisitor{j});
+        reflection::for_each_field(component, JsonReadVisitor{j});
     }
 
     enum class SerializeError {
@@ -156,7 +156,7 @@ namespace star::reflection {
         ParseError
     };
 
-    template<Reflected T>
+    template<reflection::Reflected T>
     [[nodiscard]] std::expected<nlohmann::json, SerializeError> to_json_safe(const T& component) noexcept {
         try {
             return to_json(component);
@@ -165,7 +165,7 @@ namespace star::reflection {
         }
     }
 
-    template<Reflected T>
+    template<reflection::Reflected T>
     [[nodiscard]] std::expected<void, SerializeError> save_to_file(const T& component,
                                                                    const std::filesystem::path& path) noexcept {
         try {
@@ -179,7 +179,7 @@ namespace star::reflection {
         }
     }
 
-    template<Reflected T>
+    template<reflection::Reflected T>
     [[nodiscard]] std::expected<void, SerializeError> load_from_file(T& component,
                                                                      const std::filesystem::path& path) noexcept {
         try {
@@ -195,4 +195,4 @@ namespace star::reflection {
         }
     }
 
-} // namespace star::reflection
+} // namespace star::ecs

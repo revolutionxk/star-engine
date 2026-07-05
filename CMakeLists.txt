@@ -169,12 +169,12 @@ star_add_module(star_graphics
 star_add_module(star_ecs
         SOURCES ${STAR_ECS_SRC}
         INCLUDES "${flecs_SOURCE_DIR}/include"
-        DEPS star_core flecs::flecs_static
+        DEPS star_core flecs::flecs_static nlohmann_json::nlohmann_json
 )
 
 star_add_module(star_resources
         SOURCES ${STAR_RESOURCES_SRC}
-        DEPS star_core star_graphics nlohmann_json::nlohmann_json
+        DEPS star_core star_graphics
 )
 
 star_add_module(star_rendering

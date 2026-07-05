@@ -40,11 +40,11 @@ namespace star::editor {
         void on_focus_lost();
 
         void re_sync_from(const components::Transform& transform);
-        void apply_look(const components::Transform& transform);
-        void apply_movement(f32 dt, const components::Transform& transform) const;
-        void apply_orbit(const components::Transform& transform);
-        void apply_pan(const components::Transform& transform) const;
-        void rebuild_rotation(const components::Transform& transform) const;
+        void apply_look(components::Transform& transform);
+        void apply_movement(f32 dt, components::Transform& transform) const;
+        void apply_orbit(components::Transform& transform);
+        void apply_pan(components::Transform& transform) const;
+        void rebuild_rotation(components::Transform& transform) const;
 
         Mode m_mode = Mode::Idle;
         platform::Window* m_window = nullptr;

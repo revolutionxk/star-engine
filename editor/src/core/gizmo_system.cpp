@@ -8,7 +8,7 @@ namespace star::editor {
         if (!m_entity || !m_entity->is_valid())
             return false;
 
-        const auto* transform = m_entity->try_get_mut<components::Transform>();
+        auto* transform = m_entity->try_get_mut<components::Transform>();
         if (!transform || image_size.x <= 0.0f || image_size.y <= 0.0f)
             return false;
 
@@ -40,7 +40,7 @@ namespace star::editor {
         return s == Space::World ? ImGuizmo::WORLD : ImGuizmo::LOCAL;
     }
 
-    void GizmoSystem::decompose(const Matrix4& mat, const components::Transform& t) {
+    void GizmoSystem::decompose(const Matrix4& mat, components::Transform& t) {
         t.position = {mat.m[12], mat.m[13], mat.m[14]};
 
         const Vector3 col0{mat.m[0], mat.m[1], mat.m[2]};

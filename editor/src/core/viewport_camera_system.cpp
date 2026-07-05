@@ -50,7 +50,7 @@ namespace star::editor {
     }
 
     void ViewportCameraSystem::update(const f32 dt, const flecs::world& world) {
-        world.each([this, dt](components::Camera, components::PrimaryCamera, const components::Transform& transform) {
+        world.each([this, dt](components::Camera, components::PrimaryCamera, components::Transform& transform) {
             if (m_sync_on_entry) {
                 m_sync_on_entry = false;
                 re_sync_from(transform);
@@ -150,14 +150,14 @@ namespace star::editor {
         m_pitch = -std::asin(clamp(fwd.y, -1.0f, 1.0f));
     }
 
-    void ViewportCameraSystem::apply_look(const components::Transform& transform) {
+    void ViewportCameraSystem::apply_look(components::Transform& transform) {
         m_yaw -= m_frame_delta.x * look_sensitivity;
         m_pitch += m_frame_delta.y * look_sensitivity;
         m_pitch = clamp(m_pitch, -MAX_PITCH, MAX_PITCH);
         rebuild_rotation(transform);
     }
 
-    void ViewportCameraSystem::apply_movement(const f32 dt, const components::Transform& transform) const {
+    void ViewportCameraSystem::apply_movement(const f32 dt, components::Transform& transform) const {
         const Vector3 fwd = -transform.forward();
         const Vector3 right = transform.rotation * Vector3::right();
 
@@ -184,7 +184,7 @@ namespace star::editor {
         }
     }
 
-    void ViewportCameraSystem::apply_orbit(const components::Transform& transform) {
+    void ViewportCameraSystem::apply_orbit(components::Transform& transform) {
         constexpr f32 orbit_dist = 5.0f;
         const Vector3 pivot = transform.position - transform.forward() * orbit_dist;
 
@@ -196,14 +196,14 @@ namespace star::editor {
         transform.position = pivot + transform.forward() * orbit_dist;
     }
 
-    void ViewportCameraSystem::apply_pan(const components::Transform& transform) const {
+    void ViewportCameraSystem::apply_pan(components::Transform& transform) const {
         const Vector3 right = transform.rotation * Vector3::right();
         const Vector3 up = transform.rotation * Vector3::up();
         transform.position =
             transform.position - right * (m_frame_delta.x * pan_sensitivity) + up * (m_frame_delta.y * pan_sensitivity);
     }
 
-    void ViewportCameraSystem::rebuild_rotation(const components::Transform& transform) const {
+    void ViewportCameraSystem::rebuild_rotation(components::Transform& transform) const {
         const Quaternion q_yaw(Vector3{0.0f, 1.0f, 0.0f}, m_yaw);
         const Quaternion q_pitch(Vector3{1.0f, 0.0f, 0.0f}, m_pitch);
         transform.rotation = (q_yaw * q_pitch).normalized();

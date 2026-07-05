@@ -57,7 +57,7 @@ namespace star::editor {
       private:
         static ImGuizmo::OPERATION to_imguizmo_op(Operation op);
         static ImGuizmo::MODE to_imguizmo_mode(Space s);
-        static void decompose(const Matrix4& mat, const components::Transform& t);
+        static void decompose(const Matrix4& mat, components::Transform& t);
 
         std::optional<flecs::entity> m_entity;
         Operation m_operation = Operation::Translate;

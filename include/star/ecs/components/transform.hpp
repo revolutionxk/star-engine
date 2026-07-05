@@ -4,24 +4,28 @@
 
 namespace star::components {
     struct Transform {
-        mutable Vector3 position{0.0f, 0.0f, 0.0f};
-        mutable Quaternion rotation{0.0f, 0.0f, 0.0f, 1.0f};
-        mutable Vector3 scale{1.0f, 1.0f, 1.0f};
+        Vector3 position{0.0f, 0.0f, 0.0f};
+        Quaternion rotation{0.0f, 0.0f, 0.0f, 1.0f};
+        Vector3 scale{1.0f, 1.0f, 1.0f};
 
         [[nodiscard]] Matrix4 to_matrix() const {
-            const auto translation_matrix = Matrix4::translate(position);
-            const auto rotation_matrix = Matrix4::from_quaternion(rotation);
-            const auto scale_matrix = Matrix4::scale(scale);
-            return translation_matrix * rotation_matrix * scale_matrix;
+            return Matrix4::translate(position) * Matrix4::from_quaternion(rotation) * Matrix4::scale(scale);
         }
 
-        void look_at(const Vector3& target, const Vector3& up = Vector3::up()) const {
-            const Matrix4 look_at_matrix = Matrix4::look_at(position, target, up);
-            rotation = look_at_matrix.to_quaternion();
-        }
-
-        Vector3 forward() const {
+        [[nodiscard]] Vector3 forward() const {
             return rotation * Vector3::forward();
+        }
+
+        [[nodiscard]] Vector3 right() const {
+            return rotation * Vector3::right();
+        }
+
+        [[nodiscard]] Vector3 up() const {
+            return rotation * Vector3::up();
+        }
+
+        void look_at(const Vector3& target, const Vector3& world_up = Vector3::up()) {
+            rotation = Matrix4::look_at(position, target, world_up).to_quaternion();
         }
     };
 } // namespace star::components

@@ -32,9 +32,19 @@ namespace star::editor {
         void on_imgui_init() override;
 
       private:
-        static void setup_dockspace();
-        void render_main_menu_bar() const;
+        void setup_dockspace();
+        static void build_default_layout(unsigned dockspace_id);
+        void render_main_menu_bar();
+        void render_toolbar() const;
+        void render_project_browser();
         void initialize_panels();
+
+        bool m_rebuild_layout = false;
+
+        bool m_open_browser_requested = false;
+        char m_new_project_name[128]{};
+        char m_new_project_location[512]{};
+        char m_open_project_path[512]{};
 
         EditorWindow* m_editor_window = nullptr;
         std::unique_ptr<rendering::Viewport> m_viewport;

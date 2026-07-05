@@ -1,26 +1,157 @@
 #include "star/resources/resource_manager.hpp"
 
+#include <exception>
+#include <fstream>
+
 #include "shader/builtin_shader_registry.hpp"
 #include "star/core/common.hpp"
 #include "star/graphics/buffer.hpp"
 #include "star/graphics/mesh.hpp"
 #include "star/graphics/texture.hpp"
+#include "star/resources/material_asset.hpp"
+#include "star/resources/resource_resolver.hpp"
 #include "star/resources/shader/shader.hpp"
 #include "star/utils/file_utils.hpp"
 
 namespace star::resources {
+    namespace {
+        template<typename T>
+        std::string name_of(const ResourceStorage<T>& storage, const ResourceHandle<T>& handle) {
+            if (!handle.is_valid())
+                return {};
+            for (const auto& [name, id] : storage.path_to_id)
+                if (id == handle.id)
+                    return name;
+            return {};
+        }
+
+        template<typename T>
+        ResourceHandle<T> handle_of(const ResourceStorage<T>& storage, const std::string& name) {
+            const auto it = storage.path_to_id.find(name);
+            if (it == storage.path_to_id.end())
+                return {};
+            const auto entry = storage.resources.find(it->second);
+            const u32 generation = entry != storage.resources.end() ? entry->second.generation : 1;
+            return ResourceHandle<T>{it->second, generation};
+        }
+    } // namespace
 
     ResourceManager::ResourceManager(Device& device) : m_device(device) {
         STAR_LOG_INFO(LogCategory::Resources, "Initializing ResourceManager");
 
+        ResourceResolver::bind(this);
         init_default_resources();
     }
 
     ResourceManager::~ResourceManager() {
+        ResourceResolver::unbind(this);
         if (!m_meshes.resources.empty() || !m_textures.resources.empty() || !m_shaders.resources.empty() ||
             !m_materials.resources.empty()) {
             destroy_all_resources();
         }
+    }
+
+    std::string ResourceManager::mesh_name(const ResourceHandle<Mesh>& handle) const {
+        return name_of(m_meshes, handle);
+    }
+
+    ResourceHandle<Mesh> ResourceManager::mesh_by_name(const std::string& name) const {
+        return handle_of(m_meshes, name);
+    }
+
+    std::string ResourceManager::texture_name(const ResourceHandle<Texture>& handle) const {
+        return name_of(m_textures, handle);
+    }
+
+    ResourceHandle<Texture> ResourceManager::texture_by_name(const std::string& name) const {
+        return handle_of(m_textures, name);
+    }
+
+    std::string ResourceManager::material_name(const ResourceHandle<Material>& handle) const {
+        return name_of(m_materials, handle);
+    }
+
+    ResourceHandle<Material> ResourceManager::material_by_name(const std::string& name) const {
+        return handle_of(m_materials, name);
+    }
+
+    std::string ResourceManager::shader_name(const ResourceHandle<graphics::Shader>& handle) const {
+        if (!handle.is_valid())
+            return {};
+        for (const auto& [name, id] : m_shaders.path_to_id)
+            if (id == handle.id)
+                return name;
+        return {};
+    }
+
+    ResourceHandle<graphics::Shader> ResourceManager::shader_by_name(const std::string& name) const {
+        const auto it = m_shaders.path_to_id.find(name);
+        if (it == m_shaders.path_to_id.end())
+            return {};
+        const auto entry = m_shaders.resources.find(it->second);
+        const u32 generation = entry != m_shaders.resources.end() ? entry->second.generation : 1;
+        return ResourceHandle<graphics::Shader>{it->second, generation};
+    }
+
+    void ResourceManager::set_asset_root(std::filesystem::path root) {
+        m_asset_root = std::move(root);
+    }
+
+    ResourceHandle<Material> ResourceManager::load_material(const std::string& relative_path) {
+        if (const auto it = m_materials.path_to_id.find(relative_path); it != m_materials.path_to_id.end()) {
+            const auto& entry = m_materials.resources[it->second];
+            return ResourceHandle<Material>{it->second, entry.generation};
+        }
+
+        const std::filesystem::path full =
+            m_asset_root.empty() ? std::filesystem::path{relative_path} : m_asset_root / relative_path;
+
+        std::ifstream in(full);
+        if (!in) {
+            STAR_LOG_WARN(LogCategory::Resources, "Material asset not found: {}", full.string());
+            return {};
+        }
+
+        nlohmann::json document;
+        try {
+            in >> document;
+        } catch (const std::exception& e) {
+            STAR_LOG_ERROR(LogCategory::Resources, "Malformed material '{}': {}", full.string(), e.what());
+            return {};
+        }
+
+        auto material = std::make_unique<Material>();
+        material_from_json(document, *material, *this);
+        return create_material(relative_path, std::move(material));
+    }
+
+    ResourceHandle<Material> ResourceManager::get_or_load_material(const std::string& name) {
+        if (name.empty())
+            return {};
+        if (const auto handle = material_by_name(name); handle.is_valid())
+            return handle;
+        return load_material(name);
+    }
+
+    bool ResourceManager::save_material(const ResourceHandle<Material>& handle, const std::string& relative_path) {
+        const auto* material = get_material(handle);
+        if (!material)
+            return false;
+
+        const std::filesystem::path full =
+            m_asset_root.empty() ? std::filesystem::path{relative_path} : m_asset_root / relative_path;
+
+        std::error_code ec;
+        if (!full.parent_path().empty())
+            std::filesystem::create_directories(full.parent_path(), ec);
+
+        std::ofstream out(full);
+        if (!out) {
+            STAR_LOG_ERROR(LogCategory::Resources, "Failed to write material asset: {}", full.string());
+            return false;
+        }
+        out << material_to_json(*material, *this).dump(4);
+        return true;
     }
 
     ResourceHandle<Mesh> ResourceManager::load_mesh(const std::string& path) {

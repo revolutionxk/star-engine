@@ -27,11 +27,11 @@ namespace star::scene {
     }
 
     Entity Scene::find_entity(const std::string& name) const {
-        return Entity{m_world.native().lookup(name.c_str())};
+        return Entity{m_root.lookup(name.c_str())};
     }
 
     Entity Scene::find_by_path(const std::string& path) const {
-        return Entity{m_world.native().lookup(path.c_str())};
+        return Entity{m_root.lookup(path.c_str())};
     }
 
     void Scene::ready() {

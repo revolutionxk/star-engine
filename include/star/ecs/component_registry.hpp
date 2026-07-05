@@ -57,14 +57,19 @@ namespace star::ecs {
                 return e.try_get_mut<T>();
         };
         info.serialize = [](flecs::entity e) -> nlohmann::json {
-            if (const auto* c = e.try_get<T>())
-                return to_json(*c);
-            return nullptr;
+            if constexpr (std::is_empty_v<T>) {
+                return nlohmann::json::object();
+            } else {
+                if (const auto* c = e.try_get<T>())
+                    return to_json(*c);
+                return nullptr;
+            }
         };
         info.deserialize = [](flecs::entity e, const nlohmann::json& j) {
             if (!e.has<T>())
                 e.add<T>();
-            from_json(j, *e.try_get_mut<T>());
+            if constexpr (!std::is_empty_v<T>)
+                from_json(j, *e.try_get_mut<T>());
         };
         info.register_world = [](flecs::world& w, std::string_view name) { w.component<T>(name.data()); };
 
@@ -106,7 +111,7 @@ namespace star::ecs {
 } // namespace star::ecs
 
 #define STAR_REGISTER_COMPONENT(T, ...)                                                                                \
-    namespace star::reflection::detail {                                                                                     \
+    namespace star::reflection::detail {                                                                               \
         namespace {                                                                                                    \
             [[maybe_unused]] const bool STAR_META_CONCAT(_comp_, __COUNTER__) = [] {                                   \
                 ::star::ecs::register_component<T>(__VA_ARGS__);                                                       \

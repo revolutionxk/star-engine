@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 #include "../core/editor_events.hpp"
 #include "component_inspector.hpp"
@@ -18,10 +19,12 @@ namespace star::editor {
       private:
         [[nodiscard]] bool has_valid_entity() const;
         void render_entity_contents() const;
+        void render_material_editor() const;
         static void render_entity_header(flecs::entity entity);
         static void render_empty_state();
 
         ComponentInspector* m_inspector{};
         std::optional<flecs::entity> m_selected_entity;
+        std::optional<std::string> m_selected_material;
     };
 } // namespace star::editor

@@ -12,7 +12,8 @@ namespace star::editor {
         EntityDeselected,
         SceneLoaded,
         SceneSaved,
-        ViewportResized
+        ViewportResized,
+        MaterialAssetSelected
     };
 
     struct EditorEvent {

@@ -44,6 +44,15 @@ namespace star::physics {
         });
     }
 
+    void PhysicsSystem::reset(ecs::World& world) const {
+        world.native().each([this](components::RigidBody& rigid_body) {
+            if (rigid_body.body != INVALID_BODY) {
+                m_world.remove_body(rigid_body.body);
+                rigid_body.body = INVALID_BODY;
+            }
+        });
+    }
+
     void PhysicsSystem::apply_impulse(const BodyHandle body, const Vector3& impulse) const {
         m_world.apply_impulse(body, impulse);
     }

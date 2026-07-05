@@ -1,23 +1,32 @@
 #include "editor_ui_layer.hpp"
 
+#include <cstdio>
+#include <filesystem>
+
 #include <ImGuizmo.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #include "../panels/console_panel.hpp"
+#include "../panels/content_browser_panel.hpp"
 #include "../panels/hierarchy_panel.hpp"
 #include "../panels/inspector_panel.hpp"
 #include "../panels/metrics_panel.hpp"
 #include "../panels/scene_panel.hpp"
 #include "../theme/editor_theme.hpp"
 #include "star/application/application.hpp"
+#include "star/ecs/components/camera.hpp"
 #include "star/ecs/components/transform.hpp"
 #include "star/graphics/device.hpp"
 #include "star/imgui/imgui_font_config.hpp"
+#include "star/rendering/components/light.hpp"
 #include "star/rendering/debug_renderer.hpp"
 #include "star/rendering/passes/debug_render_pass.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
 #include "star/rendering/passes/sky_render_pass.hpp"
+#include "star/scene/scene.hpp"
 #include "star/scene/scene_manager.hpp"
+#include "star/scene/scene_serializer.hpp"
 
 namespace star::editor {
     EditorUILayer::EditorUILayer(EditorWindow* editor_window)
@@ -71,6 +80,7 @@ namespace star::editor {
         auto* scene = m_panel_manager.register_panel<ScenePanel>();
         auto* console = m_panel_manager.register_panel<ConsolePanel>();
         m_panel_manager.register_panel<MetricsPanel>();
+        m_panel_manager.register_panel<ContentBrowserPanel>(m_editor_window);
 
         scene->set_viewport(m_viewport.get());
         scene->set_input_manager(&m_input_manager);
@@ -105,9 +115,51 @@ namespace star::editor {
 
     void EditorUILayer::on_imgui_render() {
         ImGuizmo::BeginFrame();
-        setup_dockspace();
         render_main_menu_bar();
+        render_toolbar();
+        setup_dockspace();
         m_panel_manager.render_all();
+        render_project_browser();
+    }
+
+    void EditorUILayer::render_toolbar() const {
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        const f32 height = ImGui::GetFrameHeight() + ImGui::GetStyle().FramePadding.y * 2.0f + 6.0f;
+
+        if (ImGui::BeginViewportSideBar("##EditorToolbar", viewport, ImGuiDir_Up, height,
+                                        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings)) {
+            const PlayState state = m_editor_window->play_state();
+
+            constexpr f32 button_width = 72.0f;
+            const f32 spacing = ImGui::GetStyle().ItemSpacing.x;
+            const f32 total = button_width * 2.0f + spacing;
+            ImGui::SetCursorPosX((ImGui::GetContentRegionAvail().x - total) * 0.5f);
+
+            const ImVec4 green{0.22f, 0.62f, 0.30f, 1.0f};
+            const ImVec4 red{0.72f, 0.25f, 0.24f, 1.0f};
+
+            if (state == PlayState::Playing) {
+                ImGui::PushStyleColor(ImGuiCol_Button, red);
+                if (ImGui::Button("Pause", {button_width, 0.0f}))
+                    m_editor_window->pause();
+                ImGui::PopStyleColor();
+            } else {
+                ImGui::PushStyleColor(ImGuiCol_Button, green);
+                if (ImGui::Button(state == PlayState::Paused ? "Resume" : "Play", {button_width, 0.0f}))
+                    m_editor_window->play();
+                ImGui::PopStyleColor();
+            }
+
+            ImGui::SameLine();
+
+            ImGui::BeginDisabled(state == PlayState::Editing);
+            if (ImGui::Button("Stop", {button_width, 0.0f})) {
+                m_editor_window->stop();
+                EditorEventBus::instance().publish({EditorEventType::EntityDeselected, nullptr});
+            }
+            ImGui::EndDisabled();
+        }
+        ImGui::End();
     }
 
     void EditorUILayer::setup_dockspace() {
@@ -134,24 +186,63 @@ namespace star::editor {
         ImGui::PopStyleVar(2);
 
         if (const auto& io = ImGui::GetIO(); io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-            ImGuiID dockspace_id = ImGui::GetID("EditorDockSpace");
+            const ImGuiID dockspace_id = ImGui::GetID("EditorDockSpace");
+
+            if (ImGui::DockBuilderGetNode(dockspace_id) == nullptr || m_rebuild_layout) {
+                m_rebuild_layout = false;
+                build_default_layout(dockspace_id);
+            }
+
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         }
 
         ImGui::End();
     }
 
-    void EditorUILayer::render_main_menu_bar() const {
+    void EditorUILayer::build_default_layout(const unsigned dockspace_id) {
+        ImGui::DockBuilderRemoveNode(dockspace_id);
+        ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->WorkSize);
+
+        ImGuiID center = dockspace_id;
+        const ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.19f, nullptr, &center);
+        const ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.24f, nullptr, &center);
+        const ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.28f, nullptr, &center);
+
+        ImGui::DockBuilderDockWindow("Hierarchy", left);
+        ImGui::DockBuilderDockWindow("Inspector", right);
+        ImGui::DockBuilderDockWindow("Metrics", right);
+        ImGui::DockBuilderDockWindow("Scene", center);
+        ImGui::DockBuilderDockWindow("Console", bottom);
+        ImGui::DockBuilderDockWindow("Content Browser", bottom);
+        ImGui::DockBuilderFinish(dockspace_id);
+    }
+
+    void EditorUILayer::render_main_menu_bar() {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("New Scene")) {
-                    STAR_LOG_INFO(LogCategory::Editor, "New Scene requested");
+                if (ImGui::MenuItem("New Project...")) {
+                    m_open_browser_requested = true;
                 }
-                if (ImGui::MenuItem("Open Scene")) {
-                    STAR_LOG_INFO(LogCategory::Editor, "Open Scene requested");
+                if (ImGui::MenuItem("Open Project...")) {
+                    m_open_browser_requested = true;
                 }
-                if (ImGui::MenuItem("Save Scene")) {
-                    STAR_LOG_INFO(LogCategory::Editor, "Save Scene requested");
+                if (ImGui::BeginMenu("Recent Projects", !m_editor_window->projects().recent().empty())) {
+                    for (const auto& root : m_editor_window->projects().recent()) {
+                        if (ImGui::MenuItem(root.filename().string().c_str())) {
+                            m_editor_window->open_project(root);
+                        }
+                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::Separator();
+
+                const bool has_project = m_editor_window->has_project();
+                if (ImGui::MenuItem("New Scene", "Ctrl+N", false, has_project)) {
+                    m_editor_window->new_scene();
+                }
+                if (ImGui::MenuItem("Save Scene", "Ctrl+S", false, has_project)) {
+                    m_editor_window->save_active_scene();
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit")) {
@@ -177,7 +268,7 @@ namespace star::editor {
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Reset Layout")) {
-                    STAR_LOG_INFO(LogCategory::Editor, "Reset layout requested");
+                    m_rebuild_layout = true;
                 }
                 ImGui::EndMenu();
             }
@@ -191,6 +282,89 @@ namespace star::editor {
 
             ImGui::EndMainMenuBar();
         }
+    }
+
+    void EditorUILayer::render_project_browser() {
+        const bool no_project = !m_editor_window->has_project();
+
+        if ((no_project || m_open_browser_requested) && !ImGui::IsPopupOpen("Project Browser")) {
+            ImGui::OpenPopup("Project Browser");
+        }
+        m_open_browser_requested = false;
+
+        const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(ImVec2(680.0f, 440.0f), ImGuiCond_Appearing);
+
+        bool keep_open = true;
+        if (!ImGui::BeginPopupModal("Project Browser", no_project ? nullptr : &keep_open,
+                                    ImGuiWindowFlags_NoCollapse)) {
+            return;
+        }
+
+        if (m_new_project_location[0] == '\0') {
+            const std::string def = ProjectManager::default_projects_dir().string();
+            std::snprintf(m_new_project_location, sizeof(m_new_project_location), "%s", def.c_str());
+        }
+
+        if (ImGui::BeginTabBar("##ProjectTabs")) {
+            if (ImGui::BeginTabItem("New Project")) {
+                ImGui::Spacing();
+                ImGui::InputText("Name", m_new_project_name, sizeof(m_new_project_name));
+                ImGui::InputText("Location", m_new_project_location, sizeof(m_new_project_location));
+                const std::string preview =
+                    (std::filesystem::path(m_new_project_location) / m_new_project_name).string();
+                ImGui::TextDisabled("Creates: %s", preview.c_str());
+                ImGui::Spacing();
+
+                const bool can_create = m_new_project_name[0] != '\0' && m_new_project_location[0] != '\0';
+                ImGui::BeginDisabled(!can_create);
+                if (ImGui::Button("Create", ImVec2(120.0f, 0.0f))) {
+                    if (m_editor_window->create_project(m_new_project_location, m_new_project_name)) {
+                        m_new_project_name[0] = '\0';
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+                ImGui::EndDisabled();
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem("Open Project")) {
+                ImGui::Spacing();
+                ImGui::TextUnformatted("Recent");
+                ImGui::Separator();
+
+                const auto& recent = m_editor_window->projects().recent();
+                if (recent.empty()) {
+                    ImGui::TextDisabled("No recent projects.");
+                }
+                for (const auto& root : recent) {
+                    const std::string label = root.filename().string() + "##" + root.string();
+                    if (ImGui::Selectable(label.c_str())) {
+                        if (m_editor_window->open_project(root))
+                            ImGui::CloseCurrentPopup();
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("%s", root.string().c_str());
+                }
+
+                ImGui::Spacing();
+                ImGui::TextUnformatted("Open by path");
+                ImGui::InputText("##OpenPath", m_open_project_path, sizeof(m_open_project_path));
+                ImGui::SameLine();
+                if (ImGui::Button("Open")) {
+                    if (m_open_project_path[0] != '\0' && m_editor_window->open_project(m_open_project_path)) {
+                        m_open_project_path[0] = '\0';
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
+        }
+
+        ImGui::EndPopup();
     }
 
     void EditorUILayer::on_imgui_init() {

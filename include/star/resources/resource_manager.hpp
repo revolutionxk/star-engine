@@ -1,5 +1,7 @@
 #pragma once
+#include <filesystem>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -71,9 +73,13 @@ namespace star::resources {
         ResourceHandle<Material> create_material(const std::string& name, std::unique_ptr<Material> material);
         Material* get_material(const ResourceHandle<Material>& handle);
         void destroy_material(const ResourceHandle<Material>& handle);
+        
+        void set_asset_root(std::filesystem::path root);
+        ResourceHandle<Material> load_material(const std::string& relative_path);
+        ResourceHandle<Material> get_or_load_material(const std::string& name);
+        bool save_material(const ResourceHandle<Material>& handle, const std::string& relative_path);
 
-        ResourceHandle<graphics::Shader> load_shader(const std::string& vertex_path,
-                                                     const std::string& fragment_path);
+        ResourceHandle<graphics::Shader> load_shader(const std::string& vertex_path, const std::string& fragment_path);
         ResourceHandle<graphics::Shader> register_builtin_shader(const std::string& name, BuiltinShader id);
         Shader* get_shader(const ResourceHandle<graphics::Shader>& handle);
 
@@ -81,6 +87,15 @@ namespace star::resources {
 
         void destroy_all_resources();
         void garbage_collect();
+
+        [[nodiscard]] std::string mesh_name(const ResourceHandle<Mesh>& handle) const;
+        [[nodiscard]] ResourceHandle<Mesh> mesh_by_name(const std::string& name) const;
+        [[nodiscard]] std::string texture_name(const ResourceHandle<Texture>& handle) const;
+        [[nodiscard]] ResourceHandle<Texture> texture_by_name(const std::string& name) const;
+        [[nodiscard]] std::string material_name(const ResourceHandle<Material>& handle) const;
+        [[nodiscard]] ResourceHandle<Material> material_by_name(const std::string& name) const;
+        [[nodiscard]] std::string shader_name(const ResourceHandle<graphics::Shader>& handle) const;
+        [[nodiscard]] ResourceHandle<graphics::Shader> shader_by_name(const std::string& name) const;
 
         ResourceHandle<Mesh> cube_mesh() const {
             return m_cube_mesh;
@@ -129,5 +144,7 @@ namespace star::resources {
         ResourceHandle<Texture> m_black_texture;
         ResourceHandle<Material> m_default_material;
         ResourceHandle<graphics::Shader> m_default_shader;
+
+        std::filesystem::path m_asset_root;
     };
 } // namespace star::resources

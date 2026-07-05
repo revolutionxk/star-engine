@@ -15,6 +15,10 @@ namespace star::editor {
             m_resource_manager = rm;
         }
 
+        [[nodiscard]] resources::ResourceManager* resource_manager() const {
+            return m_resource_manager;
+        }
+
         void draw_components(flecs::entity entity) const;
         static void draw_add_popup(flecs::entity entity);
 

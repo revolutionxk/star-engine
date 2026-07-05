@@ -103,6 +103,11 @@ file(GLOB_RECURSE STAR_PHYSICS_SRC CONFIGURE_DEPENDS
         "${INCLUDE_DIR}/star/physics/*.hpp" "${INCLUDE_DIR}/star/physics/*.h"
 )
 
+file(GLOB_RECURSE STAR_PROJECT_SRC CONFIGURE_DEPENDS
+        "${SRC_DIR}/project/*.cpp" "${SRC_DIR}/project/*.hpp" "${SRC_DIR}/project/*.h"
+        "${INCLUDE_DIR}/star/project/*.hpp" "${INCLUDE_DIR}/star/project/*.h"
+)
+
 function(star_add_module name)
     cmake_parse_arguments(SAM "" "" "SOURCES;DEPS;INCLUDES" ${ARGN})
     add_library(${name} OBJECT ${SAM_SOURCES})
@@ -176,7 +181,7 @@ star_add_module(star_ecs
 
 star_add_module(star_resources
         SOURCES ${STAR_RESOURCES_SRC}
-        DEPS star_core star_graphics
+        DEPS star_core star_graphics nlohmann_json::nlohmann_json
 )
 
 star_add_module(star_rendering
@@ -211,6 +216,11 @@ star_add_module(star_physics
         DEPS star_core star_ecs star_math Jolt
 )
 
+star_add_module(star_project
+        SOURCES ${STAR_PROJECT_SRC}
+        DEPS star_core nlohmann_json::nlohmann_json
+)
+
 add_library(${PROJECT_NAME} STATIC
         $<TARGET_OBJECTS:star_core>
         $<TARGET_OBJECTS:star_platform>
@@ -222,6 +232,7 @@ add_library(${PROJECT_NAME} STATIC
         $<TARGET_OBJECTS:star_scene>
         $<TARGET_OBJECTS:star_application>
         $<TARGET_OBJECTS:star_physics>
+        $<TARGET_OBJECTS:star_project>
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -241,6 +252,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         star_scene
         star_application
         star_physics
+        star_project
         ${CMAKE_DL_LIBS}
 )
 
@@ -252,7 +264,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 target_precompile_headers(star_core PRIVATE "${INCLUDE_DIR}/star/core/common.hpp")
 foreach (mod IN ITEMS star_platform star_graphics star_ecs star_resources
-                       star_rendering star_imgui star_scene star_application)
+                       star_rendering star_imgui star_scene star_application star_project)
     target_precompile_headers(${mod} REUSE_FROM star_core)
 endforeach ()
 
@@ -263,6 +275,7 @@ set(_STAR_ALL_MODULE_FILES
         ${STAR_RESOURCES_SRC} ${STAR_ECS_SRC} ${STAR_RENDERING_SRC}
         ${STAR_IMGUI_SRC}
         ${STAR_SCENE_SRC} ${STAR_APPLICATION_SRC} ${STAR_PHYSICS_SRC}
+        ${STAR_PROJECT_SRC}
         ${STAR_MATH_HEADERS}
 )
 set(_STAR_SRC_TREE_FILES "")

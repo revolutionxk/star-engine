@@ -29,4 +29,9 @@ struct reflection::TypeInfo<components::MeshRenderer> {
                                                    field("Receive Shadow", &components::MeshRenderer::receive_shadow));
 };
 
+namespace star::components {
+    [[nodiscard]] nlohmann::json to_json(const MeshRenderer& value);
+    void from_json(const nlohmann::json& j, MeshRenderer& value);
+} // namespace star::components
+
 STAR_REGISTER_COMPONENT(star::components::MeshRenderer);

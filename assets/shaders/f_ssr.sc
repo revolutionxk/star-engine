@@ -5,6 +5,7 @@ $input v_texcoord0
 SAMPLER2D(s_hdr, 0);
 SAMPLER2D(s_depth, 1);
 SAMPLER2D(s_scene, 2);
+SAMPLER2D(s_gbuffer, 3);
 
 uniform mat4 u_ssrProj;
 uniform mat4 u_ssrInvProj;
@@ -20,22 +21,32 @@ vec3 ssrViewPos(vec2 uvRaw, float d)
     return view.xyz / view.w;
 }
 
+vec3 ssrPosAt(vec2 uvTex, float flip)
+{
+    vec2 uvRaw = uvTex;
+    if (flip > 0.5)
+        uvRaw.y = 1.0 - uvRaw.y;
+    float d = texture2DLod(s_depth, uvTex, 0.0).x;
+    return ssrViewPos(uvRaw, d);
+}
+
 void main()
 {
     float flip = u_ssrTexel.z;
     vec2 uvTex = v_texcoord0;
-    vec2 uvRaw = uvTex;
-    if (flip > 0.5)
-        uvRaw.y = 1.0 - uvRaw.y;
+    vec2 texel = u_ssrTexel.xy;
 
     if (u_ssrTexel.w > 0.5) {
+        float roughness = texture2DLod(s_gbuffer, uvTex, 0.0).a;
+        float offsScale = mix(0.75, 6.0, roughness);
+
         float centerDepth = texture2DLod(s_depth, uvTex, 0.0).x;
         vec3 sumC = vec3(0.0, 0.0, 0.0);
         float sumA = 0.0;
         float wsum = 0.0;
         for (int x = -2; x <= 2; ++x)
             for (int y = -2; y <= 2; ++y) {
-                vec2 o = vec2(float(x), float(y)) * u_ssrTexel.xy * 1.5;
+                vec2 o = vec2(float(x), float(y)) * texel * offsScale;
                 vec4 r = texture2DLod(s_hdr, uvTex + o, 0.0);
                 float d = texture2DLod(s_depth, uvTex + o, 0.0).x;
                 float w = exp(-abs(d - centerDepth) * 3000.0);
@@ -51,12 +62,12 @@ void main()
     }
 
     vec4 src = texture2D(s_hdr, uvTex);
-    float reflectivity = src.a;
+    float reflectivity = step(0.5, src.a);
 
-    float depth = texture2DLod(s_depth, uvTex, 0.0).x;
-    vec3 P = ssrViewPos(uvRaw, depth);
+    vec3 P = ssrPosAt(uvTex, flip);
 
-    vec3 N = normalize(cross(dFdx(P), dFdy(P)));
+    vec4 gb = texture2DLod(s_gbuffer, uvTex, 0.0);
+    vec3 N = normalize(gb.xyz * 2.0 - 1.0);
     vec3 V = normalize(P);
     if (dot(N, V) > 0.0)
         N = -N;
@@ -71,7 +82,6 @@ void main()
     vec3 prevPos = P;
     vec3 hitColor = vec3(0.0, 0.0, 0.0);
     float hit = 0.0;
-
     float maxOvershoot = max(u_ssrParams.y, stepLen * 2.0);
 
     for (int i = 0; i < SSR_MAX_STEPS; ++i)
@@ -112,8 +122,11 @@ void main()
                             a = m;
                         }
                     }
-                    vec2 edge = smoothstep(0.0, 0.12, hRaw) * smoothstep(0.0, 0.12, 1.0 - hRaw);
-                    hit = edge.x * edge.y;
+
+                    vec2 e = smoothstep(0.0, 0.12, hRaw) * smoothstep(0.0, 0.12, 1.0 - hRaw);
+                    float travel = length(b - P);
+                    float distFade = 1.0 - smoothstep(u_ssrParams.x * 0.6, u_ssrParams.x, travel);
+                    hit = e.x * e.y * distFade;
                     hitColor = texture2DLod(s_hdr, hUV, 0.0).rgb;
                     break;
                 }

@@ -35,6 +35,7 @@ namespace star::rendering {
 
         [[nodiscard]] graphics::ResourceHandle<graphics::Texture> get_color_texture() const;
         [[nodiscard]] graphics::ResourceHandle<graphics::Texture> hdr_color_texture() const;
+        [[nodiscard]] graphics::ResourceHandle<graphics::Texture> hdr_normal_texture() const;
         [[nodiscard]] graphics::ResourceHandle<graphics::Texture> hdr_depth_texture() const;
         [[nodiscard]] graphics::ResourceHandle<graphics::Framebuffer> display_framebuffer() const;
 

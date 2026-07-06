@@ -116,6 +116,13 @@ namespace star::rendering {
         return {};
     }
 
+    graphics::ResourceHandle<graphics::Texture> Viewport::hdr_normal_texture() const {
+        if (m_render_target && m_render_target->is_valid()) {
+            return m_render_target->color_texture(1);
+        }
+        return {};
+    }
+
     graphics::ResourceHandle<graphics::Texture> Viewport::hdr_depth_texture() const {
         if (m_render_target && m_render_target->is_valid()) {
             return m_render_target->depth_texture();
@@ -137,8 +144,9 @@ namespace star::rendering {
         }
 
         m_render_target = std::make_unique<RenderTarget>();
-        const bool hdr_ok =
-            m_render_target->create(m_device, m_width, m_height, graphics::TextureFormat::RGBA16F, true);
+        constexpr graphics::TextureFormat hdr_formats[2] = {graphics::TextureFormat::RGBA16F,
+                                                            graphics::TextureFormat::RGBA16F};
+        const bool hdr_ok = m_render_target->create_mrt(m_device, m_width, m_height, hdr_formats, 2, true);
 
         m_display_target = std::make_unique<RenderTarget>();
         const bool ldr_ok =

@@ -37,7 +37,6 @@ jobs:
       - name: Test
         run: ctest --test-dir build/debug --output-on-failure
 
-  # Portability check — best-effort until Linux is a supported target (see roadmap Fase 1/portability).
   linux:
     name: Linux / Clang (best-effort)
     runs-on: ubuntu-latest

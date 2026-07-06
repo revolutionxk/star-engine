@@ -43,7 +43,8 @@ void main()
     float exposure = u_groundColor.w > 0.0 ? u_groundColor.w : 1.0;
 
     vec3 color = sanitizeColor(ambient_lighting + direct_lighting + mat.emissive, 4096.0) * exposure;
-    
-    float reflectivity = mat.metallic * (1.0 - mat.roughness);
-    gl_FragColor = vec4(color, reflectivity);
+
+    vec3 viewN = normalize(mul(u_view, vec4(mat.normal, 0.0)).xyz);
+    gl_FragData[0] = vec4(color, step(0.5, mat.metallic));
+    gl_FragData[1] = vec4(viewN * 0.5 + 0.5, saturate(mat.roughness));
 }

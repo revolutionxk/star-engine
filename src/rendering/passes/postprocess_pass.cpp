@@ -227,6 +227,7 @@ namespace star::rendering {
                 gpu.set_uniform("u_ssrTexel", &ssr_march, 1, graphics::UniformType::Vec4);
                 gpu.set_texture(0, hdr);
                 gpu.set_texture(1, depth);
+                gpu.set_texture(3, viewport->hdr_normal_texture());
                 draw_fullscreen(gpu, base + 2, m_ssr_shader);
 
                 gpu.set_view_framebuffer(base + 3, st->b->framebuffer());
@@ -239,6 +240,7 @@ namespace star::rendering {
                 gpu.set_texture(0, st->a->color_texture(0));
                 gpu.set_texture(1, depth);
                 gpu.set_texture(2, hdr);
+                gpu.set_texture(3, viewport->hdr_normal_texture());
                 draw_fullscreen(gpu, base + 3, m_ssr_shader);
 
                 lit = st->b->color_texture(0);

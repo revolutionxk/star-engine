@@ -5,6 +5,7 @@
 
 namespace star::graphics {
     struct Shader;
+    struct Texture;
     class DeviceContext;
 } // namespace star::graphics
 
@@ -43,7 +44,8 @@ namespace star::rendering {
             return m_params;
         }
 
-        void draw(graphics::DeviceContext& context, u32 view_id) const;
+        void draw(graphics::DeviceContext& context, u32 view_id,
+                  graphics::ResourceHandle<graphics::Texture> env_map = {}, f32 env_intensity = 1.0f) const;
 
         [[nodiscard]] bool is_initialized() const {
             return m_initialized;

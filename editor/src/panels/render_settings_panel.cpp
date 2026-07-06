@@ -2,10 +2,14 @@
 
 #include <imgui.h>
 
+#include "../core/gltf_import.hpp"
 #include "../editor_window.hpp"
 #include "star/rendering/passes/postprocess_pass.hpp"
 #include "star/rendering/passes/shadow_pass.hpp"
 #include "star/rendering/renderer.hpp"
+#include "star/rendering/systems/render_system.hpp"
+#include "star/resources/resource_manager.hpp"
+#include "star/resources/texture/texture.hpp"
 
 namespace star::editor {
     void RenderSettingsPanel::on_imgui_render() {
@@ -53,6 +57,16 @@ namespace star::editor {
             ImGui::SetItemTooltip("View distance where AO fades out (stops grazing far geometry from turning noisy/dark).");
             ImGui::EndDisabled();
 
+            ImGui::Checkbox("SSR", &p.ssr_enabled);
+            ImGui::SetItemTooltip("Screen-space reflections: metallic surfaces reflect the scene's own geometry.");
+            ImGui::BeginDisabled(!p.ssr_enabled);
+            ImGui::DragFloat("SSR Intensity", &p.ssr_intensity, 0.02f, 0.0f, 2.0f, "%.2f");
+            ImGui::DragFloat("SSR Distance", &p.ssr_max_distance, 0.1f, 0.5f, 50.0f, "%.1f");
+            ImGui::SetItemTooltip("How far a reflection ray marches (view units).");
+            ImGui::DragFloat("SSR Thickness", &p.ssr_thickness, 0.01f, 0.05f, 4.0f, "%.2f");
+            ImGui::SetItemTooltip("Depth tolerance for a ray hit. Too small = gaps, too large = smears.");
+            ImGui::EndDisabled();
+
             ImGui::Checkbox("Bloom", &p.bloom_enabled);
             ImGui::BeginDisabled(!p.bloom_enabled);
             ImGui::DragFloat("Threshold", &p.bloom_threshold, 0.01f, 0.0f, 10.0f, "%.2f");
@@ -62,6 +76,37 @@ namespace star::editor {
             ImGui::DragFloat("Intensity", &p.bloom_intensity, 0.01f, 0.0f, 4.0f, "%.2f");
             ImGui::SetItemTooltip("How strongly the bloom is added back onto the image.");
             ImGui::EndDisabled();
+        }
+
+        if (auto* rs = m_editor_window->renderer().get_render_system()) {
+            ImGui::SeparatorText("Environment (IBL)");
+            auto env = rs->environment();
+            ImGui::TextUnformatted(env.map.is_valid() ? "HDRI: loaded" : "HDRI: none");
+            ImGui::SetItemTooltip("Load an equirectangular .hdr; metals/PBR surfaces reflect it (roughness blurs it).");
+
+            if (ImGui::Button("Load HDRI...")) {
+                if (const auto path = open_environment_file_dialog(); !path.empty()) {
+                    auto& res = m_editor_window->resources();
+                    const auto handle = res.load_environment(path.string());
+                    if (const auto* tex = res.get_texture(handle)) {
+                        systems::RenderSystem::EnvironmentState state;
+                        state.map = tex->handle;
+                        state.max_mip = static_cast<f32>(tex->mipmap_count() > 0 ? tex->mipmap_count() - 1 : 0);
+                        state.intensity = env.intensity > 0.0f ? env.intensity : 1.0f;
+                        rs->set_environment(state);
+                    }
+                }
+            }
+            if (env.map.is_valid()) {
+                ImGui::SameLine();
+                if (ImGui::Button("Clear Environment"))
+                    rs->set_environment({});
+                float intensity = env.intensity;
+                if (ImGui::DragFloat("IBL Intensity", &intensity, 0.02f, 0.0f, 8.0f, "%.2f")) {
+                    env.intensity = intensity;
+                    rs->set_environment(env);
+                }
+            }
         }
 
         ImGui::End();

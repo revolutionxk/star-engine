@@ -15,6 +15,7 @@
 #include <essl/f_fxaa.sc.bin.h>
 #include <essl/f_ssao.sc.bin.h>
 #include <essl/f_ssaoblur.sc.bin.h>
+#include <essl/f_ssr.sc.bin.h>
 #include <essl/f_pick.sc.bin.h>
 #include <essl/f_shadow.sc.bin.h>
 #include <essl/f_simple.sc.bin.h>
@@ -36,6 +37,7 @@
 #include <glsl/f_fxaa.sc.bin.h>
 #include <glsl/f_ssao.sc.bin.h>
 #include <glsl/f_ssaoblur.sc.bin.h>
+#include <glsl/f_ssr.sc.bin.h>
 #include <glsl/f_pick.sc.bin.h>
 #include <glsl/f_shadow.sc.bin.h>
 #include <glsl/f_simple.sc.bin.h>
@@ -57,6 +59,7 @@
 #include <spirv/f_fxaa.sc.bin.h>
 #include <spirv/f_ssao.sc.bin.h>
 #include <spirv/f_ssaoblur.sc.bin.h>
+#include <spirv/f_ssr.sc.bin.h>
 #include <spirv/f_pick.sc.bin.h>
 #include <spirv/f_shadow.sc.bin.h>
 #include <spirv/f_simple.sc.bin.h>
@@ -80,6 +83,7 @@
     #include <dx10/f_fxaa.sc.bin.h>
     #include <dx10/f_ssao.sc.bin.h>
     #include <dx10/f_ssaoblur.sc.bin.h>
+    #include <dx10/f_ssr.sc.bin.h>
     #include <dx10/f_pick.sc.bin.h>
     #include <dx10/f_shadow.sc.bin.h>
     #include <dx10/f_simple.sc.bin.h>
@@ -101,6 +105,7 @@
     #include <dx11/f_fxaa.sc.bin.h>
     #include <dx11/f_ssao.sc.bin.h>
     #include <dx11/f_ssaoblur.sc.bin.h>
+    #include <dx11/f_ssr.sc.bin.h>
     #include <dx11/f_pick.sc.bin.h>
     #include <dx11/f_shadow.sc.bin.h>
     #include <dx11/f_simple.sc.bin.h>
@@ -124,6 +129,7 @@
     #include <mtl/f_fxaa.sc.bin.h>
     #include <mtl/f_ssao.sc.bin.h>
     #include <mtl/f_ssaoblur.sc.bin.h>
+    #include <mtl/f_ssr.sc.bin.h>
     #include <mtl/f_pick.sc.bin.h>
     #include <mtl/f_shadow.sc.bin.h>
     #include <mtl/f_simple.sc.bin.h>
@@ -162,6 +168,7 @@ namespace star::resources::detail {
         const bgfx::EmbeddedShader k_fxaa_fs = BGFX_EMBEDDED_SHADER(f_fxaa);
         const bgfx::EmbeddedShader k_ssao_fs = BGFX_EMBEDDED_SHADER(f_ssao);
         const bgfx::EmbeddedShader k_ssaoblur_fs = BGFX_EMBEDDED_SHADER(f_ssaoblur);
+        const bgfx::EmbeddedShader k_ssr_fs = BGFX_EMBEDDED_SHADER(f_ssr);
     } // namespace
 
     EmbeddedShaderPair embedded_pair_for(const BuiltinShader id) noexcept {
@@ -192,6 +199,8 @@ namespace star::resources::detail {
                 return {&k_fullscreen_vs, &k_ssao_fs};
             case BuiltinShader::SsaoBlur:
                 return {&k_fullscreen_vs, &k_ssaoblur_fs};
+            case BuiltinShader::Ssr:
+                return {&k_fullscreen_vs, &k_ssr_fs};
         }
         return {nullptr, nullptr};
     }

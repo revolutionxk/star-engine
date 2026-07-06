@@ -23,6 +23,8 @@ namespace star::rendering::uniforms {
     inline constexpr std::string_view MATERIAL_PARAMS = "u_materialParams";
     inline constexpr std::string_view EMISSIVE_COLOR = "u_emissive";
     inline constexpr std::string_view ALBEDO_TEXTURE = "u_albedoTexture";
+    inline constexpr std::string_view TEX_FLAGS = "u_texFlags";
+    inline constexpr std::string_view IBL_PARAMS = "u_iblParams";
 
     inline constexpr std::string_view CAM_POS = "u_camPos";
 
@@ -31,7 +33,8 @@ namespace star::rendering::uniforms {
 
     inline constexpr u8 STAGE_ALBEDO = 0;
     inline constexpr u8 STAGE_NORMAL = 1;
-    inline constexpr u8 STAGE_METALLIC = 2;
-    inline constexpr u8 STAGE_ROUGHNESS = 3;
+    inline constexpr u8 STAGE_MR = 2;
+    inline constexpr u8 STAGE_EMISSIVE = 3;
     inline constexpr u8 STAGE_SHADOW = 4;
+    inline constexpr u8 STAGE_ENV = 5;
 } // namespace star::rendering::uniforms

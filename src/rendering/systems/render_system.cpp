@@ -77,10 +77,25 @@ namespace {
             ctx.set_uniform(std::string(rendering::uniforms::EMISSIVE_COLOR), &mat.emissive_color, 1,
                             graphics::UniformType::Vec4);
 
-        if (mat.albedo_texture.is_valid() && !overridden.contains(rendering::uniforms::ALBEDO_TEXTURE)) {
-            if (const auto* tex = rm.get_texture(mat.albedo_texture))
-                ctx.set_texture(rendering::uniforms::STAGE_ALBEDO, tex->handle);
-        }
+        const auto bind_stage = [&](const u8 stage, const graphics::ResourceHandle<resources::Texture>& handle) {
+            if (handle.is_valid())
+                if (const auto* tex = rm.get_texture(handle)) {
+                    ctx.set_texture(stage, tex->handle);
+                    return true;
+                }
+            if (const auto* white = rm.get_texture(rm.white_texture()))
+                ctx.set_texture(stage, white->handle);
+            return false;
+        };
+
+        const bool has_albedo = bind_stage(rendering::uniforms::STAGE_ALBEDO, mat.albedo_texture);
+        const bool has_normal = bind_stage(rendering::uniforms::STAGE_NORMAL, mat.normal_texture);
+        const bool has_mr = bind_stage(rendering::uniforms::STAGE_MR, mat.metallic_roughness_texture);
+        const bool has_emissive = bind_stage(rendering::uniforms::STAGE_EMISSIVE, mat.emissive_texture);
+
+        const Vector4 tex_flags{has_albedo ? 1.0f : 0.0f, has_normal ? 1.0f : 0.0f, has_mr ? 1.0f : 0.0f,
+                                has_emissive ? 1.0f : 0.0f};
+        ctx.set_uniform(std::string(rendering::uniforms::TEX_FLAGS), &tex_flags, 1, graphics::UniformType::Vec4);
 
         for (const auto& prop : params)
             upload_property(ctx, prop);
@@ -245,6 +260,14 @@ namespace star::systems {
                             graphics::UniformType::Mat4);
         if (m_shadow.map.is_valid())
             context.set_texture(rendering::uniforms::STAGE_SHADOW, m_shadow.map);
+
+        const bool ibl_enabled = m_environment.map.is_valid();
+        const Vector4 ibl_params{ibl_enabled ? 1.0f : 0.0f, m_environment.max_mip, m_environment.intensity, 0.0f};
+        context.set_uniform(std::string(rendering::uniforms::IBL_PARAMS), &ibl_params, 1, graphics::UniformType::Vec4);
+        if (ibl_enabled)
+            context.set_texture(rendering::uniforms::STAGE_ENV, m_environment.map);
+        else if (const auto* black = m_resource_manager.get_texture(m_resource_manager.black_texture()))
+            context.set_texture(rendering::uniforms::STAGE_ENV, black->handle);
     }
 
     void RenderSystem::render(const rendering::RenderScene& scene, graphics::DeviceContext& context, const u32 view_id,

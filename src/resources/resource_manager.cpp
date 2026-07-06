@@ -262,6 +262,91 @@ namespace star::resources {
         return create_texture(path, std::move(texture));
     }
 
+    ResourceHandle<Texture> ResourceManager::load_environment(const std::string& path) {
+        const std::string key = "__env:" + path;
+        if (const auto existing = texture_by_name(key); existing.is_valid())
+            return existing;
+
+        const std::filesystem::path full = m_asset_root.empty() ? std::filesystem::path{path} : m_asset_root / path;
+
+        int width = 0, height = 0, channels = 0;
+        float* hdr = stbi_loadf(full.string().c_str(), &width, &height, &channels, 4);
+        if (!hdr) {
+            STAR_LOG_ERROR(LogCategory::Resources, "Failed to load HDR environment '{}': {}", full.string(),
+                           stbi_failure_reason());
+            return {};
+        }
+
+        std::vector base(hdr, hdr + static_cast<size_t>(width) * height * 4);
+        stbi_image_free(hdr);
+
+        const auto box_down = [](const std::vector<float>& src, const int w, const int h, const int nw, const int nh) {
+            std::vector<float> dst(static_cast<size_t>(nw) * nh * 4);
+            for (int y = 0; y < nh; ++y)
+                for (int x = 0; x < nw; ++x) {
+                    const int x0 = std::min(x * 2, w - 1), x1 = std::min(x * 2 + 1, w - 1);
+                    const int y0 = std::min(y * 2, h - 1), y1 = std::min(y * 2 + 1, h - 1);
+                    for (int c = 0; c < 4; ++c) {
+                        const float s = src[(static_cast<size_t>(y0) * w + x0) * 4 + c] +
+                                        src[(static_cast<size_t>(y0) * w + x1) * 4 + c] +
+                                        src[(static_cast<size_t>(y1) * w + x0) * 4 + c] +
+                                        src[(static_cast<size_t>(y1) * w + x1) * 4 + c];
+                        dst[(static_cast<size_t>(y) * nw + x) * 4 + c] = s * 0.25f;
+                    }
+                }
+            return dst;
+        };
+
+        while (width > 2048) {
+            const int nw = width / 2, nh = std::max(1, height / 2);
+            base = box_down(base, width, height, nw, nh);
+            width = nw;
+            height = nh;
+        }
+
+        std::vector<std::vector<float>> levels;
+        levels.push_back(std::move(base));
+        int lw = width, lh = height;
+        while (lw > 1 || lh > 1) {
+            const int nw = std::max(1, lw / 2), nh = std::max(1, lh / 2);
+            levels.push_back(box_down(levels.back(), lw, lh, nw, nh));
+            lw = nw;
+            lh = nh;
+        }
+
+        std::vector<u8> packed;
+        for (const auto& level : levels) {
+            const auto* bytes = reinterpret_cast<const u8*>(level.data());
+            packed.insert(packed.end(), bytes, bytes + level.size() * sizeof(float));
+        }
+
+        graphics::TextureDescriptor gdesc{};
+        gdesc.width = static_cast<u32>(width);
+        gdesc.height = static_cast<u32>(height);
+        gdesc.mip_levels = static_cast<u32>(levels.size());
+        gdesc.format = graphics::TextureFormat::RGBA32F;
+        gdesc.initial_data = packed.data();
+        gdesc.size_in_bytes = packed.size();
+        gdesc.usage = graphics::TextureUsage::Sampled;
+
+        const auto gpu = m_device.create_texture(gdesc);
+        if (!gpu.is_valid()) {
+            STAR_LOG_ERROR(LogCategory::Resources, "Failed to upload HDR environment '{}' to GPU", full.string());
+            return {};
+        }
+
+        auto tex = std::make_unique<Texture>();
+        tex->desc.width = static_cast<u32>(width);
+        tex->desc.height = static_cast<u32>(height);
+        tex->desc.format = TextureFormat::RGBA32F;
+        tex->desc.generate_mipmaps = true;
+        tex->handle = gpu;
+
+        STAR_LOG_INFO(LogCategory::Resources, "Loaded HDR environment '{}' ({}x{}, {} mips)", full.string(), width,
+                      height, levels.size());
+        return create_texture(key, std::move(tex));
+    }
+
     ResourceHandle<Texture> ResourceManager::get_or_load_texture(const std::string& name) {
         if (name.empty())
             return {};
@@ -282,7 +367,8 @@ namespace star::resources {
             return ResourceHandle<Texture>{it->second, entry.generation};
         }
 
-        upload_texture_to_gpu(*texture);
+        if (!texture->handle.is_valid())
+            upload_texture_to_gpu(*texture);
 
         const u32 id = m_textures.allocate_id();
         const u32 generation = m_textures.generation_of(id);
@@ -641,7 +727,7 @@ namespace star::resources {
         auto sphere = std::make_unique<Mesh>();
         *sphere = Mesh::create_sphere(1.0f, 32, 32);
         m_sphere_mesh = create_mesh("__default_sphere", std::move(sphere));
-        
+
         const auto solid_texture = [this](const std::string& name, const u8 r, const u8 g, const u8 b, const u8 a) {
             auto tex = std::make_unique<Texture>();
             tex->desc.width = 1;

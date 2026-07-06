@@ -22,12 +22,15 @@ uniform vec4 u_lightsCone[MAX_LIGHTS];
 uniform vec4 u_lightsCount;
 
 uniform vec4 u_shadowParams;
+uniform vec4 u_texFlags;
+uniform vec4 u_iblParams;
 
 SAMPLER2D(s_texColor, 0);
 SAMPLER2D(s_texNormal, 1);
 SAMPLER2D(s_texMetallicRoughness, 2);
 SAMPLER2D(s_texEmissive, 3);
 SAMPLER2D(s_shadowMap, 4);
+SAMPLER2D(s_envMap, 5);
 
 struct Material
 {
@@ -375,17 +378,48 @@ vec3 evaluateEnvironmentSpecular(vec3 N, vec3 V, Material mat, vec3 groundColor)
     return sanitizeColor(prefiltered_env * env_brdf * mat.occlusion, 4096.0);
 }
 
+vec2 dirToEquirectUV(vec3 d)
+{
+    float u = atan2(d.z, d.x) * (INV_PI * 0.5) + 0.5;
+    float v = acos(clamp(d.y, -1.0, 1.0)) * INV_PI;
+    return vec2(u, v);
+}
+
+vec3 sampleEnvLod(vec3 dir, float lod)
+{
+    return texture2DLod(s_envMap, dirToEquirectUV(dir), lod).rgb * u_iblParams.z;
+}
+
+vec3 evaluateIBLSpecular(vec3 N, vec3 V, Material mat)
+{
+    vec3 R = reflect(-V, N);
+    vec3 dominant_R = dominantSpecularDirection(N, R, mat.roughness);
+    float lod = saturate(mat.roughness) * u_iblParams.y;
+    vec3 prefiltered = sampleEnvLod(dominant_R, lod);
+
+    float NdV = saturate(dot(N, V));
+    vec3 env_brdf = envBRDFApprox(mat.F0, mat.roughness, NdV);
+    return sanitizeColor(prefiltered * env_brdf * mat.occlusion, 4096.0);
+}
+
+vec3 evaluateIBLDiffuse(vec3 N, Material mat)
+{
+    vec3 irradiance = sampleEnvLod(N, max(u_iblParams.y - 1.0, 0.0));
+    return sanitizeColor(irradiance * mat.diffuse * mat.occlusion, 4096.0);
+}
+
 vec3 evaluateAmbient(vec3 N, vec3 V, Material mat, vec3 skyColor, vec3 groundColor)
 {
     N = safeNormalize(N, vec3(0.0, 1.0, 0.0));
     V = safeNormalize(V, vec3(0.0, 0.0, 1.0));
-
+    
     vec3 diffuse_irradiance = hemisphereAmbient(N, skyColor, groundColor);
-    vec3 diffuse = diffuse_irradiance * mat.diffuse * mat.occlusion;
+    vec3 hemi = diffuse_irradiance * mat.diffuse * mat.occlusion + evaluateEnvironmentSpecular(N, V, mat, groundColor);
 
-    vec3 specular = evaluateEnvironmentSpecular(N, V, mat, groundColor);
+    vec3 ibl = evaluateIBLDiffuse(N, mat) + evaluateIBLSpecular(N, V, mat);
 
-    return sanitizeColor(diffuse + specular, 4096.0);
+    vec3 result = mix(hemi, ibl, step(0.5, u_iblParams.x));
+    return sanitizeColor(result, 4096.0);
 }
 
 #endif

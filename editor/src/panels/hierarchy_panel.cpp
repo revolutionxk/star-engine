@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include "core/gltf_import.hpp"
+
 namespace star::editor {
     void HierarchyPanel::on_imgui_render() {
         if (!m_is_open)
@@ -81,6 +83,9 @@ namespace star::editor {
             if (ImGui::MenuItem("Create Camera"))
                 create_camera_entity();
             ImGui::Separator();
+            if (ImGui::MenuItem("Import glTF..."))
+                import_gltf_model();
+            ImGui::Separator();
             if (ImGui::MenuItem("Paste")) {
                 // TODO: paste logic
             }
@@ -112,6 +117,18 @@ namespace star::editor {
         auto entity = scene->world().native().entity("Camera");
         entity.child_of(scene->root());
         STAR_LOG_INFO(LogCategory::Editor, "Created camera entity");
+    }
+
+    void HierarchyPanel::import_gltf_model() const {
+        if (!m_editor_window)
+            return;
+        auto* scene = m_editor_window->scene_manager().get_active_scene();
+        if (!scene)
+            return;
+        const auto path = open_model_file_dialog();
+        if (path.empty())
+            return;
+        import_gltf_into_scene(*scene, m_editor_window->resources(), path);
     }
 
     void HierarchyPanel::on_entity_selected(flecs::entity& entity) {

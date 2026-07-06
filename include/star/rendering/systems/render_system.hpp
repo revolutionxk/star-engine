@@ -52,6 +52,20 @@ namespace star::systems {
             m_shadow = shadow;
         }
 
+        struct EnvironmentState {
+            graphics::ResourceHandle<graphics::Texture> map{};
+            f32 max_mip{0.0f};
+            f32 intensity{1.0f};
+        };
+
+        void set_environment(const EnvironmentState& environment) {
+            m_environment = environment;
+        }
+
+        [[nodiscard]] const EnvironmentState& environment() const {
+            return m_environment;
+        }
+
         [[nodiscard]] const rendering::RenderQueue& render_queue() const {
             return m_render_queue;
         }
@@ -69,5 +83,6 @@ namespace star::systems {
         rendering::LightEnvironment m_light_env;
         rendering::AtmosphericLighting m_atmospheric;
         ShadowState m_shadow;
+        EnvironmentState m_environment;
     };
 } // namespace star::systems

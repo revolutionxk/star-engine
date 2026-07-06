@@ -30,16 +30,18 @@ namespace star::rendering {
             return;
         }
 
-        const AtmosphereSolution solution = solve_atmosphere(*scene->atmosphere, m_elapsed_time);
-        m_sky.set_params(solution.sky_params);
-        m_render_system.apply_atmospheric_lighting(solution.lighting);
+        const auto [sky_params, lighting] = solve_atmosphere(*scene->atmosphere, m_elapsed_time);
+        m_sky.set_params(sky_params);
+        m_render_system.apply_atmospheric_lighting(lighting);
         m_has_sky_this_frame = true;
     }
 
     void SkyRenderPass::render(const RenderContext& ctx) {
         Super::render(ctx);
 
-        if (!m_has_sky_this_frame) {
+        const auto& env = m_render_system.environment();
+        const bool use_env = env.map.is_valid();
+        if (!m_has_sky_this_frame && !use_env) {
             return;
         }
 
@@ -47,6 +49,7 @@ namespace star::rendering {
             viewport->bind_overlay(ctx.gpu, ctx.view_id);
         }
 
-        m_sky.draw(ctx.gpu, ctx.view_id);
+        m_sky.draw(ctx.gpu, ctx.view_id, use_env ? env.map : graphics::ResourceHandle<graphics::Texture>{},
+                   env.intensity);
     }
 } // namespace star::rendering

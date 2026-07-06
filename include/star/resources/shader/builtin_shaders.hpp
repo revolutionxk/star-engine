@@ -17,5 +17,6 @@ namespace star::resources {
         Fxaa,
         Ssao,
         SsaoBlur,
+        Ssr,
     };
 } // namespace star::resources

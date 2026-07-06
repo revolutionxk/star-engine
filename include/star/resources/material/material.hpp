@@ -15,6 +15,9 @@ namespace star::resources {
     struct Material : Resource {
         graphics::ResourceHandle<graphics::Shader> shader{};
         graphics::ResourceHandle<Texture> albedo_texture{};
+        graphics::ResourceHandle<Texture> normal_texture{};
+        graphics::ResourceHandle<Texture> metallic_roughness_texture{};
+        graphics::ResourceHandle<Texture> emissive_texture{};
 
         Vector4 albedo_color{1.0f, 1.0f, 1.0f, 1.0f};
         Vector4 emissive_color{0.0f, 0.0f, 0.0f, 0.0f};

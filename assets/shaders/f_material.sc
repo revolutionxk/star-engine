@@ -5,12 +5,27 @@ $input v_position, v_normal, v_tangent, v_texcoord0, v_viewDir, v_shadowCoord
 
 void main()
 {
+    vec4 albedoTex = texture2D(s_texColor, v_texcoord0);
+    vec3 normalTex = texture2D(s_texNormal, v_texcoord0).xyz;
+    vec3 mrTex = texture2D(s_texMetallicRoughness, v_texcoord0).xyz;
+    vec3 emissiveTex = texture2D(s_texEmissive, v_texcoord0).xyz;
+
     Material mat;
-    mat.baseColor = u_baseColor;
-    mat.metallic = u_materialParams.x;
-    mat.roughness = u_materialParams.y;
-    mat.normal = safeNormalize(v_normal, vec3(0.0, 1.0, 0.0));
-    mat.emissive = u_emissive.xyz;
+
+    vec4 albedoLin = vec4(srgbToLinear(albedoTex.rgb), albedoTex.a) * u_baseColor;
+    mat.baseColor = mix(u_baseColor, albedoLin, u_texFlags.x);
+
+    mat.metallic = mix(u_materialParams.x, u_materialParams.x * mrTex.b, u_texFlags.z);
+    mat.roughness = mix(u_materialParams.y, u_materialParams.y * mrTex.g, u_texFlags.z);
+
+    vec3 Nv = safeNormalize(v_normal, vec3(0.0, 1.0, 0.0));
+    vec3 T = safeNormalize(v_tangent, vec3(1.0, 0.0, 0.0));
+    vec3 B = cross(Nv, T);
+    vec3 nTS = normalTex * 2.0 - 1.0;
+    vec3 Nmap = safeNormalize(nTS.x * T + nTS.y * B + nTS.z * Nv, Nv);
+    mat.normal = safeNormalize(mix(Nv, Nmap, u_texFlags.y), vec3(0.0, 1.0, 0.0));
+
+    mat.emissive = mix(u_emissive.xyz, u_emissive.xyz * srgbToLinear(emissiveTex), u_texFlags.w);
 
     mat = initMaterial(mat);
 
@@ -28,5 +43,7 @@ void main()
     float exposure = u_groundColor.w > 0.0 ? u_groundColor.w : 1.0;
 
     vec3 color = sanitizeColor(ambient_lighting + direct_lighting + mat.emissive, 4096.0) * exposure;
-    gl_FragColor = vec4(color, mat.baseColor.a);
+    
+    float reflectivity = mat.metallic * (1.0 - mat.roughness);
+    gl_FragColor = vec4(color, reflectivity);
 }

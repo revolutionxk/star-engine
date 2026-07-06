@@ -31,6 +31,9 @@ namespace star::resources {
         body["metallic"] = material.metallic;
         body["roughness"] = material.roughness;
         body["albedo_texture"] = resources.texture_name(material.albedo_texture);
+        body["normal_texture"] = resources.texture_name(material.normal_texture);
+        body["metallic_roughness_texture"] = resources.texture_name(material.metallic_roughness_texture);
+        body["emissive_texture"] = resources.texture_name(material.emissive_texture);
 
         nlohmann::json document;
         document[MATERIAL_KEY] = std::move(body);
@@ -52,5 +55,11 @@ namespace star::resources {
 
         if (const auto texture = body.value("albedo_texture", std::string{}); !texture.empty())
             material.albedo_texture = resources.get_or_load_texture(texture);
+        if (const auto texture = body.value("normal_texture", std::string{}); !texture.empty())
+            material.normal_texture = resources.get_or_load_texture(texture);
+        if (const auto texture = body.value("metallic_roughness_texture", std::string{}); !texture.empty())
+            material.metallic_roughness_texture = resources.get_or_load_texture(texture);
+        if (const auto texture = body.value("emissive_texture", std::string{}); !texture.empty())
+            material.emissive_texture = resources.get_or_load_texture(texture);
     }
 } // namespace star::resources

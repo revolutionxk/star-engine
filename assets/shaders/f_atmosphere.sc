@@ -8,6 +8,17 @@ uniform vec4 u_parameters;
 uniform vec4 u_sunLuminance;
 uniform vec4 u_perezCoeff[5];
 
+uniform vec4 u_envSkyMode;
+
+SAMPLER2D(s_envMap, 0);
+
+vec2 dirToEquirectUV(vec3 d)
+{
+    float u = atan2(d.z, d.x) * 0.15915494 + 0.5;
+    float v = acos(clamp(d.y, -1.0, 1.0)) * 0.31830988;
+    return vec2(u, v);
+}
+
 vec3 xyzToRgb(vec3 xyz)
 {
     return vec3(
@@ -83,6 +94,12 @@ void main()
 
     float r = n4rand_ss(v_screenPos);
     color += vec3_splat(r) / 40.0;
+    
+    vec4 raS = mul(u_invViewProj, vec4(v_screenPos, -1.0, 1.0));
+    vec4 raE = mul(u_invViewProj, vec4(v_screenPos, 1.0, 1.0));
+    vec3 trueDir = normalize(raE.xyz / raE.w - raS.xyz / raS.w);
+    vec3 envColor = texture2D(s_envMap, dirToEquirectUV(trueDir)).rgb * u_envSkyMode.y;
+    color = mix(color, envColor, step(0.5, u_envSkyMode.x));
 
     gl_FragColor = vec4(color, 1.0);
 }

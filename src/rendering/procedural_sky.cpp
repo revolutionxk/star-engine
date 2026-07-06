@@ -71,9 +71,19 @@ namespace star::rendering {
         }
     }
 
-    void ProceduralSky::draw(graphics::DeviceContext& context, const u32 view_id) const {
+    void ProceduralSky::draw(graphics::DeviceContext& context, const u32 view_id,
+                             const graphics::ResourceHandle<graphics::Texture> env_map, const f32 env_intensity) const {
         if (!m_initialized || !m_shader.is_valid())
             return;
+        
+        const bool use_env = env_map.is_valid();
+        const float env_mode[4] = {use_env ? 1.0f : 0.0f, env_intensity, 0.0f, 0.0f};
+        context.set_uniform("u_envSkyMode", env_mode, 1, graphics::UniformType::Vec4);
+        if (use_env)
+            context.set_texture(0, env_map);
+        else if (m_rm)
+            if (const auto* black = m_rm->get_texture(m_rm->black_texture()))
+                context.set_texture(0, black->handle);
 
         const float sun_dir[4] = {m_params.sun_direction.x, m_params.sun_direction.y, m_params.sun_direction.z, 0.0f};
         context.set_uniform("u_sunDirection", sun_dir, 1, graphics::UniformType::Vec4);

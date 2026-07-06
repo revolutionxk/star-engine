@@ -74,6 +74,7 @@ namespace star::resources {
         void destroy_mesh(const ResourceHandle<Mesh>& handle);
 
         ResourceHandle<Texture> load_texture(const std::string& path);
+        ResourceHandle<Texture> load_environment(const std::string& path);
         ResourceHandle<Texture> get_or_load_texture(const std::string& name);
         ResourceHandle<Texture> create_texture(const std::string& name, std::unique_ptr<Texture> texture);
         Texture* get_texture(const ResourceHandle<Texture>& handle);

@@ -15,5 +15,7 @@ namespace star::resources {
         BloomBright,
         BloomBlur,
         Fxaa,
+        Ssao,
+        SsaoBlur,
     };
 } // namespace star::resources

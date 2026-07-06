@@ -116,6 +116,13 @@ namespace star::rendering {
         return {};
     }
 
+    graphics::ResourceHandle<graphics::Texture> Viewport::hdr_depth_texture() const {
+        if (m_render_target && m_render_target->is_valid()) {
+            return m_render_target->depth_texture();
+        }
+        return {};
+    }
+
     graphics::ResourceHandle<graphics::Framebuffer> Viewport::display_framebuffer() const {
         if (m_display_target && m_display_target->is_valid()) {
             return m_display_target->framebuffer();

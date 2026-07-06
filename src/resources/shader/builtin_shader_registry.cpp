@@ -13,6 +13,8 @@
 #include <essl/f_blur.sc.bin.h>
 #include <essl/f_brightpass.sc.bin.h>
 #include <essl/f_fxaa.sc.bin.h>
+#include <essl/f_ssao.sc.bin.h>
+#include <essl/f_ssaoblur.sc.bin.h>
 #include <essl/f_pick.sc.bin.h>
 #include <essl/f_shadow.sc.bin.h>
 #include <essl/f_simple.sc.bin.h>
@@ -32,6 +34,8 @@
 #include <glsl/f_blur.sc.bin.h>
 #include <glsl/f_brightpass.sc.bin.h>
 #include <glsl/f_fxaa.sc.bin.h>
+#include <glsl/f_ssao.sc.bin.h>
+#include <glsl/f_ssaoblur.sc.bin.h>
 #include <glsl/f_pick.sc.bin.h>
 #include <glsl/f_shadow.sc.bin.h>
 #include <glsl/f_simple.sc.bin.h>
@@ -51,6 +55,8 @@
 #include <spirv/f_blur.sc.bin.h>
 #include <spirv/f_brightpass.sc.bin.h>
 #include <spirv/f_fxaa.sc.bin.h>
+#include <spirv/f_ssao.sc.bin.h>
+#include <spirv/f_ssaoblur.sc.bin.h>
 #include <spirv/f_pick.sc.bin.h>
 #include <spirv/f_shadow.sc.bin.h>
 #include <spirv/f_simple.sc.bin.h>
@@ -72,6 +78,8 @@
     #include <dx10/f_blur.sc.bin.h>
     #include <dx10/f_brightpass.sc.bin.h>
     #include <dx10/f_fxaa.sc.bin.h>
+    #include <dx10/f_ssao.sc.bin.h>
+    #include <dx10/f_ssaoblur.sc.bin.h>
     #include <dx10/f_pick.sc.bin.h>
     #include <dx10/f_shadow.sc.bin.h>
     #include <dx10/f_simple.sc.bin.h>
@@ -91,6 +99,8 @@
     #include <dx11/f_blur.sc.bin.h>
     #include <dx11/f_brightpass.sc.bin.h>
     #include <dx11/f_fxaa.sc.bin.h>
+    #include <dx11/f_ssao.sc.bin.h>
+    #include <dx11/f_ssaoblur.sc.bin.h>
     #include <dx11/f_pick.sc.bin.h>
     #include <dx11/f_shadow.sc.bin.h>
     #include <dx11/f_simple.sc.bin.h>
@@ -112,6 +122,8 @@
     #include <mtl/f_blur.sc.bin.h>
     #include <mtl/f_brightpass.sc.bin.h>
     #include <mtl/f_fxaa.sc.bin.h>
+    #include <mtl/f_ssao.sc.bin.h>
+    #include <mtl/f_ssaoblur.sc.bin.h>
     #include <mtl/f_pick.sc.bin.h>
     #include <mtl/f_shadow.sc.bin.h>
     #include <mtl/f_simple.sc.bin.h>
@@ -148,6 +160,8 @@ namespace star::resources::detail {
         const bgfx::EmbeddedShader k_brightpass_fs = BGFX_EMBEDDED_SHADER(f_brightpass);
         const bgfx::EmbeddedShader k_blur_fs = BGFX_EMBEDDED_SHADER(f_blur);
         const bgfx::EmbeddedShader k_fxaa_fs = BGFX_EMBEDDED_SHADER(f_fxaa);
+        const bgfx::EmbeddedShader k_ssao_fs = BGFX_EMBEDDED_SHADER(f_ssao);
+        const bgfx::EmbeddedShader k_ssaoblur_fs = BGFX_EMBEDDED_SHADER(f_ssaoblur);
     } // namespace
 
     EmbeddedShaderPair embedded_pair_for(const BuiltinShader id) noexcept {
@@ -174,6 +188,10 @@ namespace star::resources::detail {
                 return {&k_fullscreen_vs, &k_blur_fs};
             case BuiltinShader::Fxaa:
                 return {&k_fullscreen_vs, &k_fxaa_fs};
+            case BuiltinShader::Ssao:
+                return {&k_fullscreen_vs, &k_ssao_fs};
+            case BuiltinShader::SsaoBlur:
+                return {&k_fullscreen_vs, &k_ssaoblur_fs};
         }
         return {nullptr, nullptr};
     }

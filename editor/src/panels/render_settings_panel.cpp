@@ -41,6 +41,18 @@ namespace star::editor {
             ImGui::Checkbox("FXAA", &p.fxaa_enabled);
             ImGui::SetItemTooltip("Fast anti-aliasing that smooths jagged edges on the resolved image.");
 
+            ImGui::Checkbox("SSAO", &p.ssao_enabled);
+            ImGui::BeginDisabled(!p.ssao_enabled);
+            ImGui::DragFloat("AO Strength", &p.ssao_strength, 0.02f, 0.0f, 2.0f, "%.2f");
+            ImGui::SetItemTooltip("How much ambient occlusion darkens creases and contacts.");
+            ImGui::DragFloat("AO Radius", &p.ssao_radius, 0.01f, 0.05f, 4.0f, "%.2f");
+            ImGui::SetItemTooltip("Sample radius in world units. Larger = broader, softer occlusion.");
+            ImGui::DragFloat("AO Power", &p.ssao_power, 0.05f, 0.1f, 6.0f, "%.2f");
+            ImGui::SetItemTooltip("Contrast of the occlusion falloff.");
+            ImGui::DragFloat("AO Fade Dist", &p.ssao_fade, 0.5f, 2.0f, 200.0f, "%.1f");
+            ImGui::SetItemTooltip("View distance where AO fades out (stops grazing far geometry from turning noisy/dark).");
+            ImGui::EndDisabled();
+
             ImGui::Checkbox("Bloom", &p.bloom_enabled);
             ImGui::BeginDisabled(!p.bloom_enabled);
             ImGui::DragFloat("Threshold", &p.bloom_threshold, 0.01f, 0.0f, 10.0f, "%.2f");

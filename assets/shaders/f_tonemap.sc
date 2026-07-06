@@ -4,8 +4,8 @@ $input v_texcoord0
 
 SAMPLER2D(s_hdr, 0);
 SAMPLER2D(s_bloom, 1);
+SAMPLER2D(s_ao, 2);
 
-// x = flip V (unused here), y = post exposure, z = bloom intensity
 uniform vec4 u_postParams;
 
 float sanitizeScalar(float x, float maxValue)
@@ -45,6 +45,10 @@ vec3 acesTonemap(vec3 x)
 void main()
 {
     vec3 hdr = texture2D(s_hdr, v_texcoord0).rgb;
+
+    float ao = texture2D(s_ao, v_texcoord0).r;
+    hdr *= mix(1.0, ao, u_postParams.w);
+
     vec3 bloom = texture2D(s_bloom, v_texcoord0).rgb;
     hdr += bloom * u_postParams.z;
 

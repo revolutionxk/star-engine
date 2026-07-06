@@ -43,6 +43,11 @@ namespace star::rendering {
             f32 bloom_knee = 0.5f;
             f32 bloom_intensity = 0.5f;
             bool fxaa_enabled = true;
+            bool ssao_enabled = true;
+            f32 ssao_radius = 0.6f;
+            f32 ssao_power = 1.5f;
+            f32 ssao_strength = 1.0f;
+            f32 ssao_fade = 25.0f;
         };
 
         [[nodiscard]] Settings& settings() noexcept {
@@ -63,12 +68,21 @@ namespace star::rendering {
             u32 height = 0;
         };
 
+        // Full-res ping-pong AO targets (a = SSAO result, b = blur scratch).
+        struct SsaoTargets {
+            std::unique_ptr<RenderTarget> a;
+            std::unique_ptr<RenderTarget> b;
+            u32 width = 0;
+            u32 height = 0;
+        };
+
         void ensure_shaders();
         static void draw_fullscreen(graphics::DeviceContext& gpu, u32 view_id,
                                     graphics::ResourceHandle<graphics::Shader> shader);
 
         BloomTargets* bloom_targets_for(const Viewport& viewport);
         ResolveTarget* resolve_target_for(const Viewport& viewport);
+        SsaoTargets* ssao_targets_for(const Viewport& viewport);
 
         graphics::Device& m_device;
         resources::ResourceManager& m_resources;
@@ -77,9 +91,12 @@ namespace star::rendering {
         graphics::ResourceHandle<graphics::Shader> m_bright_shader;
         graphics::ResourceHandle<graphics::Shader> m_blur_shader;
         graphics::ResourceHandle<graphics::Shader> m_fxaa_shader;
+        graphics::ResourceHandle<graphics::Shader> m_ssao_shader;
+        graphics::ResourceHandle<graphics::Shader> m_ssao_blur_shader;
 
         Settings m_settings;
         std::unordered_map<const Viewport*, BloomTargets> m_bloom;
+        std::unordered_map<const Viewport*, SsaoTargets> m_ssao;
         std::unordered_map<const Viewport*, ResolveTarget> m_resolve;
 
         u64 m_frame = ~0ull;

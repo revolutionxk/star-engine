@@ -1,4 +1,4 @@
-$input v_position, v_normal, v_tangent, v_texcoord0, v_viewDir, v_shadowCoord
+$input v_position, v_normal, v_tangent, v_texcoord0, v_viewDir, v_shadowCoord, v_curClip, v_prevClip
 
 #include <bgfx_shader.sh>
 #include "material.sc"
@@ -47,4 +47,8 @@ void main()
     vec3 viewN = normalize(mul(u_view, vec4(mat.normal, 0.0)).xyz);
     gl_FragData[0] = vec4(color, step(0.5, mat.metallic));
     gl_FragData[1] = vec4(viewN * 0.5 + 0.5, saturate(mat.roughness));
+
+    vec2 curNDC = v_curClip.xy / v_curClip.w;
+    vec2 prevNDC = v_prevClip.xy / v_prevClip.w;
+    gl_FragData[2] = vec4((curNDC - prevNDC) * 0.5, 0.0, 0.0);
 }

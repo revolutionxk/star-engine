@@ -52,6 +52,8 @@ namespace star::rendering {
             f32 ssr_intensity = 1.0f;
             f32 ssr_max_distance = 8.0f;
             f32 ssr_thickness = 0.6f;
+            bool taa_enabled = true;
+            f32 taa_blend = 0.9f;
         };
 
         [[nodiscard]] Settings& settings() noexcept {
@@ -86,6 +88,15 @@ namespace star::rendering {
             u32 height = 0;
         };
 
+        // TAA history ping-pong (RGBA16F). `frames` gates the first frame (no valid history yet).
+        struct TaaTargets {
+            std::unique_ptr<RenderTarget> a;
+            std::unique_ptr<RenderTarget> b;
+            u32 width = 0;
+            u32 height = 0;
+            u64 frames = 0;
+        };
+
         void ensure_shaders();
         static void draw_fullscreen(graphics::DeviceContext& gpu, u32 view_id,
                                     graphics::ResourceHandle<graphics::Shader> shader);
@@ -94,6 +105,7 @@ namespace star::rendering {
         ResolveTarget* resolve_target_for(const Viewport& viewport);
         SsaoTargets* ssao_targets_for(const Viewport& viewport);
         SsrTarget* ssr_target_for(const Viewport& viewport);
+        TaaTargets* taa_targets_for(const Viewport& viewport);
 
         graphics::Device& m_device;
         resources::ResourceManager& m_resources;
@@ -105,12 +117,14 @@ namespace star::rendering {
         graphics::ResourceHandle<graphics::Shader> m_ssao_shader;
         graphics::ResourceHandle<graphics::Shader> m_ssao_blur_shader;
         graphics::ResourceHandle<graphics::Shader> m_ssr_shader;
+        graphics::ResourceHandle<graphics::Shader> m_taa_shader;
 
         Settings m_settings;
         std::unordered_map<const Viewport*, BloomTargets> m_bloom;
         std::unordered_map<const Viewport*, SsaoTargets> m_ssao;
         std::unordered_map<const Viewport*, ResolveTarget> m_resolve;
         std::unordered_map<const Viewport*, SsrTarget> m_ssr;
+        std::unordered_map<const Viewport*, TaaTargets> m_taa;
 
         u64 m_frame = ~0ull;
         u32 m_view_cursor = 0;

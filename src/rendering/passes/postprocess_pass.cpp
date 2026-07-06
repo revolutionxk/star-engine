@@ -13,7 +13,7 @@
 namespace star::rendering {
     namespace {
         constexpr u32 POST_VIEW_BASE = 200;
-        constexpr u32 POST_VIEWS_PER_VP = 10;
+        constexpr u32 POST_VIEWS_PER_VP = 11;
     } // namespace
 
     PostProcessPass::PostProcessPass(graphics::Device& device, resources::ResourceManager& resources)
@@ -37,6 +37,7 @@ namespace star::rendering {
         load("__ssao_shader", resources::BuiltinShader::Ssao, m_ssao_shader);
         load("__ssao_blur_shader", resources::BuiltinShader::SsaoBlur, m_ssao_blur_shader);
         load("__ssr_shader", resources::BuiltinShader::Ssr, m_ssr_shader);
+        load("__taa_shader", resources::BuiltinShader::Taa, m_taa_shader);
     }
 
     void PostProcessPass::draw_fullscreen(graphics::DeviceContext& gpu, const u32 view_id,
@@ -141,6 +142,30 @@ namespace star::rendering {
         return &st;
     }
 
+    PostProcessPass::TaaTargets* PostProcessPass::taa_targets_for(const Viewport& viewport) {
+        const u32 w = std::max(1u, viewport.width());
+        const u32 h = std::max(1u, viewport.height());
+
+        auto& tt = m_taa[&viewport];
+        if (tt.width == w && tt.height == h && tt.a && tt.b && tt.a->is_valid() && tt.b->is_valid())
+            return &tt;
+
+        tt.a = std::make_unique<RenderTarget>();
+        tt.b = std::make_unique<RenderTarget>();
+        const bool ok_a = tt.a->create(&m_device, w, h, graphics::TextureFormat::RGBA16F, false);
+        const bool ok_b = tt.b->create(&m_device, w, h, graphics::TextureFormat::RGBA16F, false);
+        if (!ok_a || !ok_b) {
+            tt.a.reset();
+            tt.b.reset();
+            tt.width = tt.height = 0;
+            return nullptr;
+        }
+        tt.width = w;
+        tt.height = h;
+        tt.frames = 0;
+        return &tt;
+    }
+
     void PostProcessPass::render(const RenderContext& ctx) {
         Viewport* viewport = ctx.frame.viewport;
         if (!m_settings.enabled || !viewport)
@@ -154,6 +179,8 @@ namespace star::rendering {
         ensure_shaders();
         if (!m_tonemap_shader.is_valid())
             return;
+
+        viewport->set_taa_enabled(m_settings.taa_enabled);
 
         if (ctx.frame.frame_index != m_frame) {
             m_frame = ctx.frame.frame_index;
@@ -184,10 +211,11 @@ namespace star::rendering {
                 gpu.set_uniform("u_ssaoProj", &proj, 1, graphics::UniformType::Mat4);
                 const Vector4 ssao_params{m_settings.ssao_radius, m_settings.ssao_power, m_settings.ssao_fade, 0.0f};
                 gpu.set_uniform("u_ssaoParams", &ssao_params, 1, graphics::UniformType::Vec4);
-                const Vector4 ssao_texel{1.0f / static_cast<f32>(st->width), 1.0f / static_cast<f32>(st->height), 0.0f,
-                                         0.0f};
+                const Vector4 ssao_texel{1.0f / static_cast<f32>(st->width), 1.0f / static_cast<f32>(st->height),
+                                         flip_v, 0.0f};
                 gpu.set_uniform("u_ssaoTexel", &ssao_texel, 1, graphics::UniformType::Vec4);
                 gpu.set_texture(0, depth);
+                gpu.set_texture(1, viewport->hdr_normal_texture());
                 draw_fullscreen(gpu, base + 0, m_ssao_shader);
 
                 gpu.set_view_framebuffer(base + 1, st->b->framebuffer());
@@ -247,38 +275,71 @@ namespace star::rendering {
             }
         }
 
+        if (m_settings.taa_enabled && m_taa_shader.is_valid() && depth.is_valid()) {
+            if (TaaTargets* tt = taa_targets_for(*viewport)) {
+                const auto tw = static_cast<u16>(tt->width);
+                const auto th = static_cast<u16>(tt->height);
+                const bool even = (tt->frames % 2) == 0;
+                RenderTarget* out = even ? tt->a.get() : tt->b.get();
+                RenderTarget* history = even ? tt->b.get() : tt->a.get();
+
+                const Matrix4 cur_inv_vp = Matrix4::inverse(viewport->cur_view_proj());
+                const Matrix4 prev_vp = viewport->prev_view_proj();
+
+                gpu.set_view_framebuffer(base + 4, out->framebuffer());
+                gpu.set_view_rect(base + 4, 0, 0, tw, th);
+                gpu.set_view_clear(base + 4, 0, 0, 1.0f, 0);
+                gpu.set_uniform("u_postParams", &flip_only, 1, graphics::UniformType::Vec4);
+                gpu.set_uniform("u_taaCurInvVP", &cur_inv_vp, 1, graphics::UniformType::Mat4);
+                gpu.set_uniform("u_taaPrevVP", &prev_vp, 1, graphics::UniformType::Mat4);
+                const Vector4 taa_params{flip_v, m_settings.taa_blend, tt->frames > 0 ? 1.0f : 0.0f, 0.0f};
+                gpu.set_uniform("u_taaParams", &taa_params, 1, graphics::UniformType::Vec4);
+                const Vector4 taa_texel{1.0f / static_cast<f32>(tt->width), 1.0f / static_cast<f32>(tt->height), 0.0f,
+                                        0.0f};
+                gpu.set_uniform("u_taaTexel", &taa_texel, 1, graphics::UniformType::Vec4);
+                gpu.set_texture(0, lit);
+                gpu.set_texture(1, history->color_texture(0));
+                gpu.set_texture(2, depth);
+                gpu.set_texture(3, viewport->hdr_velocity_texture());
+                draw_fullscreen(gpu, base + 4, m_taa_shader);
+
+                lit = out->color_texture(0);
+                ++tt->frames;
+            }
+        }
+
         graphics::ResourceHandle<graphics::Texture> bloom_tex;
         if (m_settings.bloom_enabled && m_bright_shader.is_valid() && m_blur_shader.is_valid()) {
             if (const BloomTargets* bt = bloom_targets_for(*viewport)) {
                 const auto bw = static_cast<u16>(bt->width);
                 const auto bh = static_cast<u16>(bt->height);
 
-                gpu.set_view_framebuffer(base + 4, bt->a->framebuffer());
-                gpu.set_view_rect(base + 4, 0, 0, bw, bh);
-                gpu.set_view_clear(base + 4, 0, 0, 1.0f, 0);
+                gpu.set_view_framebuffer(base + 5, bt->a->framebuffer());
+                gpu.set_view_rect(base + 5, 0, 0, bw, bh);
+                gpu.set_view_clear(base + 5, 0, 0, 1.0f, 0);
                 gpu.set_uniform("u_postParams", &flip_only, 1, graphics::UniformType::Vec4);
                 const Vector4 bloom_params{m_settings.bloom_threshold, m_settings.bloom_knee, 0.0f, 0.0f};
                 gpu.set_uniform("u_bloomParams", &bloom_params, 1, graphics::UniformType::Vec4);
                 gpu.set_texture(0, lit);
-                draw_fullscreen(gpu, base + 4, m_bright_shader);
+                draw_fullscreen(gpu, base + 5, m_bright_shader);
 
-                gpu.set_view_framebuffer(base + 5, bt->b->framebuffer());
-                gpu.set_view_rect(base + 5, 0, 0, bw, bh);
-                gpu.set_view_clear(base + 5, 0, 0, 1.0f, 0);
+                gpu.set_view_framebuffer(base + 6, bt->b->framebuffer());
+                gpu.set_view_rect(base + 6, 0, 0, bw, bh);
+                gpu.set_view_clear(base + 6, 0, 0, 1.0f, 0);
                 gpu.set_uniform("u_postParams", &flip_only, 1, graphics::UniformType::Vec4);
                 const Vector4 blur_h{1.0f / static_cast<f32>(bt->width), 0.0f, 0.0f, 0.0f};
                 gpu.set_uniform("u_blurParams", &blur_h, 1, graphics::UniformType::Vec4);
                 gpu.set_texture(0, bt->a->color_texture(0));
-                draw_fullscreen(gpu, base + 5, m_blur_shader);
+                draw_fullscreen(gpu, base + 6, m_blur_shader);
 
-                gpu.set_view_framebuffer(base + 6, bt->a->framebuffer());
-                gpu.set_view_rect(base + 6, 0, 0, bw, bh);
-                gpu.set_view_clear(base + 6, 0, 0, 1.0f, 0);
+                gpu.set_view_framebuffer(base + 7, bt->a->framebuffer());
+                gpu.set_view_rect(base + 7, 0, 0, bw, bh);
+                gpu.set_view_clear(base + 7, 0, 0, 1.0f, 0);
                 gpu.set_uniform("u_postParams", &flip_only, 1, graphics::UniformType::Vec4);
                 const Vector4 blur_v{0.0f, 1.0f / static_cast<f32>(bt->height), 0.0f, 0.0f};
                 gpu.set_uniform("u_blurParams", &blur_v, 1, graphics::UniformType::Vec4);
                 gpu.set_texture(0, bt->b->color_texture(0));
-                draw_fullscreen(gpu, base + 6, m_blur_shader);
+                draw_fullscreen(gpu, base + 7, m_blur_shader);
 
                 bloom_tex = bt->a->color_texture(0);
             }
@@ -287,12 +348,12 @@ namespace star::rendering {
         const auto vw = static_cast<u16>(viewport->width());
         const auto vh = static_cast<u16>(viewport->height());
 
-        const bool want_fxaa = m_settings.fxaa_enabled && m_fxaa_shader.is_valid();
+        const bool want_fxaa = m_settings.fxaa_enabled && !m_settings.taa_enabled && m_fxaa_shader.is_valid();
         ResolveTarget* rt = want_fxaa ? resolve_target_for(*viewport) : nullptr;
         const bool fxaa = rt != nullptr;
 
         const auto tonemap_fb = fxaa ? rt->ldr->framebuffer() : display_fb;
-        const u32 tonemap_view = base + 7;
+        const u32 tonemap_view = base + 8;
         gpu.set_view_framebuffer(tonemap_view, tonemap_fb);
         gpu.set_view_rect(tonemap_view, 0, 0, vw, vh);
         gpu.set_view_clear(tonemap_view, 0, 0, 1.0f, 0);
@@ -307,7 +368,7 @@ namespace star::rendering {
         draw_fullscreen(gpu, tonemap_view, m_tonemap_shader);
 
         if (fxaa) {
-            const u32 fxaa_view = base + 8;
+            const u32 fxaa_view = base + 9;
             gpu.set_view_framebuffer(fxaa_view, display_fb);
             gpu.set_view_rect(fxaa_view, 0, 0, vw, vh);
             gpu.set_view_clear(fxaa_view, 0, 0, 1.0f, 0);

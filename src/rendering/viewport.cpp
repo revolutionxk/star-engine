@@ -11,6 +11,17 @@
 #include "star/rendering/render_target.hpp"
 
 namespace star::rendering {
+    f32 halton(u32 index, const u32 base) {
+        f32 f = 1.0f;
+        f32 r = 0.0f;
+        while (index > 0) {
+            f /= static_cast<f32>(base);
+            r += f * static_cast<f32>(index % base);
+            index /= base;
+        }
+        return r;
+    }
+
     Viewport::Viewport(graphics::Device& device) : m_device(&device) {
         STAR_LOG_INFO(LogCategory::Rendering, "Viewport created ({}x{})", m_width, m_height);
     }
@@ -54,10 +65,28 @@ namespace star::rendering {
         }
 
         if (m_has_camera) {
-            context.set_view_transform(view_id, m_view_matrix, m_projection_matrix);
+            context.set_view_transform(view_id, m_view_matrix,
+                                       m_taa_enabled ? m_render_projection : m_projection_matrix);
         }
 
         context.touch(view_id);
+    }
+
+    void Viewport::update_temporal() {
+        m_prev_view_proj = m_cur_view_proj;
+        m_cur_view_proj = m_projection_matrix * m_view_matrix;
+
+        if (!m_taa_enabled || m_width == 0 || m_height == 0) {
+            m_render_projection = m_projection_matrix;
+            return;
+        }
+
+        ++m_taa_index;
+        const f32 jx = (halton(m_taa_index, 2) - 0.5f) * 2.0f / static_cast<f32>(m_width);
+        const f32 jy = (halton(m_taa_index, 3) - 0.5f) * 2.0f / static_cast<f32>(m_height);
+        m_render_projection = m_projection_matrix;
+        m_render_projection(2, 0) += jx;
+        m_render_projection(2, 1) += jy;
     }
 
     void Viewport::bind_overlay(graphics::DeviceContext& context, const u32 view_id) const {
@@ -74,7 +103,8 @@ namespace star::rendering {
         }
 
         if (m_has_camera) {
-            context.set_view_transform(view_id, m_view_matrix, m_projection_matrix);
+            context.set_view_transform(view_id, m_view_matrix,
+                                       m_taa_enabled ? m_render_projection : m_projection_matrix);
         }
     }
 
@@ -123,6 +153,13 @@ namespace star::rendering {
         return {};
     }
 
+    graphics::ResourceHandle<graphics::Texture> Viewport::hdr_velocity_texture() const {
+        if (m_render_target && m_render_target->is_valid()) {
+            return m_render_target->color_texture(2);
+        }
+        return {};
+    }
+
     graphics::ResourceHandle<graphics::Texture> Viewport::hdr_depth_texture() const {
         if (m_render_target && m_render_target->is_valid()) {
             return m_render_target->depth_texture();
@@ -144,9 +181,9 @@ namespace star::rendering {
         }
 
         m_render_target = std::make_unique<RenderTarget>();
-        constexpr graphics::TextureFormat hdr_formats[2] = {graphics::TextureFormat::RGBA16F,
-                                                            graphics::TextureFormat::RGBA16F};
-        const bool hdr_ok = m_render_target->create_mrt(m_device, m_width, m_height, hdr_formats, 2, true);
+        constexpr graphics::TextureFormat hdr_formats[3] = {
+            graphics::TextureFormat::RGBA16F, graphics::TextureFormat::RGBA16F, graphics::TextureFormat::RGBA16F};
+        const bool hdr_ok = m_render_target->create_mrt(m_device, m_width, m_height, hdr_formats, 3, true);
 
         m_display_target = std::make_unique<RenderTarget>();
         const bool ldr_ok =

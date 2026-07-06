@@ -42,8 +42,18 @@ namespace star::editor {
             ImGui::DragFloat("Exposure", &p.exposure, 0.01f, 0.05f, 8.0f, "%.2f");
             ImGui::SetItemTooltip("Overall scene brightness before tonemapping.");
 
+            ImGui::Checkbox("TAA", &p.taa_enabled);
+            ImGui::SetItemTooltip("Temporal anti-aliasing: subpixel jitter + reprojection. Cleaner than FXAA and "
+                                  "denoises GTAO/SSR over time. Supersedes FXAA when on.");
+            ImGui::BeginDisabled(!p.taa_enabled);
+            ImGui::DragFloat("TAA Blend", &p.taa_blend, 0.005f, 0.0f, 0.98f, "%.3f");
+            ImGui::SetItemTooltip("History weight: higher = smoother/steadier but more ghosting on motion.");
+            ImGui::EndDisabled();
+
+            ImGui::BeginDisabled(p.taa_enabled);
             ImGui::Checkbox("FXAA", &p.fxaa_enabled);
-            ImGui::SetItemTooltip("Fast anti-aliasing that smooths jagged edges on the resolved image.");
+            ImGui::SetItemTooltip("Fast anti-aliasing (used only when TAA is off).");
+            ImGui::EndDisabled();
 
             ImGui::Checkbox("SSAO", &p.ssao_enabled);
             ImGui::BeginDisabled(!p.ssao_enabled);

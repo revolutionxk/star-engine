@@ -1,4 +1,6 @@
 #pragma once
+#include <unordered_map>
+
 #include "star/core/types.hpp"
 #include "star/graphics/resource_handle.hpp"
 #include "star/math/matrix.hpp"
@@ -38,7 +40,7 @@ namespace star::systems {
         void clear_atmospheric_lighting() {
             m_atmospheric.valid = false;
         }
-        
+
         struct ShadowState {
             graphics::ResourceHandle<graphics::Texture> map{};
             Matrix4 light_view_proj{Matrix4::identity()};
@@ -84,5 +86,6 @@ namespace star::systems {
         rendering::AtmosphericLighting m_atmospheric;
         ShadowState m_shadow;
         EnvironmentState m_environment;
+        mutable std::unordered_map<u64, Matrix4> m_prev_models;
     };
 } // namespace star::systems

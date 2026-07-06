@@ -19,6 +19,7 @@ namespace star::rendering {
         f32 distance_sq{0.0f};
         u8 layer{0};
         bool is_transparent{false};
+        u64 entity_id{0};
     };
 
     class RenderQueue {

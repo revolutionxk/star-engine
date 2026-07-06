@@ -36,6 +36,7 @@ namespace star::rendering {
         [[nodiscard]] graphics::ResourceHandle<graphics::Texture> get_color_texture() const;
         [[nodiscard]] graphics::ResourceHandle<graphics::Texture> hdr_color_texture() const;
         [[nodiscard]] graphics::ResourceHandle<graphics::Texture> hdr_normal_texture() const;
+        [[nodiscard]] graphics::ResourceHandle<graphics::Texture> hdr_velocity_texture() const;
         [[nodiscard]] graphics::ResourceHandle<graphics::Texture> hdr_depth_texture() const;
         [[nodiscard]] graphics::ResourceHandle<graphics::Framebuffer> display_framebuffer() const;
 
@@ -67,6 +68,24 @@ namespace star::rendering {
             return m_camera_position;
         }
 
+        void set_taa_enabled(const bool enabled) {
+            m_taa_enabled = enabled;
+        }
+
+        [[nodiscard]] bool taa_enabled() const {
+            return m_taa_enabled;
+        }
+
+        void update_temporal();
+
+        [[nodiscard]] const Matrix4& prev_view_proj() const {
+            return m_prev_view_proj;
+        }
+
+        [[nodiscard]] Matrix4 cur_view_proj() const {
+            return m_projection_matrix * m_view_matrix;
+        }
+
         [[nodiscard]] bool has_camera() const {
             return m_has_camera;
         }
@@ -88,13 +107,19 @@ namespace star::rendering {
         u32 m_height{720};
 
         bool m_framebuffer_enabled{false};
-        std::unique_ptr<RenderTarget> m_render_target;  // HDR scene color (RGBA16F + depth)
-        std::unique_ptr<RenderTarget> m_display_target; // LDR post-processed color (RGBA8)
+        std::unique_ptr<RenderTarget> m_render_target;
+        std::unique_ptr<RenderTarget> m_display_target;
 
         Matrix4 m_view_matrix{Matrix4::identity()};
         Matrix4 m_projection_matrix{Matrix4::identity()};
         Vector3 m_camera_position{0.0f, 0.0f, 0.0f};
         bool m_has_camera{false};
+
+        bool m_taa_enabled{false};
+        u32 m_taa_index{0};
+        Matrix4 m_render_projection{Matrix4::identity()};
+        Matrix4 m_cur_view_proj{Matrix4::identity()};
+        Matrix4 m_prev_view_proj{Matrix4::identity()};
     };
 
 } // namespace star::rendering

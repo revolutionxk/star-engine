@@ -284,6 +284,7 @@ namespace star::systems {
             STAR_LOG_WARN(LogCategory::Rendering, "No active camera found in scene '{}'", scene.name);
             return;
         }
+        viewport->update_temporal();
         collect_renderables(scene, viewport);
 
         m_render_queue.sort();
@@ -311,6 +312,7 @@ namespace star::systems {
             draw_call.material = item.material;
             draw_call.layer = item.layer;
             draw_call.parameters = item.parameters;
+            draw_call.entity_id = item.entity_id;
 
             if (const auto* mesh = m_resource_manager.get_mesh(item.mesh)) {
                 if (!frustum.intersects_aabb_world(mesh->bounds, draw_call.model_matrix))
@@ -335,6 +337,11 @@ namespace star::systems {
         if (has_camera) {
             const Vector3& cp = viewport->camera_position();
             cam_pos = {cp.x, cp.y, cp.z, 0.0f};
+
+            const Matrix4 cur_vp_nj = viewport->cur_view_proj();
+            const Matrix4 prev_vp = viewport->prev_view_proj();
+            context.set_uniform("u_curViewProjNJ", &cur_vp_nj, 1, graphics::UniformType::Mat4);
+            context.set_uniform("u_prevViewProj", &prev_vp, 1, graphics::UniformType::Mat4);
         }
 
         for (const auto& opaque_commands = m_render_queue.opaque_commands(); const auto& command : opaque_commands) {
@@ -349,6 +356,12 @@ namespace star::systems {
             }
 
             context.set_transform(command.model_matrix);
+
+            const auto pit = m_prev_models.find(command.entity_id);
+            const Matrix4 prev_model = pit != m_prev_models.end() ? pit->second : command.model_matrix;
+            context.set_uniform("u_prevModel", &prev_model, 1, graphics::UniformType::Mat4);
+            m_prev_models[command.entity_id] = command.model_matrix;
+
             if (mesh->vertex_buffer.is_valid() && mesh->index_buffer.is_valid()) {
                 context.set_vertex_buffer(0, mesh->vertex_buffer);
                 context.set_index_buffer(mesh->index_buffer);

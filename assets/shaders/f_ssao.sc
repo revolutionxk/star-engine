@@ -3,6 +3,7 @@ $input v_texcoord0
 #include <bgfx_shader.sh>
 
 SAMPLER2D(s_depth, 0);
+SAMPLER2D(s_gbuffer, 1);
 
 uniform mat4 u_ssaoInvProj;
 uniform mat4 u_ssaoProj;
@@ -40,23 +41,26 @@ void main()
     vec2 uv = v_texcoord0;
     vec2 texel = u_ssaoTexel.xy;
     float depth = texture2D(s_depth, uv).x;
-    vec3 P = gtaoViewPos(uv, depth);
-    vec3 V = normalize(-P);
-
-    vec3 N = normalize(cross(dFdx(P), dFdy(P)));
-    if (dot(N, V) < 0.0)
-        N = -N;
 
     if (depth >= 0.9999) {
         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
         return;
     }
 
+    vec3 P = gtaoViewPos(uv, depth);
+    vec3 V = normalize(-P);
+
+    vec3 N = normalize(texture2DLod(s_gbuffer, uv, 0.0).xyz * 2.0 - 1.0);
+    if (u_ssaoTexel.z > 0.5)
+        N.y = -N.y;
+    if (dot(N, V) < 0.0)
+        N = -N;
+
     float NdotV = clamp(dot(N, V), 0.0, 1.0);
     float radius = u_ssaoParams.x;
 
     vec2 radiusUV = vec2(radius * 0.5 * u_ssaoProj[0].x, radius * 0.5 * u_ssaoProj[1].y) / max(-P.z, 0.001);
-    radiusUV = clamp(radiusUV, texel * float(GTAO_STEPS), vec2(0.15, 0.15));
+    radiusUV = min(radiusUV, vec2(0.15, 0.15));
 
     vec2 pix = uv / max(texel, vec2(1e-6, 1e-6));
     float rot = gtaoIGN(pix);

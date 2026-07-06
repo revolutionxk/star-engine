@@ -9,10 +9,16 @@
 #include "star/resources/resource_manager.hpp"
 
 namespace star::editor {
+    class IconRegistry;
+
     class ComponentInspector {
       public:
         void set_resource_manager(resources::ResourceManager* rm) {
             m_resource_manager = rm;
+        }
+
+        void set_icons(IconRegistry* icons) {
+            m_icons = icons;
         }
 
         [[nodiscard]] resources::ResourceManager* resource_manager() const {
@@ -27,5 +33,6 @@ namespace star::editor {
                                                                   const components::MaterialInstance& inst) const;
 
         resources::ResourceManager* m_resource_manager = nullptr;
+        IconRegistry* m_icons = nullptr;
     };
 } // namespace star::editor

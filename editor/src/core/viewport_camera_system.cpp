@@ -126,7 +126,7 @@ namespace star::editor {
     }
 
     void ViewportCameraSystem::on_scroll(const platform::MouseScrollEvent& e) {
-        m_scroll -= e.offset.y;
+        m_scroll += e.offset.y;
     }
 
     void ViewportCameraSystem::on_focus_lost() {
@@ -144,8 +144,8 @@ namespace star::editor {
 
     void ViewportCameraSystem::re_sync_from(const components::Transform& transform) {
         const Vector3 fwd = transform.rotation * Vector3::forward();
-        m_yaw = std::atan2(fwd.x, fwd.z);
-        m_pitch = -std::asin(clamp(fwd.y, -1.0f, 1.0f));
+        m_yaw = std::atan2(-fwd.x, -fwd.z);
+        m_pitch = std::asin(clamp(fwd.y, -1.0f, 1.0f));
     }
 
     void ViewportCameraSystem::apply_look(components::Transform& transform) {
@@ -156,7 +156,7 @@ namespace star::editor {
     }
 
     void ViewportCameraSystem::apply_movement(const f32 dt, components::Transform& transform) const {
-        const Vector3 fwd = -transform.forward();
+        const Vector3 fwd = transform.forward();
         const Vector3 right = transform.rotation * Vector3::right();
 
         Vector3 move{};
@@ -184,14 +184,14 @@ namespace star::editor {
 
     void ViewportCameraSystem::apply_orbit(components::Transform& transform) {
         constexpr f32 orbit_dist = 5.0f;
-        const Vector3 pivot = transform.position - transform.forward() * orbit_dist;
+        const Vector3 pivot = transform.position + transform.forward() * orbit_dist;
 
         m_yaw += m_frame_delta.x * look_sensitivity;
         m_pitch += m_frame_delta.y * look_sensitivity;
         m_pitch = clamp(m_pitch, -MAX_PITCH, MAX_PITCH);
         rebuild_rotation(transform);
 
-        transform.position = pivot + transform.forward() * orbit_dist;
+        transform.position = pivot - transform.forward() * orbit_dist;
     }
 
     void ViewportCameraSystem::apply_pan(components::Transform& transform) const {

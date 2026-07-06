@@ -1,8 +1,36 @@
 #include "component_inspector.hpp"
 
+#include <string>
+#include <string_view>
+
 #include <imgui.h>
 
+#include "../core/icon_registry.hpp"
+
 namespace star::editor {
+    struct ComponentVisual {
+        const char* icon;
+        ImVec4 tint;
+    };
+
+    ComponentVisual visual_for_component(const std::string_view name) {
+        if (name == "Transform")
+            return {"axis-3d", ImVec4(0.85f, 0.85f, 0.9f, 1.0f)};
+        if (name == "MeshRenderer")
+            return {"box", ImVec4(0.72f, 0.62f, 1.0f, 1.0f)};
+        if (name == "MaterialInstance")
+            return {"palette", ImVec4(1.0f, 0.68f, 0.35f, 1.0f)};
+        if (name == "Camera")
+            return {"camera", ImVec4(0.45f, 0.78f, 0.95f, 1.0f)};
+        if (name == "Light")
+            return {"lightbulb", ImVec4(0.98f, 0.82f, 0.4f, 1.0f)};
+        if (name == "Atmosphere")
+            return {"sun", ImVec4(0.95f, 0.78f, 0.5f, 1.0f)};
+        if (name == "RigidBody" || name == "Collider")
+            return {"component", ImVec4(0.6f, 0.85f, 0.7f, 1.0f)};
+        return {"component", ImVec4(0.78f, 0.78f, 0.82f, 1.0f)};
+    }
+
     void ComponentInspector::draw_components(const flecs::entity entity) const {
         const auto& type_registry = star::reflection::TypeRegistry::instance();
         for (const auto& type_info : type_registry.all_types()) {
@@ -16,7 +44,20 @@ namespace star::editor {
                                                         ImGuiTreeNodeFlags_SpanAvailWidth |
                                                         ImGuiTreeNodeFlags_AllowOverlap;
 
-            const bool open = ImGui::CollapsingHeader(type_info.name.data(), header_flags);
+            const ComponentVisual visual = visual_for_component(type_info.name);
+            const std::string header_label = "     " + std::string(type_info.name);
+            const bool open = ImGui::CollapsingHeader(header_label.c_str(), header_flags);
+
+            if (m_icons) {
+                const ImVec2 rect_min = ImGui::GetItemRectMin();
+                const float row_h = ImGui::GetItemRectSize().y;
+                const float icon_sz = ImGui::GetTextLineHeight();
+                const float icon_x = rect_min.x + ImGui::GetTreeNodeToLabelSpacing();
+                const float icon_y = rect_min.y + (row_h - icon_sz) * 0.5f;
+                ImGui::GetWindowDrawList()->AddImage(m_icons->icon(visual.icon), {icon_x, icon_y},
+                                                     {icon_x + icon_sz, icon_y + icon_sz}, {0, 0}, {1, 1},
+                                                     ImGui::ColorConvertFloat4ToU32(visual.tint));
+            }
 
             if (can_remove && ImGui::BeginPopupContextItem()) {
                 if (ImGui::MenuItem("Remove Component"))

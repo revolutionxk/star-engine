@@ -33,7 +33,7 @@ namespace star::editor {
         void select(const std::filesystem::directory_entry& entry);
 
         EditorWindow* m_editor_window;
-        std::unique_ptr<IconRegistry> m_icons;
+        IconRegistry* m_icons{};
 
         std::filesystem::path m_root;
         std::filesystem::path m_current;

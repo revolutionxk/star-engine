@@ -44,13 +44,13 @@ namespace star::math {
         static constexpr Vector3T down() {
             return {0, -1, 0};
         }
-
+        
         static constexpr Vector3T forward() {
-            return {0, 0, 1};
+            return {0, 0, -1};
         }
 
         static constexpr Vector3T back() {
-            return {0, 0, -1};
+            return {0, 0, 1};
         }
 
         constexpr T& operator[](u32 index) {

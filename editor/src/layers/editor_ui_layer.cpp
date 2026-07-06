@@ -7,6 +7,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include "../core/icon_registry.hpp"
 #include "../panels/console_panel.hpp"
 #include "../panels/content_browser_panel.hpp"
 #include "../panels/game_panel.hpp"
@@ -68,6 +69,7 @@ namespace star::editor {
         initialize_panels();
 
         m_component_inspector.set_resource_manager(&m_editor_window->resources());
+        m_component_inspector.set_icons(&m_editor_window->icons());
 
         m_input_manager.initialize(application::Application::instance().input_manager());
 
@@ -148,6 +150,9 @@ namespace star::editor {
 
         constexpr Color4 grid_color{0.5f, 0.5f, 0.5f, 0.25f};
         dr.draw_grid({0.0f, 0.0f, 0.0f}, 100, 1.0f, grid_color);
+
+        if (auto* scene = m_editor_window->scene_manager().get_active_scene())
+            m_entity_gizmos.draw(*scene, dr, m_gizmo_system.entity());
     }
 
     void EditorUILayer::render() {
@@ -170,34 +175,38 @@ namespace star::editor {
         if (ImGui::BeginViewportSideBar("##EditorToolbar", viewport, ImGuiDir_Up, height,
                                         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings)) {
             const PlayState state = m_editor_window->play_state();
+            IconRegistry& icons = m_editor_window->icons();
 
-            constexpr f32 button_width = 72.0f;
+            const f32 btn = ImGui::GetFrameHeight() - ImGui::GetStyle().FramePadding.y * 2.0f;
+            const ImVec2 size{btn, btn};
             const f32 spacing = ImGui::GetStyle().ItemSpacing.x;
-            const f32 total = button_width * 2.0f + spacing;
+            const f32 total = btn * 2.0f + spacing;
             ImGui::SetCursorPosX((ImGui::GetContentRegionAvail().x - total) * 0.5f);
 
-            const ImVec4 green{0.22f, 0.62f, 0.30f, 1.0f};
-            const ImVec4 red{0.72f, 0.25f, 0.24f, 1.0f};
+            constexpr ImVec4 green{0.42f, 0.82f, 0.5f, 1.0f};
+            constexpr ImVec4 amber{0.95f, 0.75f, 0.35f, 1.0f};
+            constexpr ImVec4 red{0.9f, 0.45f, 0.42f, 1.0f};
+            constexpr ImVec4 transparent{0, 0, 0, 0};
 
             if (state == PlayState::Playing) {
-                ImGui::PushStyleColor(ImGuiCol_Button, red);
-                if (ImGui::Button("Pause", {button_width, 0.0f}))
+                if (ImGui::ImageButton("##pause", icons.icon("pause"), size, {0, 0}, {1, 1}, transparent, amber))
                     m_editor_window->pause();
-                ImGui::PopStyleColor();
+                ImGui::SetItemTooltip("Pause");
             } else {
-                ImGui::PushStyleColor(ImGuiCol_Button, green);
-                if (ImGui::Button(state == PlayState::Paused ? "Resume" : "Play", {button_width, 0.0f}))
+                if (ImGui::ImageButton("##play", icons.icon("play"), size, {0, 0}, {1, 1}, transparent, green))
                     m_editor_window->play();
-                ImGui::PopStyleColor();
+                ImGui::SetItemTooltip(state == PlayState::Paused ? "Resume" : "Play");
             }
 
             ImGui::SameLine();
 
             ImGui::BeginDisabled(state == PlayState::Editing);
-            if (ImGui::Button("Stop", {button_width, 0.0f})) {
+            const ImVec4 stop_tint = state == PlayState::Editing ? ImVec4{0.5f, 0.5f, 0.5f, 1.0f} : red;
+            if (ImGui::ImageButton("##stop", icons.icon("square"), size, {0, 0}, {1, 1}, transparent, stop_tint)) {
                 m_editor_window->stop();
                 EditorEventBus::instance().publish({EditorEventType::EntityDeselected, nullptr});
             }
+            ImGui::SetItemTooltip("Stop");
             ImGui::EndDisabled();
         }
         ImGui::End();

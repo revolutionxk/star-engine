@@ -2,9 +2,28 @@
 
 #include <imgui.h>
 
+#include "../core/icon_registry.hpp"
 #include "core/gltf_import.hpp"
+#include "star/ecs/components/camera.hpp"
+#include "star/rendering/components/light.hpp"
+#include "star/rendering/components/mesh_renderer.hpp"
 
 namespace star::editor {
+    struct EntityVisual {
+        const char* icon;
+        ImVec4 tint;
+    };
+
+    EntityVisual visual_for_entity(const flecs::entity entity) {
+        if (entity.has<components::Camera>())
+            return {"camera", ImVec4(0.45f, 0.78f, 0.95f, 1.0f)};
+        if (entity.has<components::Light>())
+            return {"lightbulb", ImVec4(0.98f, 0.82f, 0.4f, 1.0f)};
+        if (entity.has<components::MeshRenderer>())
+            return {"box", ImVec4(0.72f, 0.62f, 1.0f, 1.0f)};
+        return {"circle-dashed", ImVec4(0.62f, 0.62f, 0.66f, 1.0f)};
+    }
+
     void HierarchyPanel::on_imgui_render() {
         if (!m_is_open)
             return;
@@ -57,7 +76,18 @@ namespace star::editor {
             node_flags |= ImGuiTreeNodeFlags_Selected;
 
         const bool node_open = ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<intptr_t>(entity.id())),
-                                                 node_flags, "%s", entity.name().c_str());
+                                                 node_flags, "         %s", entity.name().c_str());
+
+        const auto [icon, tint] = visual_for_entity(entity);
+        const ImVec2 rect_min = ImGui::GetItemRectMin();
+        const float row_h = ImGui::GetItemRectSize().y;
+        const float icon_sz = ImGui::GetTextLineHeight();
+        const float icon_x = rect_min.x + ImGui::GetTreeNodeToLabelSpacing();
+        const float icon_y = rect_min.y + (row_h - icon_sz) * 0.5f;
+        ImGui::GetWindowDrawList()->AddImage(m_editor_window->icons().icon(icon), {icon_x, icon_y},
+                                             {icon_x + icon_sz, icon_y + icon_sz}, {0, 0}, {1, 1},
+                                             ImGui::ColorConvertFloat4ToU32(tint));
+
         if (ImGui::IsItemClicked()) {
             m_selected_entity = entity;
             on_entity_selected(m_selected_entity);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <string_view>
 
@@ -15,6 +16,8 @@ namespace star::scene {
 } // namespace star::scene
 
 namespace star::editor {
+    class IconRegistry;
+
     enum class PlayState {
         Editing,
         Playing,
@@ -24,7 +27,7 @@ namespace star::editor {
     class EditorWindow : public application::AppWindow {
       public:
         explicit EditorWindow();
-        ~EditorWindow() override = default;
+        ~EditorWindow() override;
 
         void play();
         void pause();
@@ -37,6 +40,8 @@ namespace star::editor {
         [[nodiscard]] ProjectManager& projects() {
             return m_projects;
         }
+
+        [[nodiscard]] IconRegistry& icons();
 
         [[nodiscard]] bool has_project() const {
             return m_projects.has_active();
@@ -65,5 +70,7 @@ namespace star::editor {
 
         ProjectManager m_projects;
         std::string m_active_scene_path;
+
+        std::unique_ptr<IconRegistry> m_icons;
     };
 } // namespace star::editor

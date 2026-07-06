@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include "core/editor_events.hpp"
+#include "core/icon_registry.hpp"
 #include "layers/editor_ui_layer.hpp"
 #include "scenes/sample_scene.hpp"
 #include "star/application/application.hpp"
@@ -13,6 +14,14 @@
 
 namespace star::editor {
     EditorWindow::EditorWindow() : AppWindow("Star Engine Editor", {}) {}
+
+    EditorWindow::~EditorWindow() = default;
+
+    IconRegistry& EditorWindow::icons() {
+        if (!m_icons)
+            m_icons = std::make_unique<IconRegistry>(resources());
+        return *m_icons;
+    }
 
     bool EditorWindow::on_initialize() {
         STAR_LOG_INFO(LogCategory::Editor, "Initializing editor window");

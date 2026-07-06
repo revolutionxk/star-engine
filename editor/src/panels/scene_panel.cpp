@@ -1,18 +1,28 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "scene_panel.hpp"
 
+#include <cmath>
+
 #include <imgui.h>
 
+#include "../core/editor_events.hpp"
+#include "../core/entity_gizmos.hpp"
+#include "../core/icon_registry.hpp"
+#include "../editor_window.hpp"
+#include "star/ecs/components/camera.hpp"
+#include "star/ecs/components/transform.hpp"
+#include "star/rendering/components/light.hpp"
 #include "star/rendering/passes/picking_pass.hpp"
 #include "star/rendering/viewport.hpp"
+#include "star/scene/scene.hpp"
+#include "star/scene/scene_manager.hpp"
 
 namespace star::editor {
-    namespace {
-        constexpr float FIRST_USE_WIDTH = 960.0f;
-        constexpr float FIRST_USE_HEIGHT = 640.0f;
-        constexpr u32 MIN_VIEWPORT_WIDTH = 128;
-        constexpr u32 MIN_VIEWPORT_HEIGHT = 96;
-    } // namespace
+    constexpr float FIRST_USE_WIDTH = 960.0f;
+    constexpr float FIRST_USE_HEIGHT = 640.0f;
+    constexpr u32 MIN_VIEWPORT_WIDTH = 128;
+    constexpr u32 MIN_VIEWPORT_HEIGHT = 96;
+    constexpr float ICON_HALF = 13.0f;
 
     void ScenePanel::on_imgui_render() {
         if (!m_is_open)
@@ -29,6 +39,7 @@ namespace star::editor {
             m_gizmo && m_viewport && m_gizmo->draw_and_process(m_image_pos, m_image_size, *m_viewport);
         update_focus_state(gizmo_used);
 
+        render_entity_icons();
         handle_click_pick();
         render_gizmo_toolbar();
 
@@ -83,7 +94,76 @@ namespace star::editor {
         m_image_size = ImGui::GetItemRectSize();
     }
 
+    void ScenePanel::render_entity_icons() {
+        m_icon_click_consumed = false;
+        if (!m_viewport || !m_editor_window || m_image_size.x <= 0.0f || m_image_size.y <= 0.0f)
+            return;
+
+        auto* scene = m_editor_window->scene_manager().get_active_scene();
+        if (!scene)
+            return;
+
+        const Matrix4 view_proj = m_viewport->cur_view_proj();
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        IconRegistry& icons = m_editor_window->icons();
+
+        const auto& sel_opt = m_gizmo ? m_gizmo->entity() : std::optional<flecs::entity>{};
+        const u64 sel = sel_opt && sel_opt->is_valid() ? sel_opt->id() : 0;
+
+        const bool can_click = m_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().KeyAlt &&
+                               !GizmoSystem::is_over() && !GizmoSystem::is_using();
+        const ImVec2 mouse = ImGui::GetMousePos();
+        flecs::entity clicked{};
+        f32 best_dist = 1e30f;
+
+        const auto draw_icon = [&](const flecs::entity e, const char* icon_name, const ImVec4& tint) {
+            const Vector3 pos = EntityGizmos::world_position(e);
+            const Vector4 clip = view_proj * Vector4{pos.x, pos.y, pos.z, 1.0f};
+            if (clip.w <= 1e-4f)
+                return;
+            const f32 ndc_x = clip.x / clip.w;
+            const f32 ndc_y = clip.y / clip.w;
+            if (ndc_x < -1.2f || ndc_x > 1.2f || ndc_y < -1.2f || ndc_y > 1.2f)
+                return;
+
+            const f32 sx = m_image_pos.x + (ndc_x * 0.5f + 0.5f) * m_image_size.x;
+            const f32 sy = m_image_pos.y + (1.0f - (ndc_y * 0.5f + 0.5f)) * m_image_size.y;
+
+            const bool selected = e.id() == sel;
+            const ImVec4 col = selected ? ImVec4{1.0f, 0.85f, 0.25f, 1.0f} : tint;
+            dl->AddImage(icons.icon(icon_name), {sx - ICON_HALF, sy - ICON_HALF}, {sx + ICON_HALF, sy + ICON_HALF},
+                         {0, 0}, {1, 1}, ImGui::ColorConvertFloat4ToU32(col));
+
+            if (can_click && std::abs(mouse.x - sx) <= ICON_HALF && std::abs(mouse.y - sy) <= ICON_HALF) {
+                const f32 d = (mouse.x - sx) * (mouse.x - sx) + (mouse.y - sy) * (mouse.y - sy);
+                if (d < best_dist) {
+                    best_dist = d;
+                    clicked = e;
+                }
+            }
+        };
+
+        flecs::world& world = scene->world().native();
+        world.query<const components::Camera, const components::Transform>().each(
+            [&](const flecs::entity e, const components::Camera&, const components::Transform&) {
+                draw_icon(e, "camera", ImVec4{0.6f, 0.85f, 1.0f, 1.0f});
+            });
+        world.query<const components::Light, const components::Transform>().each(
+            [&](const flecs::entity e, const components::Light& light, const components::Transform&) {
+                const char* icon = light.type == components::Light::Type::Directional ? "sun" : "lightbulb";
+                draw_icon(e, icon, ImVec4{1.0f, 0.9f, 0.55f, 1.0f});
+            });
+
+        if (can_click && clicked.is_valid()) {
+            m_icon_click_consumed = true;
+            auto selected = NodeSelectedEvent{clicked};
+            EditorEventBus::instance().publish({EditorEventType::EntitySelected, &selected});
+        }
+    }
+
     void ScenePanel::handle_click_pick() const {
+        if (m_icon_click_consumed)
+            return;
         if (!m_hovered || !m_viewport || !m_picking_pass)
             return;
         if (m_image_size.x <= 0.0f || m_image_size.y <= 0.0f)
@@ -99,44 +179,46 @@ namespace star::editor {
         const f32 v = (mouse.y - m_image_pos.y) / m_image_size.y;
         if (u < 0.0f || u > 1.0f || v < 0.0f || v > 1.0f)
             return;
-        
+
         m_picking_pass->request(static_cast<u32>(u * static_cast<f32>(m_viewport->width())),
                                 static_cast<u32>(v * static_cast<f32>(m_viewport->height())));
     }
 
     void ScenePanel::render_gizmo_toolbar() const {
-        if (!m_gizmo)
+        if (!m_gizmo || !m_editor_window)
             return;
 
-        constexpr float btn = 30.0f;
+        IconRegistry& icons = m_editor_window->icons();
+        const ImGuiStyle& style = ImGui::GetStyle();
+        constexpr float img = 18.0f;
         constexpr float gap = 4.0f;
+        const float bw = img + style.FramePadding.x * 2.0f;
 
-        const ImVec2 pos(ImGui::GetWindowContentRegionMax().x - (btn * 4 + gap * 3 + 10.0f),
+        const ImVec2 pos(ImGui::GetWindowContentRegionMax().x - (bw * 4 + gap * 3 + 10.0f),
                          ImGui::GetWindowContentRegionMin().y + 10.0f);
         ImGui::SetCursorPos(pos);
 
-        auto op_button = [&](const char* label, GizmoSystem::Operation op) {
+        const ImVec4 active_tint{0.45f, 0.72f, 1.0f, 1.0f};
+        const ImVec4 idle_tint{0.82f, 0.82f, 0.86f, 1.0f};
+
+        auto op_button = [&](const char* id, const char* icon, GizmoSystem::Operation op, const char* tip) {
             const bool active = m_gizmo->operation() == op;
-            if (active)
-                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-            if (ImGui::Button(label, ImVec2(btn, btn)))
+            if (ImGui::ImageButton(id, icons.icon(icon), ImVec2(img, img), {0, 0}, {1, 1}, {0, 0, 0, 0},
+                                   active ? active_tint : idle_tint))
                 m_gizmo->set_operation(op);
-            if (active)
-                ImGui::PopStyleColor();
+            ImGui::SetItemTooltip("%s", tip);
             ImGui::SameLine(0.0f, gap);
         };
 
-        op_button("T", GizmoSystem::Operation::Translate);
-        op_button("R", GizmoSystem::Operation::Rotate);
-        op_button("S", GizmoSystem::Operation::Scale);
+        op_button("##gizmo_t", "move", GizmoSystem::Operation::Translate, "Translate");
+        op_button("##gizmo_r", "rotate-3d", GizmoSystem::Operation::Rotate, "Rotate");
+        op_button("##gizmo_s", "scale-3d", GizmoSystem::Operation::Scale, "Scale");
 
         const bool world = m_gizmo->space() == GizmoSystem::Space::World;
-        if (world)
-            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-        if (ImGui::Button(world ? "W" : "L", ImVec2(btn, btn)))
+        if (ImGui::ImageButton("##gizmo_space", icons.icon(world ? "globe" : "axis-3d"), ImVec2(img, img), {0, 0},
+                               {1, 1}, {0, 0, 0, 0}, idle_tint))
             m_gizmo->set_space(world ? GizmoSystem::Space::Local : GizmoSystem::Space::World);
-        if (world)
-            ImGui::PopStyleColor();
+        ImGui::SetItemTooltip(world ? "World space" : "Local space");
     }
 
     void ScenePanel::render_placeholder() {

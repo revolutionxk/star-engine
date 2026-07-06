@@ -44,6 +44,10 @@ namespace star::editor {
             return m_space;
         }
 
+        [[nodiscard]] const std::optional<flecs::entity>& entity() const noexcept {
+            return m_entity;
+        }
+
         [[nodiscard]] static bool is_using() noexcept {
             return ImGuizmo::IsUsing();
         }

@@ -33,8 +33,8 @@ TEST_CASE("Vector3 - static factories", "[math][vector3]") {
     REQUIRE(Vector3::left() == Vector3{-1.0f, 0.0f, 0.0f});
     REQUIRE(Vector3::up() == Vector3{0.0f, 1.0f, 0.0f});
     REQUIRE(Vector3::down() == Vector3{0.0f, -1.0f, 0.0f});
-    REQUIRE(Vector3::forward() == Vector3{0.0f, 0.0f, 1.0f});
-    REQUIRE(Vector3::back() == Vector3{0.0f, 0.0f, -1.0f});
+    REQUIRE(Vector3::forward() == Vector3{0.0f, 0.0f, -1.0f});
+    REQUIRE(Vector3::back() == Vector3{0.0f, 0.0f, 1.0f});
 }
 
 TEST_CASE("Vector3 - arithmetic operators", "[math][vector3]") {
@@ -85,10 +85,9 @@ TEST_CASE("Vector3 - dot product", "[math][vector3]") {
 }
 
 TEST_CASE("Vector3 - cross product", "[math][vector3]") {
-    // Standard right-hand rule: right x up = forward (Z+)
-    REQUIRE(Vector3::right().cross(Vector3::up()) == Vector3::forward());
-    REQUIRE(Vector3::up().cross(Vector3::right()) == Vector3::back());
-    REQUIRE(Vector3::up().cross(Vector3::forward()) == Vector3::right());
+    REQUIRE(Vector3::right().cross(Vector3::up()) == Vector3::back());
+    REQUIRE(Vector3::up().cross(Vector3::right()) == Vector3::forward());
+    REQUIRE(Vector3::up().cross(Vector3::forward()) == Vector3::left());
 }
 
 TEST_CASE("Vector3 - cross product of parallel vectors is zero", "[math][vector3]") {

@@ -62,7 +62,7 @@ namespace star::editor {
             return;
 
         if (!m_icons)
-            m_icons = std::make_unique<IconRegistry>(m_editor_window->resources());
+            m_icons = &m_editor_window->icons();
 
         if (const auto* project = m_editor_window->projects().active(); project && m_root != project->assets_dir()) {
             m_root = project->assets_dir();

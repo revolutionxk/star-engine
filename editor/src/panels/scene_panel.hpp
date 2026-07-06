@@ -50,6 +50,7 @@ namespace star::editor {
         void update_focus_state(bool gizmo_consuming);
         void handle_viewport_resize() const;
         void render_scene_texture();
+        void render_entity_icons();
         void render_gizmo_toolbar() const;
         void handle_click_pick() const;
         static void render_placeholder();
@@ -64,5 +65,6 @@ namespace star::editor {
         ImVec2 m_image_size{};
         bool m_focused = false;
         bool m_hovered = false;
+        bool m_icon_click_consumed = false;
     };
 } // namespace star::editor

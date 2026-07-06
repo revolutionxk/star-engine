@@ -8,6 +8,7 @@
 #include "star/rendering/debug_renderer.hpp"
 #include "star/rendering/passes/debug_render_pass.hpp"
 #include "star/rendering/passes/picking_pass.hpp"
+#include "star/rendering/passes/postprocess_pass.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
 #include "star/rendering/passes/shadow_pass.hpp"
 #include "star/rendering/passes/sky_render_pass.hpp"
@@ -29,6 +30,7 @@ namespace star::rendering {
         add_render_pass(std::make_unique<SceneRenderPass>(*m_render_system));
         add_render_pass(std::make_unique<SkyRenderPass>(*m_render_system, *m_resource_manager));
         add_render_pass(std::make_unique<DebugRenderPass>(*m_debug_renderer));
+        add_render_pass(std::make_unique<PostProcessPass>(*m_device, *m_resource_manager));
         add_render_pass(std::make_unique<PickingPass>(*m_device, *m_resource_manager));
 
         STAR_LOG_INFO(LogCategory::Rendering, "Window rendering setup complete");

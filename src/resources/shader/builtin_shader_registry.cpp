@@ -10,13 +10,17 @@
 #include <essl/f_debug.sc.bin.h>
 #include <essl/f_imgui.sc.bin.h>
 #include <essl/f_material.sc.bin.h>
+#include <essl/f_blur.sc.bin.h>
+#include <essl/f_brightpass.sc.bin.h>
 #include <essl/f_pick.sc.bin.h>
 #include <essl/f_shadow.sc.bin.h>
 #include <essl/f_simple.sc.bin.h>
+#include <essl/f_tonemap.sc.bin.h>
 #include <essl/v_atmosphere.sc.bin.h>
 #include <essl/v_debug.sc.bin.h>
 #include <essl/v_imgui.sc.bin.h>
 #include <essl/v_material.sc.bin.h>
+#include <essl/v_fullscreen.sc.bin.h>
 #include <essl/v_pick.sc.bin.h>
 #include <essl/v_shadow.sc.bin.h>
 #include <essl/v_simple.sc.bin.h>
@@ -24,13 +28,17 @@
 #include <glsl/f_debug.sc.bin.h>
 #include <glsl/f_imgui.sc.bin.h>
 #include <glsl/f_material.sc.bin.h>
+#include <glsl/f_blur.sc.bin.h>
+#include <glsl/f_brightpass.sc.bin.h>
 #include <glsl/f_pick.sc.bin.h>
 #include <glsl/f_shadow.sc.bin.h>
 #include <glsl/f_simple.sc.bin.h>
+#include <glsl/f_tonemap.sc.bin.h>
 #include <glsl/v_atmosphere.sc.bin.h>
 #include <glsl/v_debug.sc.bin.h>
 #include <glsl/v_imgui.sc.bin.h>
 #include <glsl/v_material.sc.bin.h>
+#include <glsl/v_fullscreen.sc.bin.h>
 #include <glsl/v_pick.sc.bin.h>
 #include <glsl/v_shadow.sc.bin.h>
 #include <glsl/v_simple.sc.bin.h>
@@ -38,13 +46,17 @@
 #include <spirv/f_debug.sc.bin.h>
 #include <spirv/f_imgui.sc.bin.h>
 #include <spirv/f_material.sc.bin.h>
+#include <spirv/f_blur.sc.bin.h>
+#include <spirv/f_brightpass.sc.bin.h>
 #include <spirv/f_pick.sc.bin.h>
 #include <spirv/f_shadow.sc.bin.h>
 #include <spirv/f_simple.sc.bin.h>
+#include <spirv/f_tonemap.sc.bin.h>
 #include <spirv/v_atmosphere.sc.bin.h>
 #include <spirv/v_debug.sc.bin.h>
 #include <spirv/v_imgui.sc.bin.h>
 #include <spirv/v_material.sc.bin.h>
+#include <spirv/v_fullscreen.sc.bin.h>
 #include <spirv/v_pick.sc.bin.h>
 #include <spirv/v_shadow.sc.bin.h>
 #include <spirv/v_simple.sc.bin.h>
@@ -54,13 +66,17 @@
     #include <dx10/f_debug.sc.bin.h>
     #include <dx10/f_imgui.sc.bin.h>
     #include <dx10/f_material.sc.bin.h>
+    #include <dx10/f_blur.sc.bin.h>
+    #include <dx10/f_brightpass.sc.bin.h>
     #include <dx10/f_pick.sc.bin.h>
     #include <dx10/f_shadow.sc.bin.h>
     #include <dx10/f_simple.sc.bin.h>
+    #include <dx10/f_tonemap.sc.bin.h>
     #include <dx10/v_atmosphere.sc.bin.h>
     #include <dx10/v_debug.sc.bin.h>
     #include <dx10/v_imgui.sc.bin.h>
     #include <dx10/v_material.sc.bin.h>
+    #include <dx10/v_fullscreen.sc.bin.h>
     #include <dx10/v_pick.sc.bin.h>
     #include <dx10/v_shadow.sc.bin.h>
     #include <dx10/v_simple.sc.bin.h>
@@ -68,13 +84,17 @@
     #include <dx11/f_debug.sc.bin.h>
     #include <dx11/f_imgui.sc.bin.h>
     #include <dx11/f_material.sc.bin.h>
+    #include <dx11/f_blur.sc.bin.h>
+    #include <dx11/f_brightpass.sc.bin.h>
     #include <dx11/f_pick.sc.bin.h>
     #include <dx11/f_shadow.sc.bin.h>
     #include <dx11/f_simple.sc.bin.h>
+    #include <dx11/f_tonemap.sc.bin.h>
     #include <dx11/v_atmosphere.sc.bin.h>
     #include <dx11/v_debug.sc.bin.h>
     #include <dx11/v_imgui.sc.bin.h>
     #include <dx11/v_material.sc.bin.h>
+    #include <dx11/v_fullscreen.sc.bin.h>
     #include <dx11/v_pick.sc.bin.h>
     #include <dx11/v_shadow.sc.bin.h>
     #include <dx11/v_simple.sc.bin.h>
@@ -84,13 +104,17 @@
     #include <mtl/f_debug.sc.bin.h>
     #include <mtl/f_imgui.sc.bin.h>
     #include <mtl/f_material.sc.bin.h>
+    #include <mtl/f_blur.sc.bin.h>
+    #include <mtl/f_brightpass.sc.bin.h>
     #include <mtl/f_pick.sc.bin.h>
     #include <mtl/f_shadow.sc.bin.h>
     #include <mtl/f_simple.sc.bin.h>
+    #include <mtl/f_tonemap.sc.bin.h>
     #include <mtl/v_atmosphere.sc.bin.h>
     #include <mtl/v_debug.sc.bin.h>
     #include <mtl/v_imgui.sc.bin.h>
     #include <mtl/v_material.sc.bin.h>
+    #include <mtl/v_fullscreen.sc.bin.h>
     #include <mtl/v_pick.sc.bin.h>
     #include <mtl/v_shadow.sc.bin.h>
     #include <mtl/v_simple.sc.bin.h>
@@ -113,6 +137,10 @@ namespace star::resources::detail {
         const bgfx::EmbeddedShader k_pick_fs = BGFX_EMBEDDED_SHADER(f_pick);
         const bgfx::EmbeddedShader k_shadow_vs = BGFX_EMBEDDED_SHADER(v_shadow);
         const bgfx::EmbeddedShader k_shadow_fs = BGFX_EMBEDDED_SHADER(f_shadow);
+        const bgfx::EmbeddedShader k_fullscreen_vs = BGFX_EMBEDDED_SHADER(v_fullscreen);
+        const bgfx::EmbeddedShader k_tonemap_fs = BGFX_EMBEDDED_SHADER(f_tonemap);
+        const bgfx::EmbeddedShader k_brightpass_fs = BGFX_EMBEDDED_SHADER(f_brightpass);
+        const bgfx::EmbeddedShader k_blur_fs = BGFX_EMBEDDED_SHADER(f_blur);
     } // namespace
 
     EmbeddedShaderPair embedded_pair_for(const BuiltinShader id) noexcept {
@@ -131,6 +159,12 @@ namespace star::resources::detail {
                 return {&k_pick_vs, &k_pick_fs};
             case BuiltinShader::Shadow:
                 return {&k_shadow_vs, &k_shadow_fs};
+            case BuiltinShader::Tonemap:
+                return {&k_fullscreen_vs, &k_tonemap_fs};
+            case BuiltinShader::BloomBright:
+                return {&k_fullscreen_vs, &k_brightpass_fs};
+            case BuiltinShader::BloomBlur:
+                return {&k_fullscreen_vs, &k_blur_fs};
         }
         return {nullptr, nullptr};
     }

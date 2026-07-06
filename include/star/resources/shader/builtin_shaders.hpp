@@ -11,5 +11,8 @@ namespace star::resources {
         Debug,
         Picking,
         Shadow,
+        Tonemap,
+        BloomBright,
+        BloomBlur,
     };
 } // namespace star::resources

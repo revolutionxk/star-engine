@@ -28,7 +28,5 @@ void main()
     float exposure = u_groundColor.w > 0.0 ? u_groundColor.w : 1.0;
 
     vec3 color = sanitizeColor(ambient_lighting + direct_lighting + mat.emissive, 4096.0) * exposure;
-    color = acesTonemap(color);
-    color = pow(max(color, vec3(0.0, 0.0, 0.0)), vec3(1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2));
     gl_FragColor = vec4(color, mat.baseColor.a);
 }

@@ -79,8 +79,7 @@ void main()
     float sun   = exp(-dist / u_parameters.y / size2) + step(dist, size2);
     float sun2  = min(sun * sun, 1.0);
 
-    vec3 color = skyColor + sun2 * u_sunLuminance.xyz;
-    color = pow(max(color, vec3_splat(0.0)), vec3_splat(1.0 / 2.2));
+    vec3 color = max(skyColor + sun2 * u_sunLuminance.xyz, vec3_splat(0.0));
 
     float r = n4rand_ss(v_screenPos);
     color += vec3_splat(r) / 40.0;

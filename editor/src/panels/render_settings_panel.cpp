@@ -3,6 +3,7 @@
 #include <imgui.h>
 
 #include "../editor_window.hpp"
+#include "star/rendering/passes/postprocess_pass.hpp"
 #include "star/rendering/passes/shadow_pass.hpp"
 #include "star/rendering/renderer.hpp"
 
@@ -28,6 +29,24 @@ namespace star::editor {
             ImGui::EndDisabled();
         } else {
             ImGui::TextDisabled("Shadow pass unavailable");
+        }
+
+        if (auto* post = m_editor_window->renderer().get_render_pass<rendering::PostProcessPass>()) {
+            ImGui::SeparatorText("Post-Processing");
+
+            auto& p = post->settings();
+            ImGui::DragFloat("Exposure", &p.exposure, 0.01f, 0.05f, 8.0f, "%.2f");
+            ImGui::SetItemTooltip("Overall scene brightness before tonemapping.");
+
+            ImGui::Checkbox("Bloom", &p.bloom_enabled);
+            ImGui::BeginDisabled(!p.bloom_enabled);
+            ImGui::DragFloat("Threshold", &p.bloom_threshold, 0.01f, 0.0f, 10.0f, "%.2f");
+            ImGui::SetItemTooltip("Brightness above which pixels start to glow. Lower = more bloom.");
+            ImGui::DragFloat("Knee", &p.bloom_knee, 0.01f, 0.0f, 2.0f, "%.2f");
+            ImGui::SetItemTooltip("Soft-knee width so the glow fades in smoothly around the threshold.");
+            ImGui::DragFloat("Intensity", &p.bloom_intensity, 0.01f, 0.0f, 4.0f, "%.2f");
+            ImGui::SetItemTooltip("How strongly the bloom is added back onto the image.");
+            ImGui::EndDisabled();
         }
 
         ImGui::End();

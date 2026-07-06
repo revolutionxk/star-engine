@@ -358,7 +358,11 @@ vec3 evaluateEnvironmentSpecular(vec3 N, vec3 V, Material mat, vec3 groundColor)
 {
     vec3 R = reflect(-V, N);
     vec3 dominant_R = dominantSpecularDirection(N, R, mat.roughness);
-    vec3 prefiltered_env = hemisphereAmbient(dominant_R, u_envSkyColor.xyz, groundColor);
+
+    float sky_luma = dot(u_envSkyColor.xyz, vec3(0.2126, 0.7152, 0.0722));
+    vec3 sky_env = mix(u_envSkyColor.xyz, vec3(sky_luma, sky_luma, sky_luma), 0.6);
+    vec3 ground_env = vec3(sky_luma, sky_luma, sky_luma) * 0.5;
+    vec3 prefiltered_env = hemisphereAmbient(dominant_R, sky_env, ground_env);
 
     vec3 sun_dir = safeNormalize(u_envSunDir.xyz, vec3(0.0, 1.0, 0.0));
     float sun_alignment = saturate(dot(dominant_R, sun_dir));

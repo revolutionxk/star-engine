@@ -34,6 +34,8 @@ namespace star::rendering {
         void set_framebuffer_enabled(bool enabled);
 
         [[nodiscard]] graphics::ResourceHandle<graphics::Texture> get_color_texture() const;
+        [[nodiscard]] graphics::ResourceHandle<graphics::Texture> hdr_color_texture() const;
+        [[nodiscard]] graphics::ResourceHandle<graphics::Framebuffer> display_framebuffer() const;
 
         [[nodiscard]] RenderTarget* get_render_target() const {
             return m_render_target.get();
@@ -84,7 +86,8 @@ namespace star::rendering {
         u32 m_height{720};
 
         bool m_framebuffer_enabled{false};
-        std::unique_ptr<RenderTarget> m_render_target;
+        std::unique_ptr<RenderTarget> m_render_target;  // HDR scene color (RGBA16F + depth)
+        std::unique_ptr<RenderTarget> m_display_target; // LDR post-processed color (RGBA8)
 
         Matrix4 m_view_matrix{Matrix4::identity()};
         Matrix4 m_projection_matrix{Matrix4::identity()};

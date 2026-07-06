@@ -3,12 +3,12 @@
 #include <bgfx/bgfx.h>
 
 #include "star/core/common.hpp"
+#include "star/ecs/components/camera.hpp"
 #include "star/ecs/components/transform.hpp"
 #include "star/graphics/device.hpp"
 #include "star/graphics/device_context.hpp"
 #include "star/graphics/texture.hpp"
 #include "star/rendering/render_target.hpp"
-#include "star/ecs/components/camera.hpp"
 
 namespace star::rendering {
     Viewport::Viewport(graphics::Device& device) : m_device(&device) {
@@ -33,6 +33,9 @@ namespace star::rendering {
         if (m_framebuffer_enabled && m_render_target) {
             m_render_target->resize(width, height);
         }
+        if (m_framebuffer_enabled && m_display_target) {
+            m_display_target->resize(width, height);
+        }
     }
 
     void Viewport::bind(graphics::DeviceContext& context, const u32 view_id) const {
@@ -53,7 +56,7 @@ namespace star::rendering {
         if (m_has_camera) {
             context.set_view_transform(view_id, m_view_matrix, m_projection_matrix);
         }
-        
+
         context.touch(view_id);
     }
 
@@ -97,8 +100,25 @@ namespace star::rendering {
     }
 
     graphics::ResourceHandle<graphics::Texture> Viewport::get_color_texture() const {
+        if (m_display_target && m_display_target->is_valid()) {
+            return m_display_target->color_texture(0);
+        }
         if (m_render_target && m_render_target->is_valid()) {
             return m_render_target->color_texture(0);
+        }
+        return {};
+    }
+
+    graphics::ResourceHandle<graphics::Texture> Viewport::hdr_color_texture() const {
+        if (m_render_target && m_render_target->is_valid()) {
+            return m_render_target->color_texture(0);
+        }
+        return {};
+    }
+
+    graphics::ResourceHandle<graphics::Framebuffer> Viewport::display_framebuffer() const {
+        if (m_display_target && m_display_target->is_valid()) {
+            return m_display_target->framebuffer();
         }
         return {};
     }
@@ -110,16 +130,19 @@ namespace star::rendering {
         }
 
         m_render_target = std::make_unique<RenderTarget>();
+        const bool hdr_ok =
+            m_render_target->create(m_device, m_width, m_height, graphics::TextureFormat::RGBA16F, true);
 
-        const bool success =
-            m_render_target->create(m_device, m_width, m_height, graphics::TextureFormat::RGBA8, true // has_depth
-            );
+        m_display_target = std::make_unique<RenderTarget>();
+        const bool ldr_ok =
+            m_display_target->create(m_device, m_width, m_height, graphics::TextureFormat::RGBA8, false);
 
-        if (!success) {
-            STAR_LOG_ERROR(LogCategory::Rendering, "Failed to create viewport render target");
+        if (!hdr_ok || !ldr_ok) {
+            STAR_LOG_ERROR(LogCategory::Rendering, "Failed to create viewport render targets");
             m_render_target.reset();
+            m_display_target.reset();
         } else {
-            STAR_LOG_INFO(LogCategory::Rendering, "Viewport render target created ({}x{})", m_width, m_height);
+            STAR_LOG_INFO(LogCategory::Rendering, "Viewport render targets created ({}x{})", m_width, m_height);
         }
     }
 
@@ -127,6 +150,10 @@ namespace star::rendering {
         if (m_render_target) {
             m_render_target->destroy();
             m_render_target.reset();
+        }
+        if (m_display_target) {
+            m_display_target->destroy();
+            m_display_target.reset();
         }
     }
 
@@ -141,8 +168,7 @@ namespace star::rendering {
         m_view_matrix = Matrix4::inverse(transform_matrix);
 
         const f32 aspect = aspect_ratio();
-        m_projection_matrix = Matrix4::perspective(radians(camera.fov_y), aspect, camera.near_plane,
-                                                   camera.far_plane);
+        m_projection_matrix = Matrix4::perspective(radians(camera.fov_y), aspect, camera.near_plane, camera.far_plane);
 
         STAR_LOG_TRACE(LogCategory::Rendering, "Viewport camera updated: pos({}, {}, {}), aspect={}",
                        m_camera_position.x, m_camera_position.y, m_camera_position.z, aspect);

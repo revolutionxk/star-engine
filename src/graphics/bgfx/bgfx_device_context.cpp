@@ -29,9 +29,9 @@ namespace star::graphics {
         m_frame_number = bgfx::frame();
     }
 
-    void BGFXDeviceContext::blit(const u32 view_id, const ResourceHandle<Texture> dst, const u16 dst_x,
-                                 const u16 dst_y, const ResourceHandle<Texture> src, const u16 src_x, const u16 src_y,
-                                 const u16 width, const u16 height) {
+    void BGFXDeviceContext::blit(const u32 view_id, const ResourceHandle<Texture> dst, const u16 dst_x, const u16 dst_y,
+                                 const ResourceHandle<Texture> src, const u16 src_x, const u16 src_y, const u16 width,
+                                 const u16 height) {
         bgfx::blit(static_cast<bgfx::ViewId>(view_id), bgfx::TextureHandle{static_cast<u16>(dst.id)}, dst_x, dst_y,
                    bgfx::TextureHandle{static_cast<u16>(src.id)}, src_x, src_y, width, height);
     }
@@ -130,8 +130,8 @@ namespace star::graphics {
         }
 
         if (const bgfx::TextureHandle texture{static_cast<u16>(handle.id)}; bgfx::isValid(texture)) {
-            // I haven't finished it yet, but I intend to make this device the basis for other things
-            const bgfx::UniformHandle sampler = bgfx::createUniform("s_texture", bgfx::UniformType::Sampler);
+            const std::string sampler_name = "s_texStage" + std::to_string(stage);
+            const bgfx::UniformHandle sampler = get_or_create_uniform(sampler_name, UniformType::Sampler, 1);
             bgfx::setTexture(stage, sampler, texture);
         }
     }

@@ -38,6 +38,9 @@ namespace star::editor {
             ImGui::DragFloat("Exposure", &p.exposure, 0.01f, 0.05f, 8.0f, "%.2f");
             ImGui::SetItemTooltip("Overall scene brightness before tonemapping.");
 
+            ImGui::Checkbox("FXAA", &p.fxaa_enabled);
+            ImGui::SetItemTooltip("Fast anti-aliasing that smooths jagged edges on the resolved image.");
+
             ImGui::Checkbox("Bloom", &p.bloom_enabled);
             ImGui::BeginDisabled(!p.bloom_enabled);
             ImGui::DragFloat("Threshold", &p.bloom_threshold, 0.01f, 0.0f, 10.0f, "%.2f");

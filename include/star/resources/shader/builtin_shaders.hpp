@@ -14,5 +14,6 @@ namespace star::resources {
         Tonemap,
         BloomBright,
         BloomBlur,
+        Fxaa,
     };
 } // namespace star::resources

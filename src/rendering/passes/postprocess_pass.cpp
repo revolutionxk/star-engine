@@ -32,6 +32,7 @@ namespace star::rendering {
         load("__tonemap_shader", resources::BuiltinShader::Tonemap, m_tonemap_shader);
         load("__bloom_bright_shader", resources::BuiltinShader::BloomBright, m_bright_shader);
         load("__bloom_blur_shader", resources::BuiltinShader::BloomBlur, m_blur_shader);
+        load("__fxaa_shader", resources::BuiltinShader::Fxaa, m_fxaa_shader);
     }
 
     void PostProcessPass::draw_fullscreen(graphics::DeviceContext& gpu, const u32 view_id,
@@ -69,6 +70,25 @@ namespace star::rendering {
         bt.width = bw;
         bt.height = bh;
         return &bt;
+    }
+
+    PostProcessPass::ResolveTarget* PostProcessPass::resolve_target_for(const Viewport& viewport) {
+        const u32 w = std::max(1u, viewport.width());
+        const u32 h = std::max(1u, viewport.height());
+
+        auto& rt = m_resolve[&viewport];
+        if (rt.width == w && rt.height == h && rt.ldr && rt.ldr->is_valid())
+            return &rt;
+
+        rt.ldr = std::make_unique<RenderTarget>();
+        if (!rt.ldr->create(&m_device, w, h, graphics::TextureFormat::RGBA8, false)) {
+            rt.ldr.reset();
+            rt.width = rt.height = 0;
+            return nullptr;
+        }
+        rt.width = w;
+        rt.height = h;
+        return &rt;
     }
 
     void PostProcessPass::render(const RenderContext& ctx) {
@@ -133,17 +153,38 @@ namespace star::rendering {
             }
         }
 
-        const u32 resolve_view = base + 3;
-        gpu.set_view_framebuffer(resolve_view, display_fb);
-        gpu.set_view_rect(resolve_view, 0, 0, static_cast<u16>(viewport->width()),
-                          static_cast<u16>(viewport->height()));
-        gpu.set_view_clear(resolve_view, 0, 0, 1.0f, 0);
+        const auto vw = static_cast<u16>(viewport->width());
+        const auto vh = static_cast<u16>(viewport->height());
+
+        const bool want_fxaa = m_settings.fxaa_enabled && m_fxaa_shader.is_valid();
+        ResolveTarget* rt = want_fxaa ? resolve_target_for(*viewport) : nullptr;
+        const bool fxaa = rt != nullptr;
+
+        const auto tonemap_fb = fxaa ? rt->ldr->framebuffer() : display_fb;
+        const u32 tonemap_view = base + 3;
+        gpu.set_view_framebuffer(tonemap_view, tonemap_fb);
+        gpu.set_view_rect(tonemap_view, 0, 0, vw, vh);
+        gpu.set_view_clear(tonemap_view, 0, 0, 1.0f, 0);
 
         const f32 intensity = bloom_tex.is_valid() ? m_settings.bloom_intensity : 0.0f;
         const Vector4 post_params{flip_v, m_settings.exposure, intensity, 0.0f};
         gpu.set_uniform("u_postParams", &post_params, 1, graphics::UniformType::Vec4);
         gpu.set_texture(0, hdr);
         gpu.set_texture(1, bloom_tex.is_valid() ? bloom_tex : hdr);
-        draw_fullscreen(gpu, resolve_view, m_tonemap_shader);
+        draw_fullscreen(gpu, tonemap_view, m_tonemap_shader);
+
+        if (fxaa) {
+            const u32 fxaa_view = base + 4;
+            gpu.set_view_framebuffer(fxaa_view, display_fb);
+            gpu.set_view_rect(fxaa_view, 0, 0, vw, vh);
+            gpu.set_view_clear(fxaa_view, 0, 0, 1.0f, 0);
+            const Vector4 flip_params{flip_v, 0.0f, 0.0f, 0.0f};
+            gpu.set_uniform("u_postParams", &flip_params, 1, graphics::UniformType::Vec4);
+            const Vector4 fxaa_params{1.0f / static_cast<f32>(viewport->width()),
+                                      1.0f / static_cast<f32>(viewport->height()), 0.0f, 0.0f};
+            gpu.set_uniform("u_fxaaParams", &fxaa_params, 1, graphics::UniformType::Vec4);
+            gpu.set_texture(0, rt->ldr->color_texture(0));
+            draw_fullscreen(gpu, fxaa_view, m_fxaa_shader);
+        }
     }
 } // namespace star::rendering

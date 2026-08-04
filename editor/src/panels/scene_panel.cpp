@@ -62,8 +62,9 @@ namespace star::editor {
         const ImVec2 avail = ImGui::GetContentRegionAvail();
         if (avail.x <= 0 || avail.y <= 0)
             return;
-        const auto nw = static_cast<u32>(avail.x);
-        const auto nh = static_cast<u32>(avail.y);
+        const ImVec2 fb_scale = ImGui::GetIO().DisplayFramebufferScale;
+        const auto nw = static_cast<u32>(avail.x * fb_scale.x);
+        const auto nh = static_cast<u32>(avail.y * fb_scale.y);
         if (nw < MIN_VIEWPORT_WIDTH || nh < MIN_VIEWPORT_HEIGHT)
             return;
         if (nw != m_viewport->width() || nh != m_viewport->height())

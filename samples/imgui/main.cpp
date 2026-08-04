@@ -1,147 +1,141 @@
-#if defined(_WIN32)
-#define NOMINMAX
-#endif
+#include <algorithm>
+#include <cmath>
+#include <memory>
 
-#include <star/app/app.hpp>
-#include <star/app/imgui_component.hpp>
-#include <star/app/window.hpp>
-#include <star/app/input.hpp>
 #include <imgui.h>
-#include <spdlog/spdlog.h>
-#include <string>
-#include <glm/gtx/string_cast.hpp>
+
+#include "star/application/app_window.hpp"
+#include "star/application/application.hpp"
+#include "star/application/layer.hpp"
+#include "star/platform/input/input.hpp"
+#include "star/platform/window.hpp"
 
 using namespace star;
 
-class ImguiSampleApp final : public IAppDelegate, public IImguiRenderer {
-public:
-    explicit ImguiSampleApp(App &app)
-        : _app(app) {
-    }
+namespace {
+    class ImGuiSampleLayer final : public application::Layer {
+      public:
+        explicit ImGuiSampleLayer(application::AppWindow* owner) : Layer("ImGuiSampleLayer"), m_owner(owner) {}
 
-    void init() override {
-        spdlog::info("Initializing ImGui sample");
-
-        _app.set_debug_flag(BGFX_DEBUG_TEXT);
-        const auto &imgui = _app.add_component<ImGuiComponent>(*this);
-
-        ImGui::SetCurrentContext(imgui.get_context());
-
-        _app.get_window().set_title("Star Engine - ImGui Sample");
-
-        spdlog::info("ImGui sample initialized");
-    }
-
-    void shutdown() override {
-        spdlog::info("Shutting down ImGui sample");
-    }
-
-    void imgui_setup() override {
-        ImGuiIO &io = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-        spdlog::info("ImGui setup complete");
-    }
-
-    void imgui_render() override {
-        render_main_window();
-        render_input_window();
-        render_metrics_window();
-    }
-
-    void update(float delta_time) override {
-        auto &mouse = _app.get_input().get_mouse();
-        const auto velocity = mouse.get_velocity();
-
-        _mouse_velocity_max.x = std::max(_mouse_velocity_max.x, std::abs(velocity.x));
-        _mouse_velocity_max.y = std::max(_mouse_velocity_max.y, std::abs(velocity.y));
-
-        const auto scroll = mouse.get_scroll();
-        _mouse_scroll_max.x = std::max(_mouse_scroll_max.x, std::abs(scroll.x));
-        _mouse_scroll_max.y = std::max(_mouse_scroll_max.y, std::abs(scroll.y));
-    }
-
-private:
-    void render_main_window() {
-        ImGui::Begin("Star Engine - ImGui Sample");
-
-        ImGui::Text("Welcome to the Star Engine ImGui integration!");
-        ImGui::Separator();
-
-        ImGui::Text("This sample demonstrates how to use ImGui with Star Engine");
-
-        ImGui::Spacing();
-
-        // ImGui::InputText("Text Input", &_text);
-
-        ImGui::Spacing();
-        if (ImGui::ColorEdit4("Background Color", &_background_color.x)) {
-            _app.set_clear_color(_background_color);
+        void on_imgui_init() override {
+            ImGuiIO& io = ImGui::GetIO();
+            io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         }
 
-        ImGui::Spacing();
+        void update(const f32 delta_time) override {
+            const auto& input = application::Application::instance().input_manager();
+            const auto delta = input.mouse_delta();
 
-        if (ImGui::Button("Reset")) {
-            _text = "Hello Star Engine!";
-            _background_color = glm::vec4(0.3f, 0.3f, 0.3f, 1.0f);
-            _app.set_clear_color(_background_color);
+            m_mouse_delta_max.x = std::max(m_mouse_delta_max.x, std::abs(delta.x));
+            m_mouse_delta_max.y = std::max(m_mouse_delta_max.y, std::abs(delta.y));
         }
 
-        ImGui::End();
-    }
-
-    void render_input_window() {
-        ImGui::Begin("Input Information");
-
-        auto &mouse = _app.get_input().get_mouse();
-        const auto pos = mouse.get_position();
-        const auto velocity = mouse.get_velocity();
-        const auto scroll = mouse.get_scroll();
-
-        ImGui::Text("Mouse Position: (%.1f, %.1f)", pos.x, pos.y);
-        ImGui::Text("Mouse Velocity: (%.1f, %.1f)", velocity.x, velocity.y);
-        ImGui::Text("Mouse Velocity Max: (%.1f, %.1f)", _mouse_velocity_max.x, _mouse_velocity_max.y);
-
-        ImGui::Spacing();
-
-        ImGui::Text("Mouse Scroll: (%.1f, %.1f)", scroll.x, scroll.y);
-        ImGui::Text("Mouse Scroll Max: (%.1f, %.1f)", _mouse_scroll_max.x, _mouse_scroll_max.y);
-
-        ImGui::Spacing();
-
-        ImGui::Text("Left Button: %s", mouse.is_button_down(MouseButton::Left) ? "DOWN" : "UP");
-        ImGui::Text("Right Button: %s", mouse.is_button_down(MouseButton::Right) ? "DOWN" : "UP");
-        ImGui::Text("Middle Button: %s", mouse.is_button_down(MouseButton::Middle) ? "DOWN" : "UP");
-
-        ImGui::Spacing();
-
-        if (ImGui::Button("Reset Max Values")) {
-            _mouse_velocity_max = glm::vec2(0);
-            _mouse_scroll_max = glm::vec2(0);
+        void on_imgui_render() override {
+            render_main_window();
+            render_input_window();
+            render_metrics_window();
         }
 
-        ImGui::End();
-    }
+      private:
+        void render_main_window() {
+            ImGui::Begin("Star Engine - ImGui Sample");
 
-    void render_metrics_window() const {
-        ImGui::Begin("Performance Metrics");
+            ImGui::TextUnformatted("ImGui runs as an overlay layer on top of the window render graph.");
+            ImGui::Separator();
 
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                    1000.0f / ImGui::GetIO().Framerate,
-                    ImGui::GetIO().Framerate);
+            ImGui::SliderFloat("Slider", &m_slider, 0.0f, 1.0f);
+            ImGui::ColorEdit4("Color", &m_color.x);
+            ImGui::Checkbox("Checkbox", &m_checked);
 
-        const auto &win = _app.get_window();
-        const auto size = win.get_size();
-        ImGui::Text("Window Size: %u x %u", size.x, size.y);
+            ImGui::Spacing();
 
-        ImGui::End();
-    }
+            if (ImGui::Button("Reset")) {
+                m_slider = 0.5f;
+                m_color = Vector4{0.3f, 0.55f, 0.9f, 1.0f};
+                m_checked = false;
+            }
 
-    App &_app;
-    std::string _text = "Hello Star Engine!";
-    glm::vec4 _background_color{0.3f, 0.3f, 0.3f, 1.0f};
-    glm::vec2 _mouse_velocity_max{0};
-    glm::vec2 _mouse_scroll_max{0};
-};
+            ImGui::End();
+        }
 
-STAR_RUN_APP(ImguiSampleApp);
+        void render_input_window() {
+            ImGui::Begin("Input");
+
+            const auto& input = application::Application::instance().input_manager();
+            const auto position = input.mouse_position();
+            const auto delta = input.mouse_delta();
+
+            ImGui::Text("Position: (%.1f, %.1f)", position.x, position.y);
+            ImGui::Text("Delta: (%.1f, %.1f)", delta.x, delta.y);
+            ImGui::Text("Delta Max: (%.1f, %.1f)", m_mouse_delta_max.x, m_mouse_delta_max.y);
+
+            ImGui::Spacing();
+
+            ImGui::Text("Left: %s", input.is_mouse_button_pressed(platform::MouseButton::Left) ? "DOWN" : "UP");
+            ImGui::Text("Right: %s", input.is_mouse_button_pressed(platform::MouseButton::Right) ? "DOWN" : "UP");
+            ImGui::Text("Middle: %s", input.is_mouse_button_pressed(platform::MouseButton::Middle) ? "DOWN" : "UP");
+
+            ImGui::Spacing();
+
+            ImGui::Text("Space: %s", input.is_key_pressed(platform::KeyCode::Space) ? "DOWN" : "UP");
+            ImGui::Text("W A S D: %s %s %s %s", input.is_key_pressed(platform::KeyCode::W) ? "1" : "0",
+                        input.is_key_pressed(platform::KeyCode::A) ? "1" : "0",
+                        input.is_key_pressed(platform::KeyCode::S) ? "1" : "0",
+                        input.is_key_pressed(platform::KeyCode::D) ? "1" : "0");
+
+            ImGui::Spacing();
+
+            if (ImGui::Button("Reset Max")) {
+                m_mouse_delta_max = Vector2::zero();
+            }
+
+            ImGui::End();
+        }
+
+        void render_metrics_window() const {
+            ImGui::Begin("Metrics");
+
+            const auto& io = ImGui::GetIO();
+            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+
+            const auto size = m_owner->size();
+            ImGui::Text("Window: %.0f x %.0f", size.x, size.y);
+
+            ImGui::End();
+        }
+
+        application::AppWindow* m_owner = nullptr;
+
+        Vector2 m_mouse_delta_max = Vector2::zero();
+        Vector4 m_color{0.3f, 0.55f, 0.9f, 1.0f};
+        f32 m_slider = 0.5f;
+        bool m_checked = false;
+    };
+
+    class ImGuiSampleWindow final : public application::AppWindow {
+      public:
+        ImGuiSampleWindow() : AppWindow("Star Engine - ImGui Sample") {}
+
+      protected:
+        bool on_initialize() override {
+            push_overlay(std::make_unique<ImGuiSampleLayer>(this));
+            return true;
+        }
+    };
+
+    class ImGuiSampleApp final : public application::Application {
+      public:
+        explicit ImGuiSampleApp(const application::CommandLineArgs& args) : Application(args) {}
+
+      protected:
+        bool on_initialize() override {
+            if (!create_window<ImGuiSampleWindow>()) {
+                STAR_LOG_ERROR(LogCategory::Application, "Failed to create sample window");
+                return false;
+            }
+            return true;
+        }
+    };
+} // namespace
+
+STAR_RUN_APPLICATION(ImGuiSampleApp);

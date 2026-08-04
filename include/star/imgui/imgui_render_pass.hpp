@@ -59,6 +59,7 @@ namespace star::rendering {
         }
 
         static void setup_style();
+        void apply_dpi_scale(f32 density);
 
         void set_window(const platform::Window* window);
 

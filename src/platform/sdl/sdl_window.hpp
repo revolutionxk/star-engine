@@ -31,6 +31,7 @@ namespace star::platform::sdl {
         PlatformData platform_data() override;
 
         Vector2 size() const override;
+        f32 pixel_density() const override;
         void set_title(const std::string& title) const override;
         void set_size(int width, int height) override;
 
@@ -42,5 +43,8 @@ namespace star::platform::sdl {
 
         SDL_Window* m_window = nullptr;
         SDLInput* m_input_manager = nullptr;
+#ifdef STAR_PLATFORM_MACOS
+        SDL_MetalView m_metal_view = nullptr;
+#endif
     };
 } // namespace star::platform::sdl

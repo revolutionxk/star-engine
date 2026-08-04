@@ -1,94 +1,125 @@
-#include "star/app/app.hpp"
-#include "star/app/window.hpp"
+#include <memory>
+#include <string>
+
+#include "star/application/app_window.hpp"
+#include "star/application/application.hpp"
+#include "star/ecs/components/camera.hpp"
+#include "star/ecs/components/transform.hpp"
+#include "star/rendering/components/atmosphere.hpp"
+#include "star/rendering/components/light.hpp"
+#include "star/rendering/components/mesh_renderer.hpp"
+#include "star/rendering/renderer.hpp"
+#include "star/rendering/viewport.hpp"
+#include "star/resources/material/material.hpp"
+#include "star/resources/resource_manager.hpp"
+#include "star/scene/entity.hpp"
 #include "star/scene/scene.hpp"
-#include "star/scene/camera.hpp"
-#include "star/scene/transform.hpp"
-#include "star/render/forward_renderer.hpp"
-#include "star/render/scene_renderer.hpp"
-#include "star/render/renderer_components.hpp"
-#include "star/render/mesh.hpp"
-#include "star/render/material.hpp"
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <spdlog/spdlog.h>
+#include "star/scene/scene_manager.hpp"
 
 using namespace star;
 
-class BasicSampleApp final : public IAppDelegate {
-public:
-    explicit BasicSampleApp(App &app) : _app(app), _cube_entity() {
-    }
+namespace {
+    class BasicWindow final : public application::AppWindow {
+      public:
+        BasicWindow() : AppWindow("Star Engine - Basic Sample") {}
 
-    void init() override {
-        _app.get_window().set_title("Star Engine - Basic Sample");
+      protected:
+        bool on_initialize() override {
+            m_viewport = std::make_unique<rendering::Viewport>(device());
+            renderer().set_active_viewport(m_viewport.get());
 
-        _app.set_debug_flag(BGFX_DEBUG_TEXT);
-        _app.set_debug_flag(BGFX_DEBUG_STATS, true);
-        // _app.set_debug_flag(BGFX_DEBUG_IFH, true);
+            auto* scene = scene_manager().create_scene("BasicSample");
+            if (!scene) {
+                STAR_LOG_ERROR(LogCategory::Application, "Failed to create sample scene");
+                return false;
+            }
 
-        _scene_component = &_app.add_component<SceneAppComponent>();
-        _scene = _scene_component->get_scene();
-        _scene->set_name("BasicSample");
+            scene_manager().set_active_scene(scene->name());
+            build_scene(*scene);
+            return true;
+        }
 
-        const auto camera_entity = _scene->create_entity();
+        void on_update(const f32 delta_time) override {
+            const auto size = window().size();
+            m_viewport->resize(static_cast<u32>(size.x), static_cast<u32>(size.y));
 
-        auto &camera_transform = _scene->add_component<Transform>(camera_entity);
-        camera_transform.set_position(glm::vec3(0.0f, 2.0f, -5.0f));
-        camera_transform.look_at(glm::vec3(0.0f, 0.0f, 0.0f));
+            m_spin += delta_time * 0.9f;
 
-        auto &camera = _scene->add_component<Camera>(camera_entity);
-        camera.set_perspective(60.0f, 0.1f, 1000.0f);
-
-        camera.add_component<ForwardRendererComponent>();
-
-        auto &renderer_component = _scene->add_scene_component<SceneRendererComponent>();
-
-        _cube_entity = _scene->create_entity();
-        auto &cube_transform = _scene->add_component<Transform>(_cube_entity);
-        cube_transform.set_position(glm::vec3(0.0f, 0.0f, 0.0f));
-
-        auto &mesh_renderer = _scene->add_component<MeshRenderer>(_cube_entity);
-
-        Vertex::init();
-
-        Mesh cube_mesh = Mesh::create_cube(1.0f);
-        mesh_renderer.set_mesh(std::move(cube_mesh));
-
-        const auto material = std::make_shared<UnlitMaterial>();
-        material->set_color(glm::vec4(0.2f, 0.5f, 1.0f, 1.0f));
-        mesh_renderer.set_material(material);
-
-        const auto light_entity = _scene->create_entity();
-        auto &light_transform = _scene->add_component<Transform>(light_entity);
-        light_transform.set_position(glm::vec3(5.0f, 5.0f, -5.0f));
-
-        auto &light = _scene->add_component<Light>(light_entity);
-        light.set_type(LightType::Directional);
-        light.set_color(glm::vec3(1.0f, 1.0f, 0.9f));
-        light.set_intensity(1.0f);
-
-        spdlog::info("Basic sample initialized");
-    }
-
-    void update(const float delta_time) override {
-        if (_scene->is_valid_entity(_cube_entity)) {
-            if (auto *transform = _scene->get_component<Transform>(_cube_entity)) {
-                glm::vec3 euler = transform->get_euler_angles();
-                euler.y += 45.0f * delta_time;
-                transform->set_euler_angles(euler);
+            if (auto* transform = m_cube.get_mut<components::Transform>()) {
+                transform->rotation = Quaternion::from_euler(0.0f, m_spin, 0.0f);
             }
         }
-    }
 
-    void shutdown() override {
-        spdlog::info("Basic sample shutting down");
-    }
+      private:
+        graphics::ResourceHandle<resources::Material> make_material(const std::string& name, const Vector4& albedo,
+                                                                    const f32 metallic, const f32 roughness) const {
+            auto material = std::make_unique<resources::Material>();
+            material->shader = resources().default_shader();
+            material->albedo_color = albedo;
+            material->metallic = metallic;
+            material->roughness = roughness;
+            return resources().create_material(name, std::move(material));
+        }
 
-private:
-    App &_app;
-    SceneAppComponent *_scene_component = nullptr;
-    Scene *_scene = nullptr;
-    Entity _cube_entity;
-};
+        void build_scene(const scene::Scene& scene) {
+            scene.create_entity("Main Camera")
+                .set<components::Transform>({.position = Vector3{0.0f, 2.0f, 6.0f}})
+                .set<components::Camera>({})
+                .add<components::PrimaryCamera>();
 
-STAR_RUN_APP(BasicSampleApp);
+            scene.create_entity("Sky").set<components::Atmosphere>({
+                .turbidity = 2.5f,
+                .sun_elevation = 0.6f,
+                .sun_azimuth = 0.4f,
+                .sun_intensity = 1.6f,
+            });
+
+            scene.create_entity("Sun").set<components::Light>({
+                .type = components::Light::Type::Directional,
+                .direction = Vector3{-0.4f, -0.8f, -0.45f}.normalized(),
+                .color = Color4{1.0f, 0.97f, 0.92f, 1.0f},
+                .intensity = 1.0f,
+                .cast_shadows = true,
+            });
+
+            const auto ground_material = make_material("Ground", Vector4{0.32f, 0.33f, 0.36f, 1.0f}, 0.0f, 0.9f);
+            scene.create_entity("Ground")
+                .set<components::Transform>({
+                    .position = Vector3{0.0f, -1.0f, 0.0f},
+                    .scale = Vector3{20.0f, 1.0f, 20.0f},
+                })
+                .set<components::MeshRenderer>({
+                    .mesh = resources().plane_mesh(),
+                    .material = ground_material,
+                });
+
+            const auto cube_material = make_material("Cube", Vector4{0.2f, 0.5f, 1.0f, 1.0f}, 0.0f, 0.35f);
+            m_cube = scene.create_entity("Cube")
+                         .set<components::Transform>({})
+                         .set<components::MeshRenderer>({
+                             .mesh = resources().cube_mesh(),
+                             .material = cube_material,
+                         });
+        }
+
+        std::unique_ptr<rendering::Viewport> m_viewport;
+        scene::Entity m_cube;
+        f32 m_spin = 0.0f;
+    };
+
+    class BasicApp final : public application::Application {
+      public:
+        explicit BasicApp(const application::CommandLineArgs& args) : Application(args) {}
+
+      protected:
+        bool on_initialize() override {
+            if (!create_window<BasicWindow>()) {
+                STAR_LOG_ERROR(LogCategory::Application, "Failed to create sample window");
+                return false;
+            }
+            return true;
+        }
+    };
+} // namespace
+
+STAR_RUN_APPLICATION(BasicApp);

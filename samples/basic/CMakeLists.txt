@@ -23,11 +23,13 @@ target_include_directories(${SAMPLE_TARGET} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+target_precompile_headers(${SAMPLE_TARGET} PRIVATE "${INCLUDE_DIR}/star/core/common.hpp")
+
 target_link_libraries(${SAMPLE_TARGET} PRIVATE ${PROJECT_NAME})
 
 add_custom_command(TARGET ${SAMPLE_TARGET} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${PROJECT_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/assets" "${CMAKE_CURRENT_BINARY_DIR}/assets"
 )
 
 if (WIN32)

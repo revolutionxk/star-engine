@@ -125,29 +125,29 @@
     #include <dx11/v_simple.sc.bin.h>
 #endif
 #ifdef STAR_PLATFORM_MACOS
-    #include <mtl/f_atmosphere.sc.bin.h>
-    #include <mtl/f_debug.sc.bin.h>
-    #include <mtl/f_imgui.sc.bin.h>
-    #include <mtl/f_material.sc.bin.h>
-    #include <mtl/f_blur.sc.bin.h>
-    #include <mtl/f_brightpass.sc.bin.h>
-    #include <mtl/f_fxaa.sc.bin.h>
-    #include <mtl/f_ssao.sc.bin.h>
-    #include <mtl/f_ssaoblur.sc.bin.h>
-    #include <mtl/f_ssr.sc.bin.h>
-    #include <mtl/f_taa.sc.bin.h>
-    #include <mtl/f_pick.sc.bin.h>
-    #include <mtl/f_shadow.sc.bin.h>
-    #include <mtl/f_simple.sc.bin.h>
-    #include <mtl/f_tonemap.sc.bin.h>
-    #include <mtl/v_atmosphere.sc.bin.h>
-    #include <mtl/v_debug.sc.bin.h>
-    #include <mtl/v_imgui.sc.bin.h>
-    #include <mtl/v_material.sc.bin.h>
-    #include <mtl/v_fullscreen.sc.bin.h>
-    #include <mtl/v_pick.sc.bin.h>
-    #include <mtl/v_shadow.sc.bin.h>
-    #include <mtl/v_simple.sc.bin.h>
+    #include <metal/f_atmosphere.sc.bin.h>
+    #include <metal/f_debug.sc.bin.h>
+    #include <metal/f_imgui.sc.bin.h>
+    #include <metal/f_material.sc.bin.h>
+    #include <metal/f_blur.sc.bin.h>
+    #include <metal/f_brightpass.sc.bin.h>
+    #include <metal/f_fxaa.sc.bin.h>
+    #include <metal/f_ssao.sc.bin.h>
+    #include <metal/f_ssaoblur.sc.bin.h>
+    #include <metal/f_ssr.sc.bin.h>
+    #include <metal/f_taa.sc.bin.h>
+    #include <metal/f_pick.sc.bin.h>
+    #include <metal/f_shadow.sc.bin.h>
+    #include <metal/f_simple.sc.bin.h>
+    #include <metal/f_tonemap.sc.bin.h>
+    #include <metal/v_atmosphere.sc.bin.h>
+    #include <metal/v_debug.sc.bin.h>
+    #include <metal/v_imgui.sc.bin.h>
+    #include <metal/v_material.sc.bin.h>
+    #include <metal/v_fullscreen.sc.bin.h>
+    #include <metal/v_pick.sc.bin.h>
+    #include <metal/v_shadow.sc.bin.h>
+    #include <metal/v_simple.sc.bin.h>
 #endif
 
 namespace star::resources::detail {

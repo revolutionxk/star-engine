@@ -111,8 +111,8 @@ namespace star::graphics {
             return;
         }
 
-        const float width = draw_data->DisplaySize.x;
-        const float height = draw_data->DisplaySize.y;
+        const float width = draw_data->DisplaySize.x * draw_data->FramebufferScale.x;
+        const float height = draw_data->DisplaySize.y * draw_data->FramebufferScale.y;
 
         bgfx::setViewName(view_id, "ImGui");
         bgfx::setViewMode(view_id, bgfx::ViewMode::Sequential);

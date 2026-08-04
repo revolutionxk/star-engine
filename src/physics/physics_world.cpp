@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <thread>
+#include <type_traits>
 
 // clang-format off
 #include <Jolt/Jolt.h>

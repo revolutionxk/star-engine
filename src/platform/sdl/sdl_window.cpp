@@ -51,6 +51,16 @@ namespace star::platform::sdl {
             return false;
         }
 
+#ifdef STAR_PLATFORM_MACOS
+        m_metal_view = SDL_Metal_CreateView(m_window);
+        if (!m_metal_view) {
+            STAR_LOG_ERROR(LogCategory::Platform, "Failed to create SDL Metal view: {}", SDL_GetError());
+            SDL_DestroyWindow(m_window);
+            m_window = nullptr;
+            return false;
+        }
+#endif
+
         STAR_LOG_INFO(LogCategory::Platform, "SDL window created: {}x{}", config.video_mode.size.x,
                       config.video_mode.size.y);
 
@@ -61,6 +71,13 @@ namespace star::platform::sdl {
         if (!m_window) {
             return;
         }
+
+#ifdef STAR_PLATFORM_MACOS
+        if (m_metal_view) {
+            SDL_Metal_DestroyView(m_metal_view);
+            m_metal_view = nullptr;
+        }
+#endif
 
         SDL_DestroyWindow(m_window);
         m_window = nullptr;
@@ -157,6 +174,8 @@ namespace star::platform::sdl {
                 SDL_GetWindowProperties(m_window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
             return surface;
         }
+#elifdef STAR_PLATFORM_MACOS
+        return m_metal_view ? SDL_Metal_GetLayer(m_metal_view) : nullptr;
 #endif
         return nullptr;
     }
@@ -197,6 +216,8 @@ namespace star::platform::sdl {
         if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0) {
             return NativeWindowHandleType::Wayland;
         }
+#elif defined(STAR_PLATFORM_MACOS)
+        return NativeWindowHandleType::Cocoa;
 #endif
         return NativeWindowHandleType::Default;
     }
@@ -207,8 +228,17 @@ namespace star::platform::sdl {
         }
 
         i32 width, height;
-        SDL_GetWindowSize(m_window, &width, &height);
+        SDL_GetWindowSizeInPixels(m_window, &width, &height);
         return {static_cast<f32>(width), static_cast<f32>(height)};
+    }
+
+    f32 SDLWindow::pixel_density() const {
+        if (!m_window) {
+            return 1.0f;
+        }
+
+        const f32 density = SDL_GetWindowPixelDensity(m_window);
+        return density > 0.0f ? density : 1.0f;
     }
 
     void SDLWindow::set_title(const std::string& title) const {

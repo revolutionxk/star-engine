@@ -39,6 +39,8 @@ namespace star::rendering {
             return;
         }
 
+        apply_dpi_scale(window->pixel_density());
+
         if (m_renderer && !m_renderer->initialize()) {
             STAR_LOG_ERROR(LogCategory::Platform, "Failed to initialize ImGui renderer");
             if (m_platform_backend) {
@@ -126,6 +128,22 @@ namespace star::rendering {
         }
 
         return Super::reset(width, height);
+    }
+
+    void ImGuiRenderPass::apply_dpi_scale(const f32 density) {
+        ImGui::SetCurrentContext(m_context);
+
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.Fonts->Sources.empty()) {
+            io.Fonts->AddFontDefault();
+        }
+
+        for (ImFontConfig& source : io.Fonts->Sources) {
+            source.RasterizerDensity = density;
+        }
+
+        STAR_LOG_INFO(LogCategory::Platform, "ImGui font rasterizer density set to {} ({} sources)", density,
+                      io.Fonts->Sources.Size);
     }
 
     void ImGuiRenderPass::setup_style() {

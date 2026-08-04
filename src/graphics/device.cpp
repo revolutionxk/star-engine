@@ -7,7 +7,8 @@ namespace star::graphics {
         const auto api = config.api;
 #if defined(STAR_GRAPHICS_API_BGFX)
         if (api == GraphicsAPI::Auto || api == GraphicsAPI::BGFX) {
-            return std::make_shared<BGFXDevice>(config);
+            auto device = std::make_shared<BGFXDevice>(config);
+            return device->is_initialized() ? device : nullptr;
         }
 #else
     #error "No graphics API defined! Define STAR_GRAPHICS_API_BGFX in CMake."

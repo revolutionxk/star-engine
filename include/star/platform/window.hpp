@@ -34,6 +34,11 @@ namespace star::platform {
         virtual PlatformData platform_data() = 0;
 
         virtual Vector2 size() const = 0;
+
+        virtual f32 pixel_density() const {
+            return 1.0f;
+        }
+
         virtual void set_title(const std::string& title) const = 0;
         virtual void set_size(int width, int height) = 0;
 

@@ -1,6 +1,7 @@
 $input v_texcoord0
 
 #include <bgfx_shader.sh>
+#include "shaderlib.sh"
 
 SAMPLER2D(s_depth, 0);
 SAMPLER2D(s_gbuffer, 1);
@@ -23,7 +24,7 @@ float gtaoIGN(vec2 pix)
 
 vec3 gtaoViewPos(vec2 uv, float d)
 {
-    vec4 clip = vec4(uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0);
+    vec4 clip = vec4(uv * 2.0 - 1.0, toClipSpaceDepth(d), 1.0);
     vec4 view = mul(u_ssaoInvProj, clip);
     return view.xyz / view.w;
 }

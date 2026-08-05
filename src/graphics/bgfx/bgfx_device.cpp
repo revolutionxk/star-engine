@@ -69,7 +69,7 @@ namespace star::graphics {
         init.resolution.height = static_cast<u32>(size.y);
         init.debug = config.debug;
         init.profile = config.profile;
-        const u32 reset_flags = (config.vsync ? BGFX_RESET_VSYNC : 0u) | BGFX_RESET_MSAA_X4;
+        const u32 reset_flags = (config.vsync ? BGFX_RESET_VSYNC : 0u);
         init.resolution.reset = reset_flags;
 
         if (!bgfx::init(init)) {

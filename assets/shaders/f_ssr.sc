@@ -1,6 +1,7 @@
 $input v_texcoord0
 
 #include <bgfx_shader.sh>
+#include "shaderlib.sh"
 
 SAMPLER2D(s_hdr, 0);
 SAMPLER2D(s_depth, 1);
@@ -16,7 +17,7 @@ uniform vec4 u_ssrTexel;
 
 vec3 ssrViewPos(vec2 uvRaw, float d)
 {
-    vec4 clip = vec4(uvRaw * 2.0 - 1.0, d * 2.0 - 1.0, 1.0);
+    vec4 clip = vec4(uvRaw * 2.0 - 1.0, toClipSpaceDepth(d), 1.0);
     vec4 view = mul(u_ssrInvProj, clip);
     return view.xyz / view.w;
 }

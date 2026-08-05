@@ -46,7 +46,7 @@ float n4rand_ss(vec2 n)
 {
     float nrnd0 = nrand(n + 0.07 * fract(u_parameters.w));
     float nrnd1 = nrand(n + 0.11 * fract(u_parameters.w + 0.573953));
-    return 0.23 * sqrt(-log(nrnd0 + 0.00001)) * cos(6.283185 * nrnd1) + 0.5;
+    return 0.23 * sqrt(max(-log(clamp(nrnd0 + 0.00001, 0.00001, 1.0)), 0.0)) * cos(6.283185 * nrnd1) + 0.5;
 }
 
 void main()

@@ -1,6 +1,7 @@
 $input v_texcoord0
 
 #include <bgfx_shader.sh>
+#include "shaderlib.sh"
 
 SAMPLER2D(s_current, 0);
 SAMPLER2D(s_history, 1);
@@ -26,7 +27,7 @@ void main()
     vec2 velocity = texture2DLod(s_velocity, uvTex, 0.0).xy;
     vec2 prevRawMV = uvRaw - velocity;
 
-    vec4 clip = vec4(uvRaw * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    vec4 clip = vec4(uvRaw * 2.0 - 1.0, toClipSpaceDepth(depth), 1.0);
     vec4 world = mul(u_taaCurInvVP, clip);
     world /= world.w;
     vec4 pc = mul(u_taaPrevVP, world);

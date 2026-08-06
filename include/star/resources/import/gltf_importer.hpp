@@ -79,6 +79,7 @@ namespace star::resources {
 
     struct RawModel {
         std::string name;
+        std::filesystem::path source_path;
         std::vector<RawTexture> textures;
         std::vector<RawMaterial> materials;
         std::vector<RawMesh> meshes;

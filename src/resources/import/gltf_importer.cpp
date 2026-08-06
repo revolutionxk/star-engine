@@ -11,6 +11,7 @@
 #include "star/core/logger.hpp"
 #include "star/graphics/vertex.hpp"
 #include "star/resources/material/material.hpp"
+#include "star/resources/asset_meta.hpp"
 #include "star/resources/mesh/mesh.hpp"
 #include "star/resources/resource_manager.hpp"
 #include "star/resources/texture/texture.hpp"
@@ -252,6 +253,7 @@ namespace star::resources {
         const std::string base = path.filename().string();
         const std::filesystem::path dir = path.parent_path();
         model.name = base;
+        model.source_path = path;
 
         std::unordered_map<cgltf_size, i32> texture_cache;
         model.materials.reserve(data->materials_count);
@@ -389,7 +391,9 @@ namespace star::resources {
         model.name = raw.name;
         model.roots = raw.roots;
 
-        std::vector<ResourceHandle<Texture>> textures(raw.textures.size());
+        const UUID model_uuid = raw.source_path.empty() ? UUID::generate() : ensure_asset_uuid(raw.source_path);
+
+        std::vector<graphics::ResourceHandle<Texture>> textures(raw.textures.size());
         for (std::size_t i = 0; i < raw.textures.size(); ++i) {
             const RawTexture& raw_texture = raw.textures[i];
             if (const auto existing = resources.texture_by_name(raw_texture.name); existing.is_valid()) {
@@ -403,15 +407,16 @@ namespace star::resources {
             texture->desc.format = TextureFormat::RGBA8;
             texture->desc.generate_mipmaps = false;
             texture->data = raw_texture.pixels;
-            textures[i] = resources.create_texture(raw_texture.name, std::move(texture));
+            textures[i] = resources.create_texture(raw_texture.name, std::move(texture),
+                                                   UUID::derive(model_uuid, raw_texture.name));
         }
 
-        const auto resolve_texture = [&](const i32 index) -> ResourceHandle<Texture> {
+        const auto resolve_texture = [&](const i32 index) -> graphics::ResourceHandle<Texture> {
             return index >= 0 && static_cast<std::size_t>(index) < textures.size() ? textures[index]
-                                                                                  : ResourceHandle<Texture>{};
+                                                                                  : graphics::ResourceHandle<Texture>{};
         };
 
-        std::vector<ResourceHandle<Material>> materials(raw.materials.size());
+        std::vector<graphics::ResourceHandle<Material>> materials(raw.materials.size());
         for (std::size_t i = 0; i < raw.materials.size(); ++i) {
             const RawMaterial& raw_material = raw.materials[i];
             if (const auto existing = resources.material_by_name(raw_material.name); existing.is_valid()) {
@@ -429,10 +434,11 @@ namespace star::resources {
             material->normal_texture = resolve_texture(raw_material.normal_texture);
             material->metallic_roughness_texture = resolve_texture(raw_material.metallic_roughness_texture);
             material->emissive_texture = resolve_texture(raw_material.emissive_texture);
-            materials[i] = resources.create_material(raw_material.name, std::move(material));
+            materials[i] = resources.create_material(raw_material.name, std::move(material),
+                                                     UUID::derive(model_uuid, raw_material.name));
         }
 
-        std::vector<ResourceHandle<Mesh>> meshes(raw.meshes.size());
+        std::vector<graphics::ResourceHandle<Mesh>> meshes(raw.meshes.size());
         for (std::size_t i = 0; i < raw.meshes.size(); ++i) {
             const RawMesh& raw_mesh = raw.meshes[i];
             if (const auto existing = resources.mesh_by_name(raw_mesh.name); existing.is_valid()) {
@@ -443,7 +449,8 @@ namespace star::resources {
             auto mesh = std::make_unique<Mesh>();
             mesh->vertices = raw_mesh.vertices;
             mesh->indices = raw_mesh.indices;
-            meshes[i] = resources.create_mesh(raw_mesh.name, std::move(mesh));
+            meshes[i] = resources.create_mesh(raw_mesh.name, std::move(mesh),
+                                              UUID::derive(model_uuid, raw_mesh.name));
         }
 
         model.nodes.resize(raw.nodes.size());

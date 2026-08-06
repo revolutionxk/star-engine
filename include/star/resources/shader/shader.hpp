@@ -4,10 +4,8 @@
 #include "star/resources/resource.hpp"
 
 namespace star::resources {
-    using namespace star::graphics;
-
     struct Shader : Resource {
-        ResourceHandle<graphics::Shader> handle{};
+        graphics::ResourceHandle<graphics::Shader> handle{};
 
         std::string disk_vertex_path;
         std::string disk_fragment_path;

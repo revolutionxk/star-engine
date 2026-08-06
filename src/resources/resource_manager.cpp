@@ -11,6 +11,7 @@
 #include "star/graphics/mesh.hpp"
 #include "star/graphics/texture.hpp"
 #include "star/resources/material_asset.hpp"
+#include "star/resources/asset_meta.hpp"
 #include "star/resources/resource_resolver.hpp"
 #include "star/resources/shader/shader.hpp"
 #include "star/utils/file_utils.hpp"
@@ -18,7 +19,7 @@
 namespace star::resources {
     namespace detail {
         template<typename T>
-        std::string name_of(const ResourceStorage<T>& storage, const ResourceHandle<T>& handle) {
+        std::string name_of(const ResourceStorage<T>& storage, const graphics::ResourceHandle<T>& handle) {
             if (!handle.is_valid())
                 return {};
             const auto it = storage.resources.find(handle.id);
@@ -26,17 +27,17 @@ namespace star::resources {
         }
 
         template<typename T>
-        ResourceHandle<T> handle_of(const ResourceStorage<T>& storage, const std::string& name) {
+        graphics::ResourceHandle<T> handle_of(const ResourceStorage<T>& storage, const std::string& name) {
             const auto it = storage.path_to_id.find(name);
             if (it == storage.path_to_id.end())
                 return {};
             const auto entry = storage.resources.find(it->second);
             const u32 generation = entry != storage.resources.end() ? entry->second.generation : 1;
-            return ResourceHandle<T>{it->second, generation};
+            return graphics::ResourceHandle<T>{it->second, generation};
         }
     } // namespace detail
 
-    ResourceManager::ResourceManager(Device& device) : m_device(device) {
+    ResourceManager::ResourceManager(graphics::Device& device) : m_device(device) {
         STAR_LOG_INFO(LogCategory::Resources, "Initializing ResourceManager");
 
         ResourceResolver::bind(this);
@@ -51,54 +52,78 @@ namespace star::resources {
         }
     }
 
-    std::string ResourceManager::mesh_name(const ResourceHandle<Mesh>& handle) const {
+    std::string ResourceManager::mesh_name(const graphics::ResourceHandle<Mesh>& handle) const {
         return detail::name_of(m_meshes, handle);
     }
 
-    ResourceHandle<Mesh> ResourceManager::mesh_by_name(const std::string& name) const {
+    graphics::ResourceHandle<Mesh> ResourceManager::mesh_by_name(const std::string& name) const {
         return detail::handle_of(m_meshes, name);
     }
 
-    std::string ResourceManager::texture_name(const ResourceHandle<Texture>& handle) const {
+    std::string ResourceManager::texture_name(const graphics::ResourceHandle<Texture>& handle) const {
         return detail::name_of(m_textures, handle);
     }
 
-    ResourceHandle<Texture> ResourceManager::texture_by_name(const std::string& name) const {
+    graphics::ResourceHandle<Texture> ResourceManager::texture_by_name(const std::string& name) const {
         return detail::handle_of(m_textures, name);
     }
 
-    std::string ResourceManager::material_name(const ResourceHandle<Material>& handle) const {
+    std::string ResourceManager::material_name(const graphics::ResourceHandle<Material>& handle) const {
         return detail::name_of(m_materials, handle);
     }
 
-    ResourceHandle<Material> ResourceManager::material_by_name(const std::string& name) const {
+    graphics::ResourceHandle<Material> ResourceManager::material_by_name(const std::string& name) const {
         return detail::handle_of(m_materials, name);
     }
 
-    std::string ResourceManager::shader_name(const ResourceHandle<graphics::Shader>& handle) const {
+    std::string ResourceManager::shader_name(const graphics::ResourceHandle<graphics::Shader>& handle) const {
         if (!handle.is_valid())
             return {};
         const auto it = m_shaders.resources.find(handle.id);
         return it != m_shaders.resources.end() ? it->second.name : std::string{};
     }
 
-    ResourceHandle<graphics::Shader> ResourceManager::shader_by_name(const std::string& name) const {
+    UUID ResourceManager::mesh_uuid(const graphics::ResourceHandle<Mesh>& handle) const {
+        return handle.is_valid() ? m_meshes.uuid_of(handle.id) : UUID{};
+    }
+
+    UUID ResourceManager::texture_uuid(const graphics::ResourceHandle<Texture>& handle) const {
+        return handle.is_valid() ? m_textures.uuid_of(handle.id) : UUID{};
+    }
+
+    UUID ResourceManager::material_uuid(const graphics::ResourceHandle<Material>& handle) const {
+        return handle.is_valid() ? m_materials.uuid_of(handle.id) : UUID{};
+    }
+
+    graphics::ResourceHandle<Mesh> ResourceManager::mesh_by_uuid(const UUID& uuid) const {
+        return m_meshes.by_uuid(uuid);
+    }
+
+    graphics::ResourceHandle<Texture> ResourceManager::texture_by_uuid(const UUID& uuid) const {
+        return m_textures.by_uuid(uuid);
+    }
+
+    graphics::ResourceHandle<Material> ResourceManager::material_by_uuid(const UUID& uuid) const {
+        return m_materials.by_uuid(uuid);
+    }
+
+    graphics::ResourceHandle<graphics::Shader> ResourceManager::shader_by_name(const std::string& name) const {
         const auto it = m_shaders.path_to_id.find(name);
         if (it == m_shaders.path_to_id.end())
             return {};
         const auto entry = m_shaders.resources.find(it->second);
         const u32 generation = entry != m_shaders.resources.end() ? entry->second.generation : 1;
-        return ResourceHandle<graphics::Shader>{it->second, generation};
+        return graphics::ResourceHandle<graphics::Shader>{it->second, generation};
     }
 
     void ResourceManager::set_asset_root(std::filesystem::path root) {
         m_asset_root = std::move(root);
     }
 
-    ResourceHandle<Material> ResourceManager::load_material(const std::string& relative_path) {
+    graphics::ResourceHandle<Material> ResourceManager::load_material(const std::string& relative_path) {
         if (const auto it = m_materials.path_to_id.find(relative_path); it != m_materials.path_to_id.end()) {
             const auto& entry = m_materials.resources[it->second];
-            return ResourceHandle<Material>{it->second, entry.generation};
+            return graphics::ResourceHandle<Material>{it->second, entry.generation};
         }
 
         const std::filesystem::path full =
@@ -120,10 +145,10 @@ namespace star::resources {
 
         auto material = std::make_unique<Material>();
         material_from_json(document, *material, *this);
-        return create_material(relative_path, std::move(material));
+        return create_material(relative_path, std::move(material), ensure_asset_uuid(full));
     }
 
-    ResourceHandle<Material> ResourceManager::get_or_load_material(const std::string& name) {
+    graphics::ResourceHandle<Material> ResourceManager::get_or_load_material(const std::string& name) {
         if (name.empty())
             return {};
         if (const auto handle = material_by_name(name); handle.is_valid())
@@ -131,7 +156,7 @@ namespace star::resources {
         return load_material(name);
     }
 
-    bool ResourceManager::save_material(const ResourceHandle<Material>& handle, const std::string& relative_path) {
+    bool ResourceManager::save_material(const graphics::ResourceHandle<Material>& handle, const std::string& relative_path) {
         const auto* material = get_material(handle);
         if (!material)
             return false;
@@ -152,19 +177,8 @@ namespace star::resources {
         return true;
     }
 
-    ResourceHandle<Mesh> ResourceManager::load_mesh(const std::string& path) {
-        if (const auto it = m_meshes.path_to_id.find(path); it != m_meshes.path_to_id.end()) {
-            const auto& entry = m_meshes.resources[it->second];
-            return ResourceHandle<Mesh>{it->second, entry.generation};
-        }
-
-        // TODO: Load mesh from file
-        STAR_ASSERT(false, "Mesh loading from file not yet implemented: {}", path);
-
-        return {};
-    }
-
-    ResourceHandle<Mesh> ResourceManager::create_mesh(const std::string& name, std::unique_ptr<Mesh> mesh) {
+    graphics::ResourceHandle<Mesh> ResourceManager::create_mesh(const std::string& name, std::unique_ptr<Mesh> mesh,
+                                                          UUID uuid) {
         if (!mesh) {
             STAR_LOG_ERROR(LogCategory::Resources, "Cannot create mesh with null pointer");
             return {};
@@ -173,7 +187,7 @@ namespace star::resources {
         if (const auto it = m_meshes.path_to_id.find(name); it != m_meshes.path_to_id.end()) {
             STAR_LOG_WARN(LogCategory::Resources, "Mesh '{}' already exists", name);
             const auto& entry = m_meshes.resources[it->second];
-            return ResourceHandle<Mesh>{it->second, entry.generation};
+            return graphics::ResourceHandle<Mesh>{it->second, entry.generation};
         }
 
         upload_mesh_to_gpu(*mesh);
@@ -184,14 +198,19 @@ namespace star::resources {
         mesh->m_state = ResourceState::Loaded;
         mesh->m_generation = generation;
 
-        m_meshes.resources[id] = {std::move(mesh), name, generation, 1};
+        if (!uuid.is_valid()) {
+            uuid = UUID::generate();
+        }
+
+        m_meshes.resources[id] = {std::move(mesh), name, uuid, generation, 1};
         m_meshes.path_to_id[name] = id;
+        m_meshes.uuid_to_id[uuid] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Created mesh '{}' (id: {})", name, id);
-        return ResourceHandle<Mesh>{id, generation};
+        return graphics::ResourceHandle<Mesh>{id, generation};
     }
 
-    Mesh* ResourceManager::get_mesh(const ResourceHandle<Mesh>& handle) {
+    Mesh* ResourceManager::get_mesh(const graphics::ResourceHandle<Mesh>& handle) {
         if (!handle.is_valid()) {
             return nullptr;
         }
@@ -204,7 +223,7 @@ namespace star::resources {
         return it->second.resource.get();
     }
 
-    void ResourceManager::destroy_mesh(const ResourceHandle<Mesh>& handle) {
+    void ResourceManager::destroy_mesh(const graphics::ResourceHandle<Mesh>& handle) {
         if (!handle.is_valid()) {
             return;
         }
@@ -229,10 +248,10 @@ namespace star::resources {
         STAR_LOG_DEBUG(LogCategory::Resources, "Destroyed mesh (id: {})", handle.id);
     }
 
-    ResourceHandle<Texture> ResourceManager::load_texture(const std::string& path) {
+    graphics::ResourceHandle<Texture> ResourceManager::load_texture(const std::string& path) {
         if (const auto it = m_textures.path_to_id.find(path); it != m_textures.path_to_id.end()) {
             const auto& entry = m_textures.resources[it->second];
-            return ResourceHandle<Texture>{it->second, entry.generation};
+            return graphics::ResourceHandle<Texture>{it->second, entry.generation};
         }
 
         const std::filesystem::path full = m_asset_root.empty() ? std::filesystem::path{path} : m_asset_root / path;
@@ -255,10 +274,10 @@ namespace star::resources {
         texture->data.assign(pixels, pixels + static_cast<size_t>(width) * height * 4);
         stbi_image_free(pixels);
 
-        return create_texture(path, std::move(texture));
+        return create_texture(path, std::move(texture), ensure_asset_uuid(full));
     }
 
-    ResourceHandle<Texture> ResourceManager::load_environment(const std::string& path) {
+    graphics::ResourceHandle<Texture> ResourceManager::load_environment(const std::string& path) {
         const std::string key = "__env:" + path;
         if (const auto existing = texture_by_name(key); existing.is_valid())
             return existing;
@@ -343,7 +362,7 @@ namespace star::resources {
         return create_texture(key, std::move(tex));
     }
 
-    ResourceHandle<Texture> ResourceManager::get_or_load_texture(const std::string& name) {
+    graphics::ResourceHandle<Texture> ResourceManager::get_or_load_texture(const std::string& name) {
         if (name.empty())
             return {};
         if (const auto handle = texture_by_name(name); handle.is_valid())
@@ -351,7 +370,8 @@ namespace star::resources {
         return load_texture(name);
     }
 
-    ResourceHandle<Texture> ResourceManager::create_texture(const std::string& name, std::unique_ptr<Texture> texture) {
+    graphics::ResourceHandle<Texture> ResourceManager::create_texture(const std::string& name, std::unique_ptr<Texture> texture,
+                                                          UUID uuid) {
         if (!texture) {
             STAR_LOG_ERROR(LogCategory::Resources, "Cannot create texture with null pointer");
             return {};
@@ -360,7 +380,7 @@ namespace star::resources {
         if (const auto it = m_textures.path_to_id.find(name); it != m_textures.path_to_id.end()) {
             STAR_LOG_WARN(LogCategory::Resources, "Texture '{}' already exists", name);
             const auto& entry = m_textures.resources[it->second];
-            return ResourceHandle<Texture>{it->second, entry.generation};
+            return graphics::ResourceHandle<Texture>{it->second, entry.generation};
         }
 
         if (!texture->handle.is_valid())
@@ -372,14 +392,19 @@ namespace star::resources {
         texture->m_state = ResourceState::Loaded;
         texture->m_generation = generation;
 
-        m_textures.resources[id] = {std::move(texture), name, generation, 1};
+        if (!uuid.is_valid()) {
+            uuid = UUID::generate();
+        }
+
+        m_textures.resources[id] = {std::move(texture), name, uuid, generation, 1};
         m_textures.path_to_id[name] = id;
+        m_textures.uuid_to_id[uuid] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Created texture '{}' (id: {})", name, id);
-        return ResourceHandle<Texture>{id, generation};
+        return graphics::ResourceHandle<Texture>{id, generation};
     }
 
-    Texture* ResourceManager::get_texture(const ResourceHandle<Texture>& handle) {
+    Texture* ResourceManager::get_texture(const graphics::ResourceHandle<Texture>& handle) {
         if (!handle.is_valid()) {
             return nullptr;
         }
@@ -392,7 +417,7 @@ namespace star::resources {
         return it->second.resource.get();
     }
 
-    void ResourceManager::destroy_texture(const ResourceHandle<Texture>& handle) {
+    void ResourceManager::destroy_texture(const graphics::ResourceHandle<Texture>& handle) {
         if (!handle.is_valid()) {
             return;
         }
@@ -414,13 +439,13 @@ namespace star::resources {
         STAR_LOG_DEBUG(LogCategory::Resources, "Destroyed texture (id: {})", handle.id);
     }
 
-    ResourceHandle<graphics::Shader> ResourceManager::load_shader(const std::string& vertex_path,
+    graphics::ResourceHandle<graphics::Shader> ResourceManager::load_shader(const std::string& vertex_path,
                                                                   const std::string& fragment_path) {
         const std::string shader_name = vertex_path + "+" + fragment_path;
 
         if (const auto it = m_shaders.path_to_id.find(shader_name); it != m_shaders.path_to_id.end()) {
             const auto& entry = m_shaders.resources[it->second];
-            return ResourceHandle<graphics::Shader>{it->second, entry.generation};
+            return graphics::ResourceHandle<graphics::Shader>{it->second, entry.generation};
         }
 
         std::string shader_dir = "glsl";
@@ -444,10 +469,10 @@ namespace star::resources {
             return {};
         }
 
-        ShaderDescriptor desc;
+        graphics::ShaderDescriptor desc;
         desc.name = shader_name;
-        desc.stages = {{ShaderDescriptor::Stage::Vertex, std::move(vs_bytecode), "main"},
-                       {ShaderDescriptor::Stage::Fragment, std::move(fs_bytecode), "main"}};
+        desc.stages = {{graphics::ShaderDescriptor::Stage::Vertex, std::move(vs_bytecode), "main"},
+                       {graphics::ShaderDescriptor::Stage::Fragment, std::move(fs_bytecode), "main"}};
 
         const auto gpu_handle = m_device.create_shader(desc);
         if (!gpu_handle.is_valid()) {
@@ -465,18 +490,18 @@ namespace star::resources {
         const u32 id = m_shaders.allocate_id();
         const u32 generation = m_shaders.generation_of(id);
         shader->m_generation = generation;
-        m_shaders.resources[id] = {std::move(shader), shader_name, generation, 1};
+        m_shaders.resources[id] = {std::move(shader), shader_name, UUID::generate(), generation, 1};
         m_shaders.path_to_id[shader_name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Loaded shader '{}' (id: {})", shader_name, id);
-        return ResourceHandle<graphics::Shader>{id, generation};
+        return graphics::ResourceHandle<graphics::Shader>{id, generation};
     }
 
-    ResourceHandle<graphics::Shader> ResourceManager::register_builtin_shader(const std::string& name,
+    graphics::ResourceHandle<graphics::Shader> ResourceManager::register_builtin_shader(const std::string& name,
                                                                               const BuiltinShader builtin) {
         if (const auto it = m_shaders.path_to_id.find(name); it != m_shaders.path_to_id.end()) {
             const auto& entry = m_shaders.resources[it->second];
-            return ResourceHandle<graphics::Shader>{it->second, entry.generation};
+            return graphics::ResourceHandle<graphics::Shader>{it->second, entry.generation};
         }
 
         const auto gpu_handle = detail::create_embedded_program(builtin, name);
@@ -493,14 +518,14 @@ namespace star::resources {
         const u32 id = m_shaders.allocate_id();
         const u32 generation = m_shaders.generation_of(id);
         shader->m_generation = generation;
-        m_shaders.resources[id] = {std::move(shader), name, generation, 1};
+        m_shaders.resources[id] = {std::move(shader), name, UUID::generate(), generation, 1};
         m_shaders.path_to_id[name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Registered builtin shader '{}' (id: {})", name, id);
-        return ResourceHandle<graphics::Shader>{id, generation};
+        return graphics::ResourceHandle<graphics::Shader>{id, generation};
     }
 
-    Shader* ResourceManager::get_shader(const ResourceHandle<graphics::Shader>& handle) {
+    Shader* ResourceManager::get_shader(const graphics::ResourceHandle<graphics::Shader>& handle) {
         if (!handle.is_valid()) {
             return nullptr;
         }
@@ -513,7 +538,7 @@ namespace star::resources {
         return it->second.resource.get();
     }
 
-    bool ResourceManager::reload_shader_from_disk(const ResourceHandle<graphics::Shader>& handle) {
+    bool ResourceManager::reload_shader_from_disk(const graphics::ResourceHandle<graphics::Shader>& handle) {
         Shader* shader = get_shader(handle);
         if (!shader) {
             STAR_LOG_WARN(LogCategory::Resources, "reload_shader_from_disk: invalid handle");
@@ -535,10 +560,10 @@ namespace star::resources {
             return false;
         }
 
-        ShaderDescriptor desc;
+        graphics::ShaderDescriptor desc;
         desc.name = shader->m_path;
-        desc.stages = {{ShaderDescriptor::Stage::Vertex, std::move(vs_bytecode), "main"},
-                       {ShaderDescriptor::Stage::Fragment, std::move(fs_bytecode), "main"}};
+        desc.stages = {{graphics::ShaderDescriptor::Stage::Vertex, std::move(vs_bytecode), "main"},
+                       {graphics::ShaderDescriptor::Stage::Fragment, std::move(fs_bytecode), "main"}};
 
         const auto new_gpu = m_device.reload_shader(shader->handle, desc);
         if (!new_gpu.is_valid()) {
@@ -552,8 +577,8 @@ namespace star::resources {
         return true;
     }
 
-    ResourceHandle<Material> ResourceManager::create_material(const std::string& name,
-                                                              std::unique_ptr<Material> material) {
+    graphics::ResourceHandle<Material> ResourceManager::create_material(const std::string& name,
+                                                              std::unique_ptr<Material> material, UUID uuid) {
         if (!material) {
             STAR_LOG_ERROR(LogCategory::Resources, "Cannot create material with null pointer");
             return {};
@@ -562,7 +587,7 @@ namespace star::resources {
         if (const auto it = m_materials.path_to_id.find(name); it != m_materials.path_to_id.end()) {
             STAR_LOG_WARN(LogCategory::Resources, "Material '{}' already exists", name);
             const auto& entry = m_materials.resources[it->second];
-            return ResourceHandle<Material>{it->second, entry.generation};
+            return graphics::ResourceHandle<Material>{it->second, entry.generation};
         }
 
         const u32 id = m_materials.allocate_id();
@@ -571,14 +596,19 @@ namespace star::resources {
         material->m_state = ResourceState::Loaded;
         material->m_generation = generation;
 
-        m_materials.resources[id] = {std::move(material), name, generation, 1};
+        if (!uuid.is_valid()) {
+            uuid = UUID::generate();
+        }
+
+        m_materials.resources[id] = {std::move(material), name, uuid, generation, 1};
         m_materials.path_to_id[name] = id;
+        m_materials.uuid_to_id[uuid] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Created material '{}' (id: {})", name, id);
-        return ResourceHandle<Material>{id, generation};
+        return graphics::ResourceHandle<Material>{id, generation};
     }
 
-    Material* ResourceManager::get_material(const ResourceHandle<Material>& handle) {
+    Material* ResourceManager::get_material(const graphics::ResourceHandle<Material>& handle) {
         if (!handle.is_valid()) {
             return nullptr;
         }
@@ -591,7 +621,7 @@ namespace star::resources {
         return it->second.resource.get();
     }
 
-    void ResourceManager::destroy_material(const ResourceHandle<Material>& handle) {
+    void ResourceManager::destroy_material(const graphics::ResourceHandle<Material>& handle) {
         if (!handle.is_valid()) {
             return;
         }
@@ -622,6 +652,7 @@ namespace star::resources {
         m_meshes.resources.clear();
         m_meshes.path_to_id.clear();
         m_meshes.free_slots.clear();
+        m_meshes.uuid_to_id.clear();
 
         for (const auto& entry : m_textures.resources | std::views::values) {
             if (entry.resource->handle.is_valid()) {
@@ -631,6 +662,7 @@ namespace star::resources {
         m_textures.resources.clear();
         m_textures.path_to_id.clear();
         m_textures.free_slots.clear();
+        m_textures.uuid_to_id.clear();
 
         for (const auto& entry : m_shaders.resources | std::views::values) {
             if (entry.resource->handle.is_valid()) {
@@ -640,10 +672,12 @@ namespace star::resources {
         m_shaders.resources.clear();
         m_shaders.path_to_id.clear();
         m_shaders.free_slots.clear();
+        m_shaders.uuid_to_id.clear();
 
         m_materials.resources.clear();
         m_materials.path_to_id.clear();
         m_materials.free_slots.clear();
+        m_materials.uuid_to_id.clear();
     }
 
     void ResourceManager::garbage_collect() {
@@ -651,13 +685,13 @@ namespace star::resources {
     }
 
     void ResourceManager::upload_mesh_to_gpu(Mesh& mesh) const {
-        BufferDescriptor vertex_buffer_desc;
-        vertex_buffer_desc.size_in_bytes = mesh.vertices.size() * sizeof(Vertex);
-        vertex_buffer_desc.bind_flags = static_cast<u32>(BufferDescriptor::BindFlags::VertexBuffer);
-        vertex_buffer_desc.usage = BufferDescriptor::Usage::Static;
-        vertex_buffer_desc.type = BufferDescriptor::Type::Vertex;
+        graphics::BufferDescriptor vertex_buffer_desc;
+        vertex_buffer_desc.size_in_bytes = mesh.vertices.size() * sizeof(graphics::Vertex);
+        vertex_buffer_desc.bind_flags = static_cast<u32>(graphics::BufferDescriptor::BindFlags::VertexBuffer);
+        vertex_buffer_desc.usage = graphics::BufferDescriptor::Usage::Static;
+        vertex_buffer_desc.type = graphics::BufferDescriptor::Type::Vertex;
         vertex_buffer_desc.initial_data = mesh.vertices.data();
-        vertex_buffer_desc.stride = sizeof(Vertex);
+        vertex_buffer_desc.stride = sizeof(graphics::Vertex);
 
         mesh.vertex_buffer = m_device.create_buffer(vertex_buffer_desc);
 
@@ -666,11 +700,11 @@ namespace star::resources {
             return;
         }
 
-        BufferDescriptor index_buffer_desc;
+        graphics::BufferDescriptor index_buffer_desc;
         index_buffer_desc.size_in_bytes = mesh.indices.size() * sizeof(u32);
-        index_buffer_desc.bind_flags = static_cast<u32>(BufferDescriptor::BindFlags::IndexBuffer);
-        index_buffer_desc.usage = BufferDescriptor::Usage::Static;
-        index_buffer_desc.type = BufferDescriptor::Type::Index32;
+        index_buffer_desc.bind_flags = static_cast<u32>(graphics::BufferDescriptor::BindFlags::IndexBuffer);
+        index_buffer_desc.usage = graphics::BufferDescriptor::Usage::Static;
+        index_buffer_desc.type = graphics::BufferDescriptor::Type::Index32;
         index_buffer_desc.initial_data = mesh.indices.data();
 
         mesh.index_buffer = m_device.create_buffer(index_buffer_desc);
@@ -678,7 +712,7 @@ namespace star::resources {
         if (!mesh.index_buffer.is_valid()) {
             STAR_LOG_ERROR(LogCategory::Resources, "Failed to create index buffer for mesh");
             m_device.destroy_buffer(mesh.vertex_buffer);
-            mesh.vertex_buffer = ResourceHandle<Buffer>{0, 0};
+            mesh.vertex_buffer = graphics::ResourceHandle<graphics::Buffer>{0, 0};
             return;
         }
 

@@ -7,8 +7,6 @@ namespace star::graphics {
 } // namespace star::graphics
 
 namespace star::resources {
-    using namespace star::graphics;
-
     enum class TextureFormat {
         R8,
         RG8,
@@ -41,7 +39,7 @@ namespace star::resources {
 
     struct Texture : Resource {
         std::vector<u8> data{};
-        ResourceHandle<graphics::Texture> handle{};
+        graphics::ResourceHandle<graphics::Texture> handle{};
         TextureDescriptor desc{};
 
         u32 mipmap_count() const {

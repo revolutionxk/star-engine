@@ -12,11 +12,15 @@ TEST_CASE("ResourceStorage recycles ids with a bumped generation", "[resources][
 
     const u32 id = storage.allocate_id();
     const u32 gen = storage.generation_of(id);
-    storage.resources[id] = {std::make_unique<int>(42), "answer", gen, 1};
+    const UUID uuid = UUID::generate();
+    storage.resources[id] = {std::make_unique<int>(42), "answer", uuid, gen, 1};
+    storage.uuid_to_id[uuid] = id;
     REQUIRE(gen == 1);
     REQUIRE(storage.resources[id].name == "answer");
+    REQUIRE(storage.by_uuid(uuid).id == id);
 
     storage.resources.erase(id);
+    storage.uuid_to_id.erase(uuid);
     storage.release_id(id);
 
     const u32 recycled = storage.allocate_id();

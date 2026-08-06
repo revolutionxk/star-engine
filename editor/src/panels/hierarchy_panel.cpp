@@ -1,5 +1,7 @@
 #include "hierarchy_panel.hpp"
 
+#include "../core/file_dialog.hpp"
+
 #include <imgui.h>
 
 #include "../core/icon_registry.hpp"
@@ -152,13 +154,7 @@ namespace star::editor {
     void HierarchyPanel::import_gltf_model() const {
         if (!m_editor_window)
             return;
-        auto* scene = m_editor_window->scene_manager().get_active_scene();
-        if (!scene)
-            return;
-        const auto path = open_model_file_dialog();
-        if (path.empty())
-            return;
-        import_gltf_into_scene(*scene, m_editor_window->resources(), path);
+        m_editor_window->open_file_dialog(FileRequest::Model);
     }
 
     void HierarchyPanel::on_entity_selected(flecs::entity& entity) {

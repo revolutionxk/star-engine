@@ -112,10 +112,8 @@ namespace star::ecs {
 
 #define STAR_REGISTER_COMPONENT(T, ...)                                                                                \
     namespace star::reflection::detail {                                                                               \
-        namespace {                                                                                                    \
-            [[maybe_unused]] const bool STAR_META_CONCAT(_comp_, __COUNTER__) = [] {                                   \
-                ::star::ecs::register_component<T>(__VA_ARGS__);                                                       \
-                return true;                                                                                           \
-            }();                                                                                                       \
-        }                                                                                                              \
+        [[maybe_unused]] static const bool STAR_META_CONCAT(_comp_, __COUNTER__) = [] {                                \
+            ::star::ecs::register_component<T>(__VA_ARGS__);                                                           \
+            return true;                                                                                               \
+        }();                                                                                                           \
     }

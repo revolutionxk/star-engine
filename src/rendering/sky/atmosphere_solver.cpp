@@ -4,7 +4,7 @@
 #include "star/rendering/render_scene.hpp"
 
 namespace star::rendering {
-    namespace {
+    namespace detail {
         constexpr float ABCDE[5][3] = {
             {-0.2592f, -0.2608f, -1.4630f}, {0.0008f, 0.0092f, 0.4275f}, {0.2125f, 0.2102f, 5.3251f},
             {-0.8989f, -1.6537f, -2.5771f}, {0.0452f, 0.0529f, 0.3703f},
@@ -78,7 +78,7 @@ namespace star::rendering {
                 out[i][3] = 0.0f;
             }
         }
-    } // namespace
+    } // namespace detail
 
     AtmosphereSolution solve_atmosphere(const AtmosphereSnapshot& snapshot, const f32 elapsed_time) {
         AtmosphereSolution out;
@@ -93,11 +93,11 @@ namespace star::rendering {
 
         const float hour = 12.0f + se / (3.14159265f * 0.5f) * 6.0f;
 
-        const auto sky_xyz = sample_table(SKY_LUM_XYZ_TABLE, hour);
-        const auto sun_xyz = sample_table(SUN_LUM_XYZ_TABLE, hour);
+        const auto sky_xyz = detail::sample_table(detail::SKY_LUM_XYZ_TABLE, hour);
+        const auto sun_xyz = detail::sample_table(detail::SUN_LUM_XYZ_TABLE, hour);
 
-        const Vector3 sky_rgb_raw = xyz_to_rgb(sky_xyz[0], sky_xyz[1], sky_xyz[2]);
-        const Vector3 sun_rgb_raw = xyz_to_rgb(sun_xyz[0], sun_xyz[1], sun_xyz[2]);
+        const Vector3 sky_rgb_raw = detail::xyz_to_rgb(sky_xyz[0], sky_xyz[1], sky_xyz[2]);
+        const Vector3 sun_rgb_raw = detail::xyz_to_rgb(sun_xyz[0], sun_xyz[1], sun_xyz[2]);
 
         const auto normalize_color = [](const Vector3& c, const float target_peak) {
             const float m = std::max(std::max(c.x, c.y), std::max(c.z, 1e-4f));
@@ -118,7 +118,7 @@ namespace star::rendering {
         out.sky_params.sun_size = 0.02f;
         out.sky_params.sun_bloom = 3.0f;
         out.sky_params.time = elapsed_time;
-        compute_perez_coeff(snapshot.turbidity, out.sky_params.perez_coeff);
+        detail::compute_perez_coeff(snapshot.turbidity, out.sky_params.perez_coeff);
 
         out.lighting.valid = true;
         out.lighting.sun_direction = sun_dir;

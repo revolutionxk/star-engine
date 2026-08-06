@@ -5,7 +5,7 @@
 #include "star/resources/resource_manager.hpp"
 
 namespace star::resources {
-    namespace {
+    namespace detail {
         constexpr const char* MATERIAL_KEY = "star_material";
 
         nlohmann::json to_json(const Vector4& v) {
@@ -21,13 +21,13 @@ namespace star::resources {
             }
             return fallback;
         }
-    } // namespace
+    } // namespace detail
 
     nlohmann::json material_to_json(const Material& material, const ResourceManager& resources) {
         nlohmann::json body;
         body["shader"] = resources.shader_name(material.shader);
-        body["albedo_color"] = to_json(material.albedo_color);
-        body["emissive_color"] = to_json(material.emissive_color);
+        body["albedo_color"] = detail::to_json(material.albedo_color);
+        body["emissive_color"] = detail::to_json(material.emissive_color);
         body["metallic"] = material.metallic;
         body["roughness"] = material.roughness;
         body["albedo_texture"] = resources.texture_name(material.albedo_texture);
@@ -36,20 +36,20 @@ namespace star::resources {
         body["emissive_texture"] = resources.texture_name(material.emissive_texture);
 
         nlohmann::json document;
-        document[MATERIAL_KEY] = std::move(body);
+        document[detail::MATERIAL_KEY] = std::move(body);
         return document;
     }
 
     void material_from_json(const nlohmann::json& document, Material& material, ResourceManager& resources) {
-        const nlohmann::json& body = document.contains(MATERIAL_KEY) ? document[MATERIAL_KEY] : document;
+        const nlohmann::json& body = document.contains(detail::MATERIAL_KEY) ? document[detail::MATERIAL_KEY] : document;
 
         const auto shader = resources.shader_by_name(body.value("shader", std::string{}));
         material.shader = shader.is_valid() ? shader : resources.default_shader();
 
         if (body.contains("albedo_color"))
-            material.albedo_color = vec4_or(body["albedo_color"], material.albedo_color);
+            material.albedo_color = detail::vec4_or(body["albedo_color"], material.albedo_color);
         if (body.contains("emissive_color"))
-            material.emissive_color = vec4_or(body["emissive_color"], material.emissive_color);
+            material.emissive_color = detail::vec4_or(body["emissive_color"], material.emissive_color);
         material.metallic = body.value("metallic", material.metallic);
         material.roughness = body.value("roughness", material.roughness);
 

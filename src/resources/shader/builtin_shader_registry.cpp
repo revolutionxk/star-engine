@@ -152,31 +152,29 @@
 
 namespace star::resources::detail {
 
-    namespace {
-        const bgfx::EmbeddedShader k_simple_vs = BGFX_EMBEDDED_SHADER(v_simple);
-        const bgfx::EmbeddedShader k_simple_fs = BGFX_EMBEDDED_SHADER(f_simple);
-        const bgfx::EmbeddedShader k_material_vs = BGFX_EMBEDDED_SHADER(v_material);
-        const bgfx::EmbeddedShader k_material_fs = BGFX_EMBEDDED_SHADER(f_material);
-        const bgfx::EmbeddedShader k_imgui_vs = BGFX_EMBEDDED_SHADER(v_imgui);
-        const bgfx::EmbeddedShader k_imgui_fs = BGFX_EMBEDDED_SHADER(f_imgui);
-        const bgfx::EmbeddedShader k_atmosphere_vs = BGFX_EMBEDDED_SHADER(v_atmosphere);
-        const bgfx::EmbeddedShader k_atmosphere_fs = BGFX_EMBEDDED_SHADER(f_atmosphere);
-        const bgfx::EmbeddedShader k_debug_vs = BGFX_EMBEDDED_SHADER(v_debug);
-        const bgfx::EmbeddedShader k_debug_fs = BGFX_EMBEDDED_SHADER(f_debug);
-        const bgfx::EmbeddedShader k_pick_vs = BGFX_EMBEDDED_SHADER(v_pick);
-        const bgfx::EmbeddedShader k_pick_fs = BGFX_EMBEDDED_SHADER(f_pick);
-        const bgfx::EmbeddedShader k_shadow_vs = BGFX_EMBEDDED_SHADER(v_shadow);
-        const bgfx::EmbeddedShader k_shadow_fs = BGFX_EMBEDDED_SHADER(f_shadow);
-        const bgfx::EmbeddedShader k_fullscreen_vs = BGFX_EMBEDDED_SHADER(v_fullscreen);
-        const bgfx::EmbeddedShader k_tonemap_fs = BGFX_EMBEDDED_SHADER(f_tonemap);
-        const bgfx::EmbeddedShader k_brightpass_fs = BGFX_EMBEDDED_SHADER(f_brightpass);
-        const bgfx::EmbeddedShader k_blur_fs = BGFX_EMBEDDED_SHADER(f_blur);
-        const bgfx::EmbeddedShader k_fxaa_fs = BGFX_EMBEDDED_SHADER(f_fxaa);
-        const bgfx::EmbeddedShader k_ssao_fs = BGFX_EMBEDDED_SHADER(f_ssao);
-        const bgfx::EmbeddedShader k_ssaoblur_fs = BGFX_EMBEDDED_SHADER(f_ssaoblur);
-        const bgfx::EmbeddedShader k_ssr_fs = BGFX_EMBEDDED_SHADER(f_ssr);
-        const bgfx::EmbeddedShader k_taa_fs = BGFX_EMBEDDED_SHADER(f_taa);
-    } // namespace
+    const bgfx::EmbeddedShader k_simple_vs = BGFX_EMBEDDED_SHADER(v_simple);
+    const bgfx::EmbeddedShader k_simple_fs = BGFX_EMBEDDED_SHADER(f_simple);
+    const bgfx::EmbeddedShader k_material_vs = BGFX_EMBEDDED_SHADER(v_material);
+    const bgfx::EmbeddedShader k_material_fs = BGFX_EMBEDDED_SHADER(f_material);
+    const bgfx::EmbeddedShader k_imgui_vs = BGFX_EMBEDDED_SHADER(v_imgui);
+    const bgfx::EmbeddedShader k_imgui_fs = BGFX_EMBEDDED_SHADER(f_imgui);
+    const bgfx::EmbeddedShader k_atmosphere_vs = BGFX_EMBEDDED_SHADER(v_atmosphere);
+    const bgfx::EmbeddedShader k_atmosphere_fs = BGFX_EMBEDDED_SHADER(f_atmosphere);
+    const bgfx::EmbeddedShader k_debug_vs = BGFX_EMBEDDED_SHADER(v_debug);
+    const bgfx::EmbeddedShader k_debug_fs = BGFX_EMBEDDED_SHADER(f_debug);
+    const bgfx::EmbeddedShader k_pick_vs = BGFX_EMBEDDED_SHADER(v_pick);
+    const bgfx::EmbeddedShader k_pick_fs = BGFX_EMBEDDED_SHADER(f_pick);
+    const bgfx::EmbeddedShader k_shadow_vs = BGFX_EMBEDDED_SHADER(v_shadow);
+    const bgfx::EmbeddedShader k_shadow_fs = BGFX_EMBEDDED_SHADER(f_shadow);
+    const bgfx::EmbeddedShader k_fullscreen_vs = BGFX_EMBEDDED_SHADER(v_fullscreen);
+    const bgfx::EmbeddedShader k_tonemap_fs = BGFX_EMBEDDED_SHADER(f_tonemap);
+    const bgfx::EmbeddedShader k_brightpass_fs = BGFX_EMBEDDED_SHADER(f_brightpass);
+    const bgfx::EmbeddedShader k_blur_fs = BGFX_EMBEDDED_SHADER(f_blur);
+    const bgfx::EmbeddedShader k_fxaa_fs = BGFX_EMBEDDED_SHADER(f_fxaa);
+    const bgfx::EmbeddedShader k_ssao_fs = BGFX_EMBEDDED_SHADER(f_ssao);
+    const bgfx::EmbeddedShader k_ssaoblur_fs = BGFX_EMBEDDED_SHADER(f_ssaoblur);
+    const bgfx::EmbeddedShader k_ssr_fs = BGFX_EMBEDDED_SHADER(f_ssr);
+    const bgfx::EmbeddedShader k_taa_fs = BGFX_EMBEDDED_SHADER(f_taa);
 
     EmbeddedShaderPair embedded_pair_for(const BuiltinShader id) noexcept {
         switch (id) {

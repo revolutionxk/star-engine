@@ -17,7 +17,7 @@
 
 using namespace star;
 
-namespace {
+namespace star::systems::detail {
     constexpr f32 MAX_SPOT_INNER_HALF_ANGLE_DEG = 89.0f;
     constexpr f32 MAX_SPOT_OUTER_HALF_ANGLE_DEG = 89.9f;
     constexpr f32 MIN_SPOT_ANGLE_GAP_DEG = 0.1f;
@@ -130,7 +130,7 @@ namespace {
         for (const auto& prop : params)
             upload_property(ctx, prop);
     }
-} // namespace
+} // namespace star::systems::detail
 
 namespace star::systems {
     RenderSystem::RenderSystem(graphics::Device& device, resources::ResourceManager& resource_manager)
@@ -226,12 +226,12 @@ namespace star::systems {
                     type_id = 2.0f;
                     {
                         const f32 inner_angle =
-                            std::clamp(light.inner_cone_angle_deg, 0.0f, MAX_SPOT_INNER_HALF_ANGLE_DEG);
+                            std::clamp(light.inner_cone_angle_deg, 0.0f, detail::MAX_SPOT_INNER_HALF_ANGLE_DEG);
                         const f32 outer_angle =
-                            std::clamp(std::max(light.outer_cone_angle_deg, inner_angle + MIN_SPOT_ANGLE_GAP_DEG),
-                                       inner_angle + MIN_SPOT_ANGLE_GAP_DEG, MAX_SPOT_OUTER_HALF_ANGLE_DEG);
-                        inner_cone_cos = spot_half_angle_cos(inner_angle);
-                        outer_cone_cos = spot_half_angle_cos(outer_angle);
+                            std::clamp(std::max(light.outer_cone_angle_deg, inner_angle + detail::MIN_SPOT_ANGLE_GAP_DEG),
+                                       inner_angle + detail::MIN_SPOT_ANGLE_GAP_DEG, detail::MAX_SPOT_OUTER_HALF_ANGLE_DEG);
+                        inner_cone_cos = detail::spot_half_angle_cos(inner_angle);
+                        outer_cone_cos = detail::spot_half_angle_cos(outer_angle);
                     }
                     break;
             }
@@ -425,7 +425,7 @@ namespace star::systems {
             graphics::ResourceHandle<graphics::Shader> shader_handle;
             if (command.material.is_valid()) {
                 if (const auto* material = m_resource_manager.get_material(command.material)) {
-                    submit_material(context, m_uniforms, *material, command.parameters, m_resource_manager,
+                    detail::submit_material(context, m_uniforms, *material, command.parameters, m_resource_manager,
                                     transparent);
 
                     if (material->shader.is_valid()) {

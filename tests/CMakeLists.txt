@@ -28,6 +28,10 @@ target_include_directories(${TEST_TARGET} PRIVATE
     "${TEST_DIR}/src"
 )
 
+target_compile_definitions(${TEST_TARGET} PRIVATE
+    STAR_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets"
+)
+
 target_precompile_headers(${TEST_TARGET} PRIVATE "${INCLUDE_DIR}/star/core/common.hpp")
 
 target_link_libraries(${TEST_TARGET} PRIVATE

@@ -9,7 +9,7 @@
 #include "star/core/logger.hpp"
 
 namespace star::editor {
-    namespace {
+    namespace detail {
         constexpr std::size_t MAX_RECENT = 10;
 
         std::filesystem::path env_path(const char* name) {
@@ -17,7 +17,7 @@ namespace star::editor {
                 return std::filesystem::path{value};
             return {};
         }
-    } // namespace
+    } // namespace detail
 
     ProjectManager::ProjectManager() {
         load_recent();
@@ -48,18 +48,18 @@ namespace star::editor {
     void ProjectManager::remember(const std::filesystem::path& root) {
         std::erase(m_recent, root);
         m_recent.insert(m_recent.begin(), root);
-        if (m_recent.size() > MAX_RECENT)
-            m_recent.resize(MAX_RECENT);
+        if (m_recent.size() > detail::MAX_RECENT)
+            m_recent.resize(detail::MAX_RECENT);
         save_recent();
     }
 
     std::filesystem::path ProjectManager::config_dir() {
 #ifdef _WIN32
-        std::filesystem::path base = env_path("LOCALAPPDATA");
+        std::filesystem::path base = detail::env_path("LOCALAPPDATA");
 #else
-        std::filesystem::path base = env_path("XDG_CONFIG_HOME");
+        std::filesystem::path base = detail::env_path("XDG_CONFIG_HOME");
         if (base.empty()) {
-            if (const auto home = env_path("HOME"); !home.empty())
+            if (const auto home = detail::env_path("HOME"); !home.empty())
                 base = home / ".config";
         }
 #endif
@@ -74,10 +74,10 @@ namespace star::editor {
 
     std::filesystem::path ProjectManager::default_projects_dir() {
 #ifdef _WIN32
-        if (const auto home = env_path("USERPROFILE"); !home.empty())
+        if (const auto home = detail::env_path("USERPROFILE"); !home.empty())
             return home / "Documents" / "StarProjects";
 #else
-        if (const auto home = env_path("HOME"); !home.empty())
+        if (const auto home = detail::env_path("HOME"); !home.empty())
             return home / "StarProjects";
 #endif
         return std::filesystem::current_path() / "StarProjects";

@@ -15,7 +15,7 @@
 #include "star/scene/scene.hpp"
 
 namespace star::scene {
-    namespace {
+    namespace detail {
         rendering::LightSnapshot::Type to_snapshot(const components::Light::Type t) noexcept {
             switch (t) {
                 case components::Light::Type::Point:
@@ -27,7 +27,7 @@ namespace star::scene {
                     return rendering::LightSnapshot::Type::Directional;
             }
         }
-    } // namespace
+    } // namespace detail
 
     struct SceneRenderExtractor::QueryCache {
         flecs::world* world{nullptr};
@@ -116,7 +116,7 @@ namespace star::scene {
 
         m_cache->lights.each([&](flecs::entity, const components::Light& light, const components::Transform& xf) {
             rendering::LightSnapshot snap;
-            snap.type = to_snapshot(light.type);
+            snap.type = detail::to_snapshot(light.type);
             snap.position = xf.position;
             const f32 dir_len_sq = light.direction.x * light.direction.x + light.direction.y * light.direction.y +
                                    light.direction.z * light.direction.z;

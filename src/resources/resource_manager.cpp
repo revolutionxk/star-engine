@@ -16,7 +16,7 @@
 #include "star/utils/file_utils.hpp"
 
 namespace star::resources {
-    namespace {
+    namespace detail {
         template<typename T>
         std::string name_of(const ResourceStorage<T>& storage, const ResourceHandle<T>& handle) {
             if (!handle.is_valid())
@@ -34,7 +34,7 @@ namespace star::resources {
             const u32 generation = entry != storage.resources.end() ? entry->second.generation : 1;
             return ResourceHandle<T>{it->second, generation};
         }
-    } // namespace
+    } // namespace detail
 
     ResourceManager::ResourceManager(Device& device) : m_device(device) {
         STAR_LOG_INFO(LogCategory::Resources, "Initializing ResourceManager");
@@ -52,27 +52,27 @@ namespace star::resources {
     }
 
     std::string ResourceManager::mesh_name(const ResourceHandle<Mesh>& handle) const {
-        return name_of(m_meshes, handle);
+        return detail::name_of(m_meshes, handle);
     }
 
     ResourceHandle<Mesh> ResourceManager::mesh_by_name(const std::string& name) const {
-        return handle_of(m_meshes, name);
+        return detail::handle_of(m_meshes, name);
     }
 
     std::string ResourceManager::texture_name(const ResourceHandle<Texture>& handle) const {
-        return name_of(m_textures, handle);
+        return detail::name_of(m_textures, handle);
     }
 
     ResourceHandle<Texture> ResourceManager::texture_by_name(const std::string& name) const {
-        return handle_of(m_textures, name);
+        return detail::handle_of(m_textures, name);
     }
 
     std::string ResourceManager::material_name(const ResourceHandle<Material>& handle) const {
-        return name_of(m_materials, handle);
+        return detail::name_of(m_materials, handle);
     }
 
     ResourceHandle<Material> ResourceManager::material_by_name(const std::string& name) const {
-        return handle_of(m_materials, name);
+        return detail::handle_of(m_materials, name);
     }
 
     std::string ResourceManager::shader_name(const ResourceHandle<graphics::Shader>& handle) const {

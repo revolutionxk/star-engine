@@ -166,6 +166,7 @@ namespace star::editor {
         render_toolbar();
         setup_dockspace();
         m_panel_manager.render_all();
+        render_import_progress();
         render_project_browser();
     }
 
@@ -334,6 +335,34 @@ namespace star::editor {
 
             ImGui::EndMainMenuBar();
         }
+    }
+
+    void EditorUILayer::render_import_progress() const {
+        const auto names = m_editor_window->imports_in_flight_names();
+        if (names.empty())
+            return;
+
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+        const ImVec2 pos{viewport->WorkPos.x + viewport->WorkSize.x - 16.0f,
+                         viewport->WorkPos.y + viewport->WorkSize.y - 16.0f};
+        ImGui::SetNextWindowPos(pos, ImGuiCond_Always, ImVec2(1.0f, 1.0f));
+        ImGui::SetNextWindowBgAlpha(0.85f);
+
+        constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+                                           ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+                                           ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking;
+
+        if (ImGui::Begin("##ImportProgress", nullptr, flags)) {
+            const f32 spin = static_cast<f32>(ImGui::GetTime()) * 2.0f;
+            constexpr const char* frames = "|/-\\";
+            ImGui::Text("%c  Importing %zu model%s", frames[static_cast<int>(spin) % 4], names.size(),
+                        names.size() == 1 ? "" : "s");
+            ImGui::Separator();
+            for (const auto& name : names) {
+                ImGui::BulletText("%s", name.c_str());
+            }
+        }
+        ImGui::End();
     }
 
     void EditorUILayer::render_project_browser() {

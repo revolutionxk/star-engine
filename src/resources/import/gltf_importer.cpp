@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <unordered_map>
 
 #include <cgltf.h>
 #include <stb_image.h>
@@ -15,7 +16,7 @@
 #include "star/resources/texture/texture.hpp"
 
 namespace star::resources {
-    namespace {
+    namespace detail {
         Vector3 read_vec3(const cgltf_accessor* acc, const cgltf_size i) {
             float v[3] = {0.0f, 0.0f, 0.0f};
             if (acc)
@@ -30,7 +31,7 @@ namespace star::resources {
             return {v[0], v[1]};
         }
 
-        void compute_normals(Mesh& mesh) {
+        void compute_normals(RawMesh& mesh) {
             for (auto& v : mesh.vertices)
                 v.normal = Vector3{0.0f, 0.0f, 0.0f};
             for (cgltf_size t = 0; t + 2 < mesh.indices.size(); t += 3) {
@@ -50,7 +51,7 @@ namespace star::resources {
             }
         }
 
-        void compute_tangents(Mesh& mesh) {
+        void compute_tangents(RawMesh& mesh) {
             std::vector<Vector3> tan(mesh.vertices.size(), Vector3{0.0f, 0.0f, 0.0f});
             std::vector<Vector3> bit(mesh.vertices.size(), Vector3{0.0f, 0.0f, 0.0f});
             for (cgltf_size t = 0; t + 2 < mesh.indices.size(); t += 3) {
@@ -88,13 +89,9 @@ namespace star::resources {
             }
         }
 
-        ResourceHandle<Texture> load_image_texture(ResourceManager& resources, const cgltf_data* data,
-                                                   const cgltf_image* image, const std::filesystem::path& dir,
-                                                   const std::string& name) {
+        bool decode_image(const cgltf_image* image, const std::filesystem::path& dir, RawTexture& out) {
             if (!image)
-                return {};
-            if (const auto existing = resources.texture_by_name(name); existing.is_valid())
-                return existing;
+                return false;
 
             int w = 0, h = 0, comp = 0;
             stbi_uc* pixels = nullptr;
@@ -131,54 +128,61 @@ namespace star::resources {
             }
 
             if (!pixels) {
-                STAR_LOG_WARN(LogCategory::Resources, "glTF image '{}' could not be decoded", name);
-                return {};
+                return false;
             }
 
-            auto tex = std::make_unique<Texture>();
-            tex->desc.width = static_cast<u32>(w);
-            tex->desc.height = static_cast<u32>(h);
-            tex->desc.format = TextureFormat::RGBA8;
-            tex->desc.generate_mipmaps = false;
-            tex->data.assign(pixels, pixels + static_cast<size_t>(w) * h * 4);
+            out.width = static_cast<u32>(w);
+            out.height = static_cast<u32>(h);
+            out.pixels.assign(pixels, pixels + static_cast<size_t>(w) * h * 4);
             stbi_image_free(pixels);
-            return resources.create_texture(name, std::move(tex));
+            return true;
         }
 
-        ResourceHandle<Material> import_material(ResourceManager& resources, const cgltf_data* data,
-                                                 const cgltf_material* gm, const std::string& base,
-                                                 const std::filesystem::path& dir) {
-            if (!gm)
-                return resources.default_material();
+        i32 texture_index(const cgltf_texture_view& view, const cgltf_data* data,
+                          const std::filesystem::path& dir, const std::string& base, const char* slot,
+                          std::vector<RawTexture>& textures, std::unordered_map<cgltf_size, i32>& cache) {
+            if (!view.texture || !view.texture->image)
+                return -1;
+
+            const auto img = static_cast<cgltf_size>(view.texture->image - data->images);
+            if (const auto it = cache.find(img); it != cache.end())
+                return it->second;
+
+            RawTexture raw;
+            raw.name = base + "#img" + std::to_string(img) + "_" + slot;
+            if (!decode_image(view.texture->image, dir, raw)) {
+                STAR_LOG_WARN(LogCategory::Resources, "glTF image '{}' could not be decoded", raw.name);
+                cache.emplace(img, -1);
+                return -1;
+            }
+
+            const auto index = static_cast<i32>(textures.size());
+            textures.push_back(std::move(raw));
+            cache.emplace(img, index);
+            return index;
+        }
+
+        RawMaterial parse_material(const cgltf_data* data, const cgltf_material* gm, const std::string& base,
+                                   const std::filesystem::path& dir, std::vector<RawTexture>& textures,
+                                   std::unordered_map<cgltf_size, i32>& cache) {
+            RawMaterial m;
             const auto idx = static_cast<cgltf_size>(gm - data->materials);
-
-            auto m = std::make_unique<Material>();
-            m->shader = resources.default_shader();
-
-            const auto load_view = [&](const cgltf_texture_view& view, const char* slot) -> ResourceHandle<Texture> {
-                if (!view.texture || !view.texture->image)
-                    return {};
-                const auto img = static_cast<cgltf_size>(view.texture->image - data->images);
-                return load_image_texture(resources, data, view.texture->image, dir,
-                                          base + "#img" + std::to_string(img) + "_" + slot);
-            };
+            m.name = base + "#mat" + std::to_string(idx) + (gm->name ? std::string{"_"} + gm->name : std::string{});
 
             if (gm->has_pbr_metallic_roughness) {
                 const auto& p = gm->pbr_metallic_roughness;
-                m->albedo_color = {p.base_color_factor[0], p.base_color_factor[1], p.base_color_factor[2],
-                                   p.base_color_factor[3]};
-                m->metallic = p.metallic_factor;
-                m->roughness = p.roughness_factor;
-                m->albedo_texture = load_view(p.base_color_texture, "albedo");
-                m->metallic_roughness_texture = load_view(p.metallic_roughness_texture, "mr");
+                m.albedo_color = {p.base_color_factor[0], p.base_color_factor[1], p.base_color_factor[2],
+                                  p.base_color_factor[3]};
+                m.metallic = p.metallic_factor;
+                m.roughness = p.roughness_factor;
+                m.albedo_texture = texture_index(p.base_color_texture, data, dir, base, "albedo", textures, cache);
+                m.metallic_roughness_texture =
+                    texture_index(p.metallic_roughness_texture, data, dir, base, "mr", textures, cache);
             }
-            m->normal_texture = load_view(gm->normal_texture, "normal");
-            m->emissive_color = {gm->emissive_factor[0], gm->emissive_factor[1], gm->emissive_factor[2], 1.0f};
-            m->emissive_texture = load_view(gm->emissive_texture, "emissive");
-
-            const std::string name =
-                base + "#mat" + std::to_string(idx) + (gm->name ? std::string{"_"} + gm->name : std::string{});
-            return resources.create_material(name, std::move(m));
+            m.normal_texture = texture_index(gm->normal_texture, data, dir, base, "normal", textures, cache);
+            m.emissive_color = {gm->emissive_factor[0], gm->emissive_factor[1], gm->emissive_factor[2], 1.0f};
+            m.emissive_texture = texture_index(gm->emissive_texture, data, dir, base, "emissive", textures, cache);
+            return m;
         }
 
         void decompose(const cgltf_float m[16], Vector3& t, Quaternion& r, Vector3& s) {
@@ -223,21 +227,23 @@ namespace star::resources {
             }
             r = q;
         }
-    } // namespace
+    } // namespace detail
 
-    ImportedModel import_gltf(ResourceManager& resources, const std::filesystem::path& path) {
+    RawModel parse_gltf(const std::filesystem::path& path) {
         const std::string path_str = path.string();
         cgltf_options options{};
         cgltf_data* data = nullptr;
 
+        RawModel model;
+
         if (cgltf_parse_file(&options, path_str.c_str(), &data) != cgltf_result_success) {
             STAR_LOG_ERROR(LogCategory::Resources, "glTF parse failed: {}", path_str);
-            return {};
+            return model;
         }
         if (cgltf_load_buffers(&options, data, path_str.c_str()) != cgltf_result_success) {
             STAR_LOG_ERROR(LogCategory::Resources, "glTF buffer load failed: {}", path_str);
             cgltf_free(data);
-            return {};
+            return model;
         }
         if (cgltf_validate(data) != cgltf_result_success) {
             STAR_LOG_WARN(LogCategory::Resources, "glTF validation warnings: {}", path_str);
@@ -245,14 +251,16 @@ namespace star::resources {
 
         const std::string base = path.filename().string();
         const std::filesystem::path dir = path.parent_path();
-        ImportedModel model;
         model.name = base;
 
-        std::vector<ResourceHandle<Material>> mat_handles(data->materials_count);
-        for (cgltf_size m = 0; m < data->materials_count; ++m)
-            mat_handles[m] = import_material(resources, data, &data->materials[m], base, dir);
+        std::unordered_map<cgltf_size, i32> texture_cache;
+        model.materials.reserve(data->materials_count);
+        for (cgltf_size m = 0; m < data->materials_count; ++m) {
+            model.materials.push_back(
+                detail::parse_material(data, &data->materials[m], base, dir, model.textures, texture_cache));
+        }
 
-        std::vector<std::vector<ImportedPrimitive>> mesh_prims(data->meshes_count);
+        std::vector<std::vector<RawPrimitive>> mesh_prims(data->meshes_count);
         for (cgltf_size mi = 0; mi < data->meshes_count; ++mi) {
             const cgltf_mesh& gmesh = data->meshes[mi];
             for (cgltf_size pi = 0; pi < gmesh.primitives_count; ++pi) {
@@ -284,13 +292,14 @@ namespace star::resources {
                 if (!pos || pos->count == 0)
                     continue;
 
-                Mesh mesh;
+                RawMesh mesh;
+                mesh.name = base + "#m" + std::to_string(mi) + "_p" + std::to_string(pi);
                 mesh.vertices.resize(pos->count);
                 for (cgltf_size i = 0; i < pos->count; ++i) {
-                    Vertex v{};
-                    v.position = read_vec3(pos, i);
-                    v.normal = read_vec3(nrm, i);
-                    v.tex_coords = read_vec2(uv, i);
+                    graphics::Vertex v{};
+                    v.position = detail::read_vec3(pos, i);
+                    v.normal = detail::read_vec3(nrm, i);
+                    v.tex_coords = detail::read_vec2(uv, i);
                     if (tan) {
                         float t[4] = {0.0f, 0.0f, 0.0f, 1.0f};
                         cgltf_accessor_read_float(tan, i, t, 4);
@@ -311,45 +320,46 @@ namespace star::resources {
                 }
 
                 if (!nrm)
-                    compute_normals(mesh);
+                    detail::compute_normals(mesh);
                 if (!tan)
-                    compute_tangents(mesh);
+                    detail::compute_tangents(mesh);
                 for (cgltf_size k = 0; k + 2 < mesh.indices.size(); k += 3)
                     std::swap(mesh.indices[k + 1], mesh.indices[k + 2]);
 
-                const std::string mesh_name = base + "#m" + std::to_string(mi) + "_p" + std::to_string(pi);
-                const auto handle = resources.create_mesh(mesh_name, std::make_unique<Mesh>(std::move(mesh)));
-                const auto mat = prim.material ? mat_handles[static_cast<cgltf_size>(prim.material - data->materials)]
-                                               : resources.default_material();
-                mesh_prims[mi].push_back({handle, mat});
+                const auto mesh_index = static_cast<i32>(model.meshes.size());
+                model.meshes.push_back(std::move(mesh));
+
+                const i32 material_index =
+                    prim.material ? static_cast<i32>(prim.material - data->materials) : -1;
+                mesh_prims[mi].push_back({mesh_index, material_index});
             }
         }
 
         model.nodes.resize(data->nodes_count);
         for (cgltf_size ni = 0; ni < data->nodes_count; ++ni) {
             const cgltf_node& gn = data->nodes[ni];
-            auto& [name, position, rotation, scale, primitives, children] = model.nodes[ni];
-            name = gn.name ? gn.name : ("node_" + std::to_string(ni));
+            RawNode& node = model.nodes[ni];
+            node.name = gn.name ? gn.name : ("node_" + std::to_string(ni));
 
             if (gn.has_matrix) {
-                decompose(gn.matrix, position, rotation, scale);
+                detail::decompose(gn.matrix, node.position, node.rotation, node.scale);
             } else {
                 if (gn.has_translation)
-                    position = {gn.translation[0], gn.translation[1], gn.translation[2]};
+                    node.position = {gn.translation[0], gn.translation[1], gn.translation[2]};
                 if (gn.has_rotation)
-                    rotation = {gn.rotation[0], gn.rotation[1], gn.rotation[2], gn.rotation[3]};
+                    node.rotation = {gn.rotation[0], gn.rotation[1], gn.rotation[2], gn.rotation[3]};
                 if (gn.has_scale)
-                    scale = {gn.scale[0], gn.scale[1], gn.scale[2]};
+                    node.scale = {gn.scale[0], gn.scale[1], gn.scale[2]};
             }
 
             if (gn.mesh) {
                 const auto midx = static_cast<cgltf_size>(gn.mesh - data->meshes);
-                primitives = mesh_prims[midx];
+                node.primitives = mesh_prims[midx];
             }
 
-            children.reserve(gn.children_count);
+            node.children.reserve(gn.children_count);
             for (cgltf_size c = 0; c < gn.children_count; ++c)
-                children.push_back(static_cast<u32>(gn.children[c] - data->nodes));
+                node.children.push_back(static_cast<u32>(gn.children[c] - data->nodes));
         }
 
         const cgltf_scene* scene = data->scene ? data->scene : (data->scenes_count ? &data->scenes[0] : nullptr);
@@ -362,16 +372,105 @@ namespace star::resources {
                     model.roots.push_back(static_cast<u32>(ni));
         }
 
-        const cgltf_size prim_total = [&] {
-            cgltf_size n = 0;
-            for (const auto& mp : mesh_prims)
-                n += mp.size();
-            return n;
-        }();
-        STAR_LOG_INFO(LogCategory::Resources, "Imported glTF '{}': {} nodes, {} meshes, {} primitives, {} materials",
-                      base, data->nodes_count, data->meshes_count, prim_total, data->materials_count);
+        STAR_LOG_INFO(LogCategory::Resources,
+                      "Parsed glTF '{}': {} nodes, {} meshes, {} materials, {} textures", base, model.nodes.size(),
+                      model.meshes.size(), model.materials.size(), model.textures.size());
 
         cgltf_free(data);
+        model.ok = true;
         return model;
+    }
+
+    ImportedModel upload_gltf(ResourceManager& resources, const RawModel& raw) {
+        ImportedModel model;
+        if (!raw.ok)
+            return model;
+
+        model.name = raw.name;
+        model.roots = raw.roots;
+
+        std::vector<ResourceHandle<Texture>> textures(raw.textures.size());
+        for (std::size_t i = 0; i < raw.textures.size(); ++i) {
+            const RawTexture& raw_texture = raw.textures[i];
+            if (const auto existing = resources.texture_by_name(raw_texture.name); existing.is_valid()) {
+                textures[i] = existing;
+                continue;
+            }
+
+            auto texture = std::make_unique<Texture>();
+            texture->desc.width = raw_texture.width;
+            texture->desc.height = raw_texture.height;
+            texture->desc.format = TextureFormat::RGBA8;
+            texture->desc.generate_mipmaps = false;
+            texture->data = raw_texture.pixels;
+            textures[i] = resources.create_texture(raw_texture.name, std::move(texture));
+        }
+
+        const auto resolve_texture = [&](const i32 index) -> ResourceHandle<Texture> {
+            return index >= 0 && static_cast<std::size_t>(index) < textures.size() ? textures[index]
+                                                                                  : ResourceHandle<Texture>{};
+        };
+
+        std::vector<ResourceHandle<Material>> materials(raw.materials.size());
+        for (std::size_t i = 0; i < raw.materials.size(); ++i) {
+            const RawMaterial& raw_material = raw.materials[i];
+            if (const auto existing = resources.material_by_name(raw_material.name); existing.is_valid()) {
+                materials[i] = existing;
+                continue;
+            }
+
+            auto material = std::make_unique<Material>();
+            material->shader = resources.default_shader();
+            material->albedo_color = raw_material.albedo_color;
+            material->emissive_color = raw_material.emissive_color;
+            material->metallic = raw_material.metallic;
+            material->roughness = raw_material.roughness;
+            material->albedo_texture = resolve_texture(raw_material.albedo_texture);
+            material->normal_texture = resolve_texture(raw_material.normal_texture);
+            material->metallic_roughness_texture = resolve_texture(raw_material.metallic_roughness_texture);
+            material->emissive_texture = resolve_texture(raw_material.emissive_texture);
+            materials[i] = resources.create_material(raw_material.name, std::move(material));
+        }
+
+        std::vector<ResourceHandle<Mesh>> meshes(raw.meshes.size());
+        for (std::size_t i = 0; i < raw.meshes.size(); ++i) {
+            const RawMesh& raw_mesh = raw.meshes[i];
+            if (const auto existing = resources.mesh_by_name(raw_mesh.name); existing.is_valid()) {
+                meshes[i] = existing;
+                continue;
+            }
+
+            auto mesh = std::make_unique<Mesh>();
+            mesh->vertices = raw_mesh.vertices;
+            mesh->indices = raw_mesh.indices;
+            meshes[i] = resources.create_mesh(raw_mesh.name, std::move(mesh));
+        }
+
+        model.nodes.resize(raw.nodes.size());
+        for (std::size_t i = 0; i < raw.nodes.size(); ++i) {
+            const RawNode& raw_node = raw.nodes[i];
+            ImportedNode& node = model.nodes[i];
+            node.name = raw_node.name;
+            node.position = raw_node.position;
+            node.rotation = raw_node.rotation;
+            node.scale = raw_node.scale;
+            node.children = raw_node.children;
+
+            node.primitives.reserve(raw_node.primitives.size());
+            for (const auto& [mesh_index, material_index] : raw_node.primitives) {
+                if (mesh_index < 0 || static_cast<std::size_t>(mesh_index) >= meshes.size())
+                    continue;
+                const auto material = material_index >= 0 && static_cast<std::size_t>(material_index) < materials.size()
+                                          ? materials[material_index]
+                                          : resources.default_material();
+                node.primitives.push_back({meshes[mesh_index], material});
+            }
+        }
+
+        return model;
+    }
+
+    ImportedModel import_gltf(ResourceManager& resources, const std::filesystem::path& path) {
+        return upload_gltf(resources, parse_gltf(path));
     }
 } // namespace star::resources

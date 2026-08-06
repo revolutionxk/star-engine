@@ -9,7 +9,7 @@
 #include "star/core/logger.hpp"
 
 namespace star::project {
-    namespace {
+    namespace detail {
         constexpr std::string_view ENGINE_VERSION = "0.1.0";
         constexpr const char* MANIFEST_KEY = "star_project";
 
@@ -21,7 +21,7 @@ namespace star::project {
             }
             return {};
         }
-    } // namespace
+    } // namespace detail
 
     std::optional<Project> Project::create(const std::filesystem::path& parent_dir, const std::string_view name) {
         if (name.empty()) {
@@ -40,7 +40,7 @@ namespace star::project {
         Project project;
         project.m_root = root;
         project.m_name = std::string{name};
-        project.m_engine_version = std::string{ENGINE_VERSION};
+        project.m_engine_version = std::string{detail::ENGINE_VERSION};
         project.m_default_scene = std::string{layout::SCENES} + "/Main" + std::string{layout::SCENE_EXTENSION};
 
         for (const std::string_view sub : {layout::ASSETS, layout::SCENES, layout::CONFIG, layout::CACHE}) {
@@ -62,7 +62,7 @@ namespace star::project {
         std::error_code ec;
         std::filesystem::path manifest = path;
         if (std::filesystem::is_directory(path, ec))
-            manifest = find_manifest(path);
+            manifest = detail::find_manifest(path);
 
         if (manifest.empty() || !std::filesystem::exists(manifest, ec)) {
             STAR_LOG_ERROR(LogCategory::Editor, "No project manifest found at {}", path.string());
@@ -83,12 +83,12 @@ namespace star::project {
             return std::nullopt;
         }
 
-        const nlohmann::json& body = doc.contains(MANIFEST_KEY) ? doc[MANIFEST_KEY] : doc;
+        const nlohmann::json& body = doc.contains(detail::MANIFEST_KEY) ? doc[detail::MANIFEST_KEY] : doc;
 
         Project project;
         project.m_root = manifest.parent_path();
         project.m_name = body.value("name", manifest.stem().string());
-        project.m_engine_version = body.value("engine_version", std::string{ENGINE_VERSION});
+        project.m_engine_version = body.value("engine_version", std::string{detail::ENGINE_VERSION});
         project.m_default_scene = body.value("default_scene", std::string{});
 
         STAR_LOG_INFO(LogCategory::Editor, "Loaded project '{}' from {}", project.m_name, project.m_root.string());
@@ -97,7 +97,7 @@ namespace star::project {
 
     bool Project::save() const {
         nlohmann::json doc;
-        doc[MANIFEST_KEY] = {
+        doc[detail::MANIFEST_KEY] = {
             {"name", m_name},
             {"engine_version", m_engine_version},
             {"default_scene", m_default_scene},

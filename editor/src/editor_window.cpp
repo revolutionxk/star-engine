@@ -3,11 +3,16 @@
 #include <filesystem>
 
 #include "core/editor_events.hpp"
+#include "core/file_dialog.hpp"
+#include "core/gltf_import.hpp"
 #include "core/icon_registry.hpp"
 #include "layers/editor_ui_layer.hpp"
 #include "scenes/sample_scene.hpp"
 #include "star/application/application.hpp"
+#include "star/rendering/renderer.hpp"
+#include "star/rendering/systems/render_system.hpp"
 #include "star/resources/resource_manager.hpp"
+#include "star/resources/texture/texture.hpp"
 #include "star/scene/scene.hpp"
 #include "star/scene/scene_manager.hpp"
 #include "star/scene/scene_serializer.hpp"
@@ -47,6 +52,71 @@ namespace star::editor {
 
     void EditorWindow::on_update(const f32 delta_time) {
         set_render_interpolation(m_play_state == PlayState::Playing);
+
+        for (const auto& [request, path] : m_file_dialogs.poll()) {
+            switch (request) {
+                case FileRequest::Model:
+                    queue_model_import(path);
+                    break;
+                case FileRequest::Environment:
+                    load_environment(path);
+                    break;
+                case FileRequest::Scene:
+                    open_scene_file(path);
+                    break;
+            }
+        }
+
+        if (m_model_loader) {
+            if (auto* scene = scene_manager().get_active_scene()) {
+                for (const auto& completed : m_model_loader->poll()) {
+                    instantiate_model(*scene, completed.model);
+                }
+            }
+        }
+    }
+
+    void EditorWindow::open_file_dialog(const FileRequest request) {
+        m_file_dialogs.open(request, &window());
+    }
+
+    void EditorWindow::load_environment(const std::filesystem::path& path) {
+        auto* render_system = renderer().get_render_system();
+        if (!render_system)
+            return;
+
+        auto& res = resources();
+        const auto handle = res.load_environment(path.string());
+        const auto* texture = res.get_texture(handle);
+        if (!texture) {
+            STAR_LOG_ERROR(LogCategory::Editor, "Failed to load environment: {}", path.string());
+            return;
+        }
+
+        systems::RenderSystem::EnvironmentState state;
+        state.map = texture->handle;
+        state.max_mip = static_cast<f32>(texture->mipmap_count() > 0 ? texture->mipmap_count() - 1 : 0);
+        const f32 previous = render_system->environment().intensity;
+        state.intensity = previous > 0.0f ? previous : 1.0f;
+        render_system->set_environment(state);
+
+        STAR_LOG_INFO(LogCategory::Editor, "Environment loaded: {}", path.filename().string());
+    }
+
+    void EditorWindow::queue_model_import(const std::filesystem::path& path) {
+        if (!m_model_loader) {
+            m_model_loader = std::make_unique<resources::AsyncModelLoader>(
+                application::Application::instance().jobs(), resources());
+        }
+        m_model_loader->enqueue(path);
+    }
+
+    u32 EditorWindow::imports_in_flight() const {
+        return m_model_loader ? m_model_loader->in_flight() : 0;
+    }
+
+    std::vector<std::string> EditorWindow::imports_in_flight_names() const {
+        return m_model_loader ? m_model_loader->in_flight_names() : std::vector<std::string>{};
     }
 
     void EditorWindow::on_fixed_update(const f32 fixed_dt) {

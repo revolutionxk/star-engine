@@ -4,10 +4,13 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
+#include "core/file_dialog.hpp"
 #include "core/project_manager.hpp"
+#include "star/resources/import/async_model_loader.hpp"
 #include "star/application/app_window.hpp"
 #include "star/physics/physics_system.hpp"
 
@@ -47,6 +50,13 @@ namespace star::editor {
             return m_projects.has_active();
         }
 
+        void open_file_dialog(FileRequest request);
+        void queue_model_import(const std::filesystem::path& path);
+        void load_environment(const std::filesystem::path& path);
+
+        [[nodiscard]] u32 imports_in_flight() const;
+        [[nodiscard]] std::vector<std::string> imports_in_flight_names() const;
+
         bool create_project(const std::filesystem::path& parent_dir, std::string_view name);
         bool open_project(const std::filesystem::path& path);
         
@@ -64,6 +74,8 @@ namespace star::editor {
         void load_project_scene();
         void update_window_title();
 
+        EditorFileDialogs m_file_dialogs;
+        std::unique_ptr<resources::AsyncModelLoader> m_model_loader;
         physics::PhysicsSystem m_physics;
         PlayState m_play_state = PlayState::Editing;
         nlohmann::json m_scene_snapshot;

@@ -255,10 +255,8 @@ namespace star::reflection {
 #define STAR_META_CONCAT(a, b) STAR_META_CONCAT_IMPL(a, b)
 #define STAR_REGISTER_TYPE(T)                                                                                          \
     namespace star::reflection::detail {                                                                               \
-        namespace {                                                                                                    \
-            [[maybe_unused]] const bool STAR_META_CONCAT(_reg_, __COUNTER__) = [] {                                    \
-                ::star::reflection::TypeRegistry::instance().register_type<T>();                                       \
-                return true;                                                                                           \
-            }();                                                                                                       \
-        }                                                                                                              \
+        [[maybe_unused]] static const bool STAR_META_CONCAT(_reg_, __COUNTER__) = [] {                                 \
+            ::star::reflection::TypeRegistry::instance().register_type<T>();                                           \
+            return true;                                                                                               \
+        }();                                                                                                           \
     }

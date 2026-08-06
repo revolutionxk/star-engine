@@ -44,6 +44,7 @@ namespace star::editor {
         static void build_default_layout(unsigned dockspace_id);
         void render_main_menu_bar();
         void render_toolbar() const;
+        void render_import_progress() const;
         void render_project_browser();
         void resolve_pending_pick() const;
         void initialize_panels();

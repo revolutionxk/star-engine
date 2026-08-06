@@ -2,7 +2,7 @@
 
 #include <imgui.h>
 
-#include "../core/gltf_import.hpp"
+#include "../core/file_dialog.hpp"
 #include "../editor_window.hpp"
 #include "star/rendering/passes/shadow_pass.hpp"
 #include "star/rendering/renderer.hpp"
@@ -98,17 +98,7 @@ namespace star::editor {
             ImGui::SetItemTooltip("Load an equirectangular .hdr; metals/PBR surfaces reflect it (roughness blurs it).");
 
             if (ImGui::Button("Load HDRI...")) {
-                if (const auto path = open_environment_file_dialog(); !path.empty()) {
-                    auto& res = m_editor_window->resources();
-                    const auto handle = res.load_environment(path.string());
-                    if (const auto* tex = res.get_texture(handle)) {
-                        systems::RenderSystem::EnvironmentState state;
-                        state.map = tex->handle;
-                        state.max_mip = static_cast<f32>(tex->mipmap_count() > 0 ? tex->mipmap_count() - 1 : 0);
-                        state.intensity = env.intensity > 0.0f ? env.intensity : 1.0f;
-                        rs->set_environment(state);
-                    }
-                }
+                m_editor_window->open_file_dialog(FileRequest::Environment);
             }
             if (env.map.is_valid()) {
                 ImGui::SameLine();

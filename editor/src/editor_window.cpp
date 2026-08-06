@@ -95,6 +95,8 @@ namespace star::editor {
 
         systems::RenderSystem::EnvironmentState state;
         state.map = texture->handle;
+        state.width = texture->desc.width;
+        state.height = texture->desc.height;
         state.max_mip = static_cast<f32>(texture->mipmap_count() > 0 ? texture->mipmap_count() - 1 : 0);
         const f32 previous = render_system->environment().intensity;
         state.intensity = previous > 0.0f ? previous : 1.0f;

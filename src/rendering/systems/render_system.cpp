@@ -299,13 +299,22 @@ namespace star::systems {
         if (m_shadow.map.is_valid())
             context.set_texture(ids.sampler_shadow, rendering::uniforms::STAGE_SHADOW, m_shadow.map);
 
-        const bool ibl_enabled = m_environment.map.is_valid();
+        const bool ibl_enabled = m_environment.map.is_valid() && m_ibl.is_valid();
         const Vector4 ibl_params{ibl_enabled ? 1.0f : 0.0f, m_environment.max_mip, m_environment.intensity, 0.0f};
         context.set_uniform(ids.ibl_params, &ibl_params);
-        if (ibl_enabled)
-            context.set_texture(ids.sampler_env, rendering::uniforms::STAGE_ENV, m_environment.map);
-        else if (const auto* black = m_resource_manager.get_texture(m_resource_manager.black_texture()))
-            context.set_texture(ids.sampler_env, rendering::uniforms::STAGE_ENV, black->handle);
+
+        const Vector4 ibl_params2{m_ibl.specular_levels, m_ibl.specular_strip_pad, 0.0f, 0.0f};
+        context.set_uniform(ids.ibl_params2, &ibl_params2);
+
+        const auto* black = m_resource_manager.get_texture(m_resource_manager.black_texture());
+        const auto fallback = black ? black->handle : graphics::ResourceHandle<graphics::Texture>{};
+
+        context.set_texture(ids.sampler_specular_env, rendering::uniforms::STAGE_SPECULAR_ENV,
+                            ibl_enabled ? m_ibl.specular : fallback);
+        context.set_texture(ids.sampler_irradiance_env, rendering::uniforms::STAGE_IRRADIANCE_ENV,
+                            ibl_enabled ? m_ibl.irradiance : fallback);
+        context.set_texture(ids.sampler_brdf_lut, rendering::uniforms::STAGE_BRDF_LUT,
+                            ibl_enabled ? m_ibl.brdf_lut : fallback);
     }
 
     void RenderSystem::render(const rendering::RenderScene& scene, graphics::DeviceContext& context, const u32 view_id,

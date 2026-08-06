@@ -31,6 +31,7 @@ namespace star::rendering::uniforms {
         emissive_color = vec4(EMISSIVE_COLOR);
         tex_flags = vec4(TEX_FLAGS);
         ibl_params = vec4(IBL_PARAMS);
+        ibl_params2 = vec4(IBL_PARAMS2);
 
         cascade_view_proj = context.uniform(CASCADE_VIEW_PROJ, UniformType::Mat4, 4);
         cascade_splits = vec4(CASCADE_SPLITS);
@@ -47,7 +48,9 @@ namespace star::rendering::uniforms {
         sampler_mr = sampler(SAMPLER_MR);
         sampler_emissive = sampler(SAMPLER_EMISSIVE);
         sampler_shadow = sampler(SAMPLER_SHADOW);
-        sampler_env = sampler(SAMPLER_ENV);
+        sampler_specular_env = sampler(SAMPLER_SPECULAR_ENV);
+        sampler_irradiance_env = sampler(SAMPLER_IRRADIANCE_ENV);
+        sampler_brdf_lut = sampler(SAMPLER_BRDF_LUT);
 
         cam_pos = vec4(CAM_POS);
     }

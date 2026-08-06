@@ -126,6 +126,11 @@ namespace star::editor {
                 ImGui::SameLine();
                 if (ImGui::Button("Clear Environment"))
                     rs->set_environment({});
+
+                ImGui::Text("Prefilter: %s (%ux%u source)", rs->ibl().is_valid() ? "baked" : "pending", env.width,
+                            env.height);
+                ImGui::SetItemTooltip("Irradiance, GGX specular and BRDF LUT are baked once when the HDRI loads.");
+
                 float intensity = env.intensity;
                 if (ImGui::DragFloat("IBL Intensity", &intensity, 0.02f, 0.0f, 8.0f, "%.2f")) {
                     env.intensity = intensity;

@@ -26,6 +26,7 @@ namespace star::rendering::uniforms {
     inline constexpr std::string_view ALBEDO_TEXTURE = "u_albedoTexture";
     inline constexpr std::string_view TEX_FLAGS = "u_texFlags";
     inline constexpr std::string_view IBL_PARAMS = "u_iblParams";
+    inline constexpr std::string_view IBL_PARAMS2 = "u_iblParams2";
 
     inline constexpr std::string_view CAM_POS = "u_camPos";
 
@@ -44,14 +45,18 @@ namespace star::rendering::uniforms {
     inline constexpr std::string_view SAMPLER_MR = "s_texMetallicRoughness";
     inline constexpr std::string_view SAMPLER_EMISSIVE = "s_texEmissive";
     inline constexpr std::string_view SAMPLER_SHADOW = "s_shadowMap";
-    inline constexpr std::string_view SAMPLER_ENV = "s_envMap";
+    inline constexpr std::string_view SAMPLER_SPECULAR_ENV = "s_specularEnv";
+    inline constexpr std::string_view SAMPLER_IRRADIANCE_ENV = "s_irradianceEnv";
+    inline constexpr std::string_view SAMPLER_BRDF_LUT = "s_brdfLut";
 
     inline constexpr u8 STAGE_ALBEDO = 0;
     inline constexpr u8 STAGE_NORMAL = 1;
     inline constexpr u8 STAGE_MR = 2;
     inline constexpr u8 STAGE_EMISSIVE = 3;
     inline constexpr u8 STAGE_SHADOW = 4;
-    inline constexpr u8 STAGE_ENV = 5;
+    inline constexpr u8 STAGE_SPECULAR_ENV = 5;
+    inline constexpr u8 STAGE_IRRADIANCE_ENV = 6;
+    inline constexpr u8 STAGE_BRDF_LUT = 7;
 
     struct SceneUniforms {
         graphics::UniformId ambient_color;
@@ -71,6 +76,7 @@ namespace star::rendering::uniforms {
         graphics::UniformId emissive_color;
         graphics::UniformId tex_flags;
         graphics::UniformId ibl_params;
+        graphics::UniformId ibl_params2;
 
         graphics::UniformId cam_pos;
         graphics::UniformId cascade_view_proj;
@@ -88,7 +94,9 @@ namespace star::rendering::uniforms {
         graphics::UniformId sampler_mr;
         graphics::UniformId sampler_emissive;
         graphics::UniformId sampler_shadow;
-        graphics::UniformId sampler_env;
+        graphics::UniformId sampler_specular_env;
+        graphics::UniformId sampler_irradiance_env;
+        graphics::UniformId sampler_brdf_lut;
 
         void resolve(graphics::DeviceContext& context);
 

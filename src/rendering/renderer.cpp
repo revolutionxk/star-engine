@@ -9,6 +9,7 @@
 #include "star/rendering/debug_renderer.hpp"
 #include "star/rendering/passes/bloom_pass.hpp"
 #include "star/rendering/passes/debug_render_pass.hpp"
+#include "star/rendering/passes/ibl_pass.hpp"
 #include "star/rendering/passes/picking_pass.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
 #include "star/rendering/passes/shadow_pass.hpp"
@@ -35,6 +36,7 @@ namespace star::rendering {
         }
         m_debug_renderer = std::make_unique<DebugRenderer>(*m_resource_manager);
 
+        add_render_pass(std::make_unique<IblPass>(*m_device, *m_resource_manager, *m_render_system));
         add_render_pass(std::make_unique<ShadowPass>(*m_device, *m_resource_manager, *m_render_system));
         add_render_pass(std::make_unique<SceneRenderPass>(*m_render_system));
         add_render_pass(std::make_unique<SkyRenderPass>(*m_render_system, *m_resource_manager));

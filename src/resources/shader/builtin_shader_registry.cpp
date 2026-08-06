@@ -13,6 +13,9 @@
 #include <essl/f_brightpass.sc.bin.h>
 #include <essl/f_debug.sc.bin.h>
 #include <essl/f_fxaa.sc.bin.h>
+#include <essl/f_ibl_brdf.sc.bin.h>
+#include <essl/f_ibl_irradiance.sc.bin.h>
+#include <essl/f_ibl_prefilter.sc.bin.h>
 #include <essl/f_imgui.sc.bin.h>
 #include <essl/f_material.sc.bin.h>
 #include <essl/f_pick.sc.bin.h>
@@ -38,6 +41,9 @@
 #include <glsl/f_brightpass.sc.bin.h>
 #include <glsl/f_debug.sc.bin.h>
 #include <glsl/f_fxaa.sc.bin.h>
+#include <glsl/f_ibl_brdf.sc.bin.h>
+#include <glsl/f_ibl_irradiance.sc.bin.h>
+#include <glsl/f_ibl_prefilter.sc.bin.h>
 #include <glsl/f_imgui.sc.bin.h>
 #include <glsl/f_material.sc.bin.h>
 #include <glsl/f_pick.sc.bin.h>
@@ -63,6 +69,9 @@
 #include <spirv/f_brightpass.sc.bin.h>
 #include <spirv/f_debug.sc.bin.h>
 #include <spirv/f_fxaa.sc.bin.h>
+#include <spirv/f_ibl_brdf.sc.bin.h>
+#include <spirv/f_ibl_irradiance.sc.bin.h>
+#include <spirv/f_ibl_prefilter.sc.bin.h>
 #include <spirv/f_imgui.sc.bin.h>
 #include <spirv/f_material.sc.bin.h>
 #include <spirv/f_pick.sc.bin.h>
@@ -90,6 +99,9 @@
     #include <dx10/f_brightpass.sc.bin.h>
     #include <dx10/f_debug.sc.bin.h>
     #include <dx10/f_fxaa.sc.bin.h>
+    #include <dx10/f_ibl_brdf.sc.bin.h>
+    #include <dx10/f_ibl_irradiance.sc.bin.h>
+    #include <dx10/f_ibl_prefilter.sc.bin.h>
     #include <dx10/f_imgui.sc.bin.h>
     #include <dx10/f_material.sc.bin.h>
     #include <dx10/f_pick.sc.bin.h>
@@ -115,6 +127,9 @@
     #include <dx11/f_brightpass.sc.bin.h>
     #include <dx11/f_debug.sc.bin.h>
     #include <dx11/f_fxaa.sc.bin.h>
+    #include <dx11/f_ibl_brdf.sc.bin.h>
+    #include <dx11/f_ibl_irradiance.sc.bin.h>
+    #include <dx11/f_ibl_prefilter.sc.bin.h>
     #include <dx11/f_imgui.sc.bin.h>
     #include <dx11/f_material.sc.bin.h>
     #include <dx11/f_pick.sc.bin.h>
@@ -142,6 +157,9 @@
     #include <metal/f_brightpass.sc.bin.h>
     #include <metal/f_debug.sc.bin.h>
     #include <metal/f_fxaa.sc.bin.h>
+    #include <metal/f_ibl_brdf.sc.bin.h>
+    #include <metal/f_ibl_irradiance.sc.bin.h>
+    #include <metal/f_ibl_prefilter.sc.bin.h>
     #include <metal/f_imgui.sc.bin.h>
     #include <metal/f_material.sc.bin.h>
     #include <metal/f_pick.sc.bin.h>
@@ -189,6 +207,9 @@ namespace star::resources::detail {
     const bgfx::EmbeddedShader k_ssaoblur_fs = BGFX_EMBEDDED_SHADER(f_ssaoblur);
     const bgfx::EmbeddedShader k_ssr_fs = BGFX_EMBEDDED_SHADER(f_ssr);
     const bgfx::EmbeddedShader k_taa_fs = BGFX_EMBEDDED_SHADER(f_taa);
+    const bgfx::EmbeddedShader k_ibl_brdf_fs = BGFX_EMBEDDED_SHADER(f_ibl_brdf);
+    const bgfx::EmbeddedShader k_ibl_irradiance_fs = BGFX_EMBEDDED_SHADER(f_ibl_irradiance);
+    const bgfx::EmbeddedShader k_ibl_prefilter_fs = BGFX_EMBEDDED_SHADER(f_ibl_prefilter);
 
     EmbeddedShaderPair embedded_pair_for(const BuiltinShader id) noexcept {
         switch (id) {
@@ -226,6 +247,12 @@ namespace star::resources::detail {
                 return {&k_fullscreen_vs, &k_ssr_fs};
             case BuiltinShader::Taa:
                 return {&k_fullscreen_vs, &k_taa_fs};
+            case BuiltinShader::IblBrdf:
+                return {&k_fullscreen_vs, &k_ibl_brdf_fs};
+            case BuiltinShader::IblIrradiance:
+                return {&k_fullscreen_vs, &k_ibl_irradiance_fs};
+            case BuiltinShader::IblPrefilter:
+                return {&k_fullscreen_vs, &k_ibl_prefilter_fs};
         }
         return {nullptr, nullptr};
     }

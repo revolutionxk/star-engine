@@ -2,6 +2,7 @@
 #define MATERIAL_HEADER
 
 #include <bgfx_shader.sh>
+#include "ibl.sh"
 
 #define MAX_LIGHTS 16
 
@@ -25,6 +26,7 @@ uniform vec4 u_shadowParams;
 uniform vec4 u_shadowParams2;
 uniform vec4 u_texFlags;
 uniform vec4 u_iblParams;
+uniform vec4 u_iblParams2;
 
 #define MAX_CASCADES 4
 uniform mat4 u_cascadeViewProj[MAX_CASCADES];
@@ -36,7 +38,9 @@ SAMPLER2D(s_texNormal, 1);
 SAMPLER2D(s_texMetallicRoughness, 2);
 SAMPLER2D(s_texEmissive, 3);
 SAMPLER2D(s_shadowMap, 4);
-SAMPLER2D(s_envMap, 5);
+SAMPLER2D(s_specularEnv, 5);
+SAMPLER2D(s_irradianceEnv, 6);
+SAMPLER2D(s_brdfLut, 7);
 
 struct Material
 {
@@ -462,33 +466,40 @@ vec3 evaluateEnvironmentSpecular(vec3 N, vec3 V, Material mat, vec3 groundColor)
     return sanitizeColor(prefiltered_env * env_brdf * mat.occlusion, 4096.0);
 }
 
-vec2 dirToEquirectUV(vec3 d)
+vec3 sampleSpecularEnv(vec3 dir, float roughness)
 {
-    float u = atan2(d.z, d.x) * (INV_PI * 0.5) + 0.5;
-    float v = acos(clamp(d.y, -1.0, 1.0)) * INV_PI;
-    return vec2(u, v);
-}
+    float levels = max(u_iblParams2.x, 1.0);
+    float level = saturate(roughness) * (levels - 1.0);
+    float lo = floor(level);
+    float hi = min(lo + 1.0, levels - 1.0);
 
-vec3 sampleEnvLod(vec3 dir, float lod)
-{
-    return texture2DLod(s_envMap, dirToEquirectUV(dir), lod).rgb * u_iblParams.z;
+    vec2 uv = dirToEquirectUV(dir);
+    float invLevels = 1.0 / levels;
+    float pad = u_iblParams2.y;
+    float v = clamp(uv.y, pad, 1.0 - pad) * invLevels;
+
+    vec3 a = texture2DLod(s_specularEnv, vec2(uv.x, v + lo * invLevels), 0.0).rgb;
+    vec3 b = texture2DLod(s_specularEnv, vec2(uv.x, v + hi * invLevels), 0.0).rgb;
+    return mix(a, b, level - lo) * u_iblParams.z;
 }
 
 vec3 evaluateIBLSpecular(vec3 N, vec3 V, Material mat)
 {
     vec3 R = reflect(-V, N);
     vec3 dominant_R = dominantSpecularDirection(N, R, mat.roughness);
-    float lod = saturate(mat.roughness) * u_iblParams.y;
-    vec3 prefiltered = sampleEnvLod(dominant_R, lod);
+    vec3 prefiltered = sampleSpecularEnv(dominant_R, mat.roughness);
 
     float NdV = saturate(dot(N, V));
-    vec3 env_brdf = envBRDFApprox(mat.F0, mat.roughness, NdV);
+    vec2 dfg = texture2DLod(s_brdfLut, vec2(clamp(NdV, 0.002, 0.998),
+                                            clamp(mat.roughness, 0.002, 0.998)), 0.0).xy;
+    vec3 env_brdf = mat.F0 * dfg.x + vec3(dfg.y, dfg.y, dfg.y);
+
     return sanitizeColor(prefiltered * env_brdf * mat.occlusion, 4096.0);
 }
 
 vec3 evaluateIBLDiffuse(vec3 N, Material mat)
 {
-    vec3 irradiance = sampleEnvLod(N, max(u_iblParams.y - 1.0, 0.0));
+    vec3 irradiance = texture2DLod(s_irradianceEnv, dirToEquirectUV(N), 0.0).rgb * u_iblParams.z;
     return sanitizeColor(irradiance * mat.diffuse * mat.occlusion, 4096.0);
 }
 

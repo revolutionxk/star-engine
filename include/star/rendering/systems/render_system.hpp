@@ -72,8 +72,22 @@ namespace star::systems {
 
         struct EnvironmentState {
             graphics::ResourceHandle<graphics::Texture> map{};
+            u32 width{0};
+            u32 height{0};
             f32 max_mip{0.0f};
             f32 intensity{1.0f};
+        };
+
+        struct IblState {
+            graphics::ResourceHandle<graphics::Texture> irradiance{};
+            graphics::ResourceHandle<graphics::Texture> specular{};
+            graphics::ResourceHandle<graphics::Texture> brdf_lut{};
+            f32 specular_levels{0.0f};
+            f32 specular_strip_pad{0.0f};
+
+            [[nodiscard]] bool is_valid() const noexcept {
+                return irradiance.is_valid() && specular.is_valid() && brdf_lut.is_valid();
+            }
         };
 
         void set_job_system(JobSystem* jobs) noexcept {
@@ -86,6 +100,14 @@ namespace star::systems {
 
         [[nodiscard]] const EnvironmentState& environment() const {
             return m_environment;
+        }
+
+        void set_ibl(const IblState& ibl) {
+            m_ibl = ibl;
+        }
+
+        [[nodiscard]] const IblState& ibl() const {
+            return m_ibl;
         }
 
         [[nodiscard]] const rendering::RenderQueue& render_queue() const {
@@ -109,6 +131,7 @@ namespace star::systems {
         rendering::AtmosphericLighting m_atmospheric;
         ShadowState m_shadow;
         EnvironmentState m_environment;
+        IblState m_ibl;
         static constexpr u32 PARALLEL_CULL_THRESHOLD = 256;
         static constexpr u32 CULL_GRAIN = 128;
 

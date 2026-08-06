@@ -21,5 +21,8 @@ namespace star::resources {
         SsaoBlur,
         Ssr,
         Taa,
+        IblBrdf,
+        IblIrradiance,
+        IblPrefilter,
     };
 } // namespace star::resources

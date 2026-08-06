@@ -328,10 +328,36 @@ namespace star::systems {
         const rendering::Frustum frustum =
             rendering::Frustum::extract(viewport->projection_matrix() * viewport->view_matrix());
 
-        for (const auto& item : scene.renderables) {
-            if (!item.mesh.is_valid()) {
+        const auto count = static_cast<u32>(scene.renderables.size());
+        if (count == 0) {
+            return;
+        }
+
+        m_visible.assign(count, 0);
+
+        const auto cull = [&](const u32 begin, const u32 end) {
+            for (u32 i = begin; i < end; ++i) {
+                const auto& item = scene.renderables[i];
+                if (!item.mesh.is_valid())
+                    continue;
+                if (item.has_bounds && !frustum.intersects_aabb_world(item.bounds, item.model_matrix))
+                    continue;
+                m_visible[i] = 1;
+            }
+        };
+
+        if (m_jobs && count >= PARALLEL_CULL_THRESHOLD) {
+            m_jobs->parallel_for(count, CULL_GRAIN, cull);
+        } else {
+            cull(0, count);
+        }
+
+        for (u32 i = 0; i < count; ++i) {
+            if (m_visible[i] == 0) {
                 continue;
             }
+
+            const auto& item = scene.renderables[i];
 
             rendering::DrawCall draw_call;
             draw_call.model_matrix = item.model_matrix;
@@ -340,19 +366,12 @@ namespace star::systems {
             draw_call.layer = item.layer;
             draw_call.parameters = item.parameters;
             draw_call.entity_id = item.entity_id;
-
-            if (const auto* mesh = m_resource_manager.get_mesh(item.mesh)) {
-                if (!frustum.intersects_aabb_world(mesh->bounds, draw_call.model_matrix))
-                    continue;
-            }
-
             draw_call.distance_sq = camera_position.distance_squared_to(item.world_position);
 
             draw_call.is_transparent = item.is_transparent;
             if (!draw_call.is_transparent && item.material.is_valid()) {
                 if (const auto* material = m_resource_manager.get_material(item.material)) {
-                    draw_call.is_transparent =
-                        material->pipeline_state.blend_mode != graphics::BlendMode::Opaque;
+                    draw_call.is_transparent = material->pipeline_state.blend_mode != graphics::BlendMode::Opaque;
                 }
             }
 

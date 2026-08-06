@@ -114,8 +114,31 @@ namespace star::graphics {
 
         m_context.reset();
 
+        if (const bgfx::Stats* stats = bgfx::getStats()) {
+            const u32 alive = stats->numTextures + stats->numFrameBuffers + stats->numPrograms +
+                              stats->numShaders + stats->numVertexBuffers + stats->numIndexBuffers +
+                              stats->numUniforms;
+            if (alive > 0) {
+                STAR_LOG_WARN(LogCategory::Graphics,
+                              "GPU resources alive at shutdown: {} textures, {} framebuffers, {} programs, "
+                              "{} shaders, {} vb, {} ib, {} uniforms",
+                              stats->numTextures, stats->numFrameBuffers, stats->numPrograms, stats->numShaders,
+                              stats->numVertexBuffers, stats->numIndexBuffers, stats->numUniforms);
+
+            }
+        }
+
         bgfx::shutdown();
         m_initialized = false;
+    }
+
+    void BGFXDevice::set_gpu_profiling(const bool enabled) {
+        if (m_gpu_profiling == enabled) {
+            return;
+        }
+        m_gpu_profiling = enabled;
+        bgfx::setDebug(enabled ? BGFX_DEBUG_PROFILER : BGFX_DEBUG_NONE);
+        STAR_LOG_INFO(LogCategory::Graphics, "GPU profiling {}", enabled ? "enabled" : "disabled");
     }
 
     ResourceHandle<Buffer> BGFXDevice::create_buffer(BufferDescriptor& buffer_descriptor) {

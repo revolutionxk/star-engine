@@ -31,6 +31,8 @@ namespace star::graphics {
         void destroy_shader(ResourceHandle<Shader> handle) override;
         void destroy_framebuffer(ResourceHandle<Framebuffer> handle) override;
 
+        void set_gpu_profiling(bool enabled) override;
+
       private:
         enum class BufferKind : u32 {
             StaticVertex,

@@ -4,6 +4,7 @@
 #include "application_config.hpp"
 #include "application_context.hpp"
 #include "game_loop.hpp"
+#include "star/core/job_system.hpp"
 
 namespace star::platform {
     class Input;
@@ -81,6 +82,10 @@ namespace star::application {
             return *m_game_loop;
         }
 
+        [[nodiscard]] JobSystem& jobs() const {
+            return *m_jobs;
+        }
+
         [[nodiscard]] const GameLoop& game_loop() const {
             return *m_game_loop;
         }
@@ -123,6 +128,7 @@ namespace star::application {
         std::unique_ptr<platform::Input> m_input_manager;
         std::vector<std::unique_ptr<AppWindow>> m_app_windows;
         std::unique_ptr<GameLoop> m_game_loop;
+        std::unique_ptr<JobSystem> m_jobs;
 
         std::shared_ptr<graphics::Device> m_device;
         std::shared_ptr<resources::ResourceManager> m_resource_manager;

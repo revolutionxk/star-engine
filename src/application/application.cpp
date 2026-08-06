@@ -53,6 +53,9 @@ namespace star::application {
 
         m_window_manager->set_input_manager(m_input_manager.get());
 
+        m_jobs = std::make_unique<JobSystem>();
+        m_context.register_service(m_jobs.get());
+
         const GameLoopConfig loop_config{.fixed_timestep = m_config.fixed_timestep, .target_fps = m_config.max_fps};
         m_game_loop = std::make_unique<GameLoop>(loop_config);
 
@@ -84,6 +87,11 @@ namespace star::application {
 
         if (m_input_manager) {
             m_input_manager.reset();
+        }
+
+        if (m_jobs) {
+            m_jobs->wait_idle();
+            m_jobs.reset();
         }
 
         m_context.clear();

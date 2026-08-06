@@ -1,5 +1,6 @@
 #include "star/rendering/renderer.hpp"
 
+#include "star/application/application.hpp"
 #include "star/core/logger.hpp"
 #include "star/ecs/components/camera.hpp"
 #include "star/ecs/components/transform.hpp"
@@ -29,6 +30,9 @@ namespace star::rendering {
 
         m_view_allocator = std::make_unique<ViewAllocator>(*m_device->context());
         m_render_system = std::make_unique<systems::RenderSystem>(*m_device, *m_resource_manager);
+        if (application::Application::has_instance()) {
+            m_render_system->set_job_system(&application::Application::instance().jobs());
+        }
         m_debug_renderer = std::make_unique<DebugRenderer>(*m_resource_manager);
 
         add_render_pass(std::make_unique<ShadowPass>(*m_device, *m_resource_manager, *m_render_system));

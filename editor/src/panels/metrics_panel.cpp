@@ -110,8 +110,15 @@ namespace star::editor {
     void MetricsPanel::render_pass_table() const {
         ImGui::SeparatorText("Per pass");
 
+        bool profiling = m_device && m_device->gpu_profiling();
+        if (ImGui::Checkbox("GPU timings", &profiling) && m_device) {
+            m_device->set_gpu_profiling(profiling);
+        }
+        ImGui::SetItemTooltip("Issues a GPU timer query per view. Costs a little; leave off unless profiling.");
+
         if (m_views.empty()) {
-            ImGui::TextDisabled("No view timings this frame.");
+            ImGui::TextDisabled(profiling ? "Waiting for the first timed frame..."
+                                          : "Enable GPU timings to see per-pass cost.");
             return;
         }
 

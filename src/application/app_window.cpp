@@ -92,6 +92,7 @@ namespace star::application {
         }
 
         m_resource_manager = std::make_shared<resources::ResourceManager>(*m_device);
+        m_scene_extractor.set_resource_manager(m_resource_manager.get());
         m_renderer = std::make_unique<rendering::Renderer>(*m_device, *m_window, *m_resource_manager);
         m_scene_manager = std::make_unique<scene::SceneManager>();
         m_layer_stack = std::make_unique<LayerStack>();

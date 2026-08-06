@@ -62,6 +62,8 @@ namespace star::rendering {
         u64 entity_id{0};
         u32 layer{0};
         bool is_transparent{false};
+        bool has_bounds{false};
+        AABB bounds{};
     };
 
     struct RenderScene {

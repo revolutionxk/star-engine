@@ -11,6 +11,7 @@
 #include "star/rendering/components/material_instance.hpp"
 #include "star/rendering/components/mesh_renderer.hpp"
 #include "star/rendering/render_scene.hpp"
+#include "star/resources/resource_manager.hpp"
 #include "star/scene/scene.hpp"
 
 namespace star::scene {
@@ -159,6 +160,12 @@ namespace star::scene {
                 snap.mesh = mr.mesh;
                 snap.material = mr.material;
                 snap.layer = mr.layer;
+                if (m_resources) {
+                    if (const auto* mesh = m_resources->get_mesh(mr.mesh)) {
+                        snap.bounds = mesh->bounds;
+                        snap.has_bounds = true;
+                    }
+                }
                 if (const auto* mi = e.try_get<components::MaterialInstance>()) {
                     snap.parameters = mi->parameters;
                     if (mi->material.is_valid()) {

@@ -72,6 +72,12 @@ namespace star::graphics {
             return new_handle;
         }
 
+        virtual void set_gpu_profiling(bool enabled) = 0;
+
+        [[nodiscard]] bool gpu_profiling() const noexcept {
+            return m_gpu_profiling;
+        }
+
         bool is_initialized() const {
             return m_initialized;
         }
@@ -86,6 +92,7 @@ namespace star::graphics {
         bool m_initialized = false;
         GraphicsDeviceConfig m_config;
         DeviceCaps m_caps;
+        bool m_gpu_profiling = false;
         std::shared_ptr<DeviceContext> m_context;
     };
 } // namespace star::graphics

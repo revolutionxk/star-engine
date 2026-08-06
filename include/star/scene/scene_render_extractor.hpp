@@ -8,6 +8,10 @@ namespace star::rendering {
     struct RenderScene;
 }
 
+namespace star::resources {
+    class ResourceManager;
+} // namespace star::resources
+
 namespace star::scene {
     class Scene;
 
@@ -21,6 +25,10 @@ namespace star::scene {
         SceneRenderExtractor(SceneRenderExtractor&&) noexcept;
         SceneRenderExtractor& operator=(SceneRenderExtractor&&) noexcept;
         
+        void set_resource_manager(resources::ResourceManager* resources) noexcept {
+            m_resources = resources;
+        }
+
         void extract(Scene& scene, rendering::RenderScene& out, f32 alpha = 1.0f) const;
 
         void reset();
@@ -28,5 +36,6 @@ namespace star::scene {
       private:
         struct QueryCache;
         std::unique_ptr<QueryCache> m_cache;
+        resources::ResourceManager* m_resources{nullptr};
     };
 } // namespace star::scene

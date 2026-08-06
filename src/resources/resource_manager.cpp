@@ -21,10 +21,8 @@ namespace star::resources {
         std::string name_of(const ResourceStorage<T>& storage, const ResourceHandle<T>& handle) {
             if (!handle.is_valid())
                 return {};
-            for (const auto& [name, id] : storage.path_to_id)
-                if (id == handle.id)
-                    return name;
-            return {};
+            const auto it = storage.resources.find(handle.id);
+            return it != storage.resources.end() ? it->second.name : std::string{};
         }
 
         template<typename T>
@@ -80,10 +78,8 @@ namespace star::resources {
     std::string ResourceManager::shader_name(const ResourceHandle<graphics::Shader>& handle) const {
         if (!handle.is_valid())
             return {};
-        for (const auto& [name, id] : m_shaders.path_to_id)
-            if (id == handle.id)
-                return name;
-        return {};
+        const auto it = m_shaders.resources.find(handle.id);
+        return it != m_shaders.resources.end() ? it->second.name : std::string{};
     }
 
     ResourceHandle<graphics::Shader> ResourceManager::shader_by_name(const std::string& name) const {
@@ -188,7 +184,7 @@ namespace star::resources {
         mesh->m_state = ResourceState::Loaded;
         mesh->m_generation = generation;
 
-        m_meshes.resources[id] = {std::move(mesh), generation, 1};
+        m_meshes.resources[id] = {std::move(mesh), name, generation, 1};
         m_meshes.path_to_id[name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Created mesh '{}' (id: {})", name, id);
@@ -376,7 +372,7 @@ namespace star::resources {
         texture->m_state = ResourceState::Loaded;
         texture->m_generation = generation;
 
-        m_textures.resources[id] = {std::move(texture), generation, 1};
+        m_textures.resources[id] = {std::move(texture), name, generation, 1};
         m_textures.path_to_id[name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Created texture '{}' (id: {})", name, id);
@@ -469,7 +465,7 @@ namespace star::resources {
         const u32 id = m_shaders.allocate_id();
         const u32 generation = m_shaders.generation_of(id);
         shader->m_generation = generation;
-        m_shaders.resources[id] = {std::move(shader), generation, 1};
+        m_shaders.resources[id] = {std::move(shader), shader_name, generation, 1};
         m_shaders.path_to_id[shader_name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Loaded shader '{}' (id: {})", shader_name, id);
@@ -497,7 +493,7 @@ namespace star::resources {
         const u32 id = m_shaders.allocate_id();
         const u32 generation = m_shaders.generation_of(id);
         shader->m_generation = generation;
-        m_shaders.resources[id] = {std::move(shader), generation, 1};
+        m_shaders.resources[id] = {std::move(shader), name, generation, 1};
         m_shaders.path_to_id[name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Registered builtin shader '{}' (id: {})", name, id);
@@ -575,7 +571,7 @@ namespace star::resources {
         material->m_state = ResourceState::Loaded;
         material->m_generation = generation;
 
-        m_materials.resources[id] = {std::move(material), generation, 1};
+        m_materials.resources[id] = {std::move(material), name, generation, 1};
         m_materials.path_to_id[name] = id;
 
         STAR_LOG_INFO(LogCategory::Resources, "Created material '{}' (id: {})", name, id);

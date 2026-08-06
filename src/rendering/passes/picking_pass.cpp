@@ -15,7 +15,13 @@ namespace star::rendering {
     PickingPass::PickingPass(graphics::Device& device, resources::ResourceManager& resources)
         : m_device(device), m_resources(resources) {}
 
-    PickingPass::~PickingPass() = default;
+    PickingPass::~PickingPass() {
+        m_target.destroy();
+        if (m_readback.is_valid()) {
+            m_device.destroy_texture(m_readback);
+            m_readback = {};
+        }
+    }
 
     Vector4 PickingPass::encode_id(const u32 id) {
         return Vector4{static_cast<f32>(id & 0xFFu) / 255.0f, static_cast<f32>((id >> 8) & 0xFFu) / 255.0f,

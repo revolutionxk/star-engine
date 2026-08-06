@@ -30,6 +30,7 @@ namespace star::resources {
     struct ResourceStorage {
         struct Entry {
             std::unique_ptr<T> resource;
+            std::string name;
             u32 generation = 1;
             u32 ref_count = 0;
         };

@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_map>
 
+#include "star/core/job_system.hpp"
 #include "star/core/types.hpp"
 #include "star/graphics/resource_handle.hpp"
 #include "star/math/matrix.hpp"
@@ -61,6 +62,10 @@ namespace star::systems {
             f32 intensity{1.0f};
         };
 
+        void set_job_system(JobSystem* jobs) noexcept {
+            m_jobs = jobs;
+        }
+
         void set_environment(const EnvironmentState& environment) {
             m_environment = environment;
         }
@@ -90,7 +95,12 @@ namespace star::systems {
         rendering::AtmosphericLighting m_atmospheric;
         ShadowState m_shadow;
         EnvironmentState m_environment;
+        static constexpr u32 PARALLEL_CULL_THRESHOLD = 256;
+        static constexpr u32 CULL_GRAIN = 128;
+
+        JobSystem* m_jobs{nullptr};
         rendering::uniforms::SceneUniforms m_uniforms;
+        std::vector<u8> m_visible;
         mutable std::unordered_map<u64, Matrix4> m_prev_models;
         mutable std::unordered_map<u64, Matrix4> m_cur_models;
     };

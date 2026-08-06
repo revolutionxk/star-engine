@@ -274,10 +274,28 @@ namespace star::systems {
                                     m_light_env.sun_luminance_rgb.z, 0.0f};
         context.set_uniform(ids.env_sun_color, &env_sun_color);
 
-        const Vector4 shadow_params{m_shadow.enabled ? 1.0f : 0.0f, m_shadow.bias, m_shadow.texel_size,
+        const Vector4 shadow_params{m_shadow.enabled ? static_cast<f32>(m_shadow.cascade_count) : 0.0f,
+                                    m_shadow.bias, m_shadow.texel_size,
                                     m_shadow.origin_bottom_left ? 1.0f : 0.0f};
         context.set_uniform(ids.shadow_params, &shadow_params);
-        context.set_uniform(ids.light_view_proj, &m_shadow.light_view_proj);
+
+        const Vector4 shadow_params2{m_shadow.atlas_scale, m_shadow.normal_bias,
+                                     m_shadow.visualize ? 1.0f : 0.0f, 0.0f};
+        context.set_uniform(ids.shadow_params2, &shadow_params2);
+
+        std::array<Matrix4, rendering::MAX_SHADOW_CASCADES> cascade_vp{};
+        std::array<Vector4, rendering::MAX_SHADOW_CASCADES> cascade_offsets{};
+        Vector4 cascade_splits{};
+        for (u32 i = 0; i < rendering::MAX_SHADOW_CASCADES; ++i) {
+            cascade_vp[i] = m_shadow.cascades[i].view_proj;
+            cascade_offsets[i] = {m_shadow.cascades[i].atlas_offset.x, m_shadow.cascades[i].atlas_offset.y,
+                                  m_shadow.cascades[i].texel_world_size,
+                                  1.0f / std::max(m_shadow.cascades[i].depth_range, 1e-3f)};
+            (&cascade_splits.x)[i] = m_shadow.cascades[i].split_far;
+        }
+        context.set_uniform(ids.cascade_view_proj, cascade_vp.data(), rendering::MAX_SHADOW_CASCADES);
+        context.set_uniform(ids.cascade_offsets, cascade_offsets.data(), rendering::MAX_SHADOW_CASCADES);
+        context.set_uniform(ids.cascade_splits, &cascade_splits);
         if (m_shadow.map.is_valid())
             context.set_texture(ids.sampler_shadow, rendering::uniforms::STAGE_SHADOW, m_shadow.map);
 

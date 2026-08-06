@@ -13,7 +13,7 @@ namespace star::resources {
         return meta;
     }
 
-    Uuid read_asset_uuid(const std::filesystem::path& asset_path) {
+    UUID read_asset_uuid(const std::filesystem::path& asset_path) {
         const std::filesystem::path meta = meta_path_for(asset_path);
 
         std::ifstream in(meta);
@@ -30,7 +30,7 @@ namespace star::resources {
         }
 
         const auto text = document.value("uuid", std::string{});
-        const auto parsed = Uuid::parse(text);
+        const auto parsed = UUID::parse(text);
         if (!parsed.has_value()) {
             STAR_LOG_WARN(LogCategory::Resources, "Asset meta '{}' has no usable uuid", meta.string());
             return {};
@@ -38,7 +38,7 @@ namespace star::resources {
         return *parsed;
     }
 
-    bool write_asset_uuid(const std::filesystem::path& asset_path, const Uuid& uuid) {
+    bool write_asset_uuid(const std::filesystem::path& asset_path, const UUID& uuid) {
         const std::filesystem::path meta = meta_path_for(asset_path);
 
         std::error_code ec;
@@ -59,12 +59,12 @@ namespace star::resources {
         return true;
     }
 
-    Uuid ensure_asset_uuid(const std::filesystem::path& asset_path) {
-        if (const Uuid existing = read_asset_uuid(asset_path); existing.is_valid()) {
+    UUID ensure_asset_uuid(const std::filesystem::path& asset_path) {
+        if (const UUID existing = read_asset_uuid(asset_path); existing.is_valid()) {
             return existing;
         }
 
-        const Uuid created = Uuid::generate();
+        const UUID created = UUID::generate();
         write_asset_uuid(asset_path, created);
         return created;
     }

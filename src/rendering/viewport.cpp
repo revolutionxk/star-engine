@@ -214,6 +214,8 @@ namespace star::rendering {
 
     void Viewport::update_camera_matrices(const components::Camera& camera, const components::Transform& transform) {
         m_camera_position = transform.position;
+        m_near_plane = camera.near_plane;
+        m_far_plane = camera.far_plane;
 
         const auto transform_matrix = transform.to_matrix();
         m_view_matrix = Matrix4::inverse(transform_matrix);

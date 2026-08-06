@@ -29,8 +29,11 @@ namespace star::rendering::uniforms {
 
     inline constexpr std::string_view CAM_POS = "u_camPos";
 
-    inline constexpr std::string_view LIGHT_VIEW_PROJ = "u_lightViewProj";
+    inline constexpr std::string_view CASCADE_VIEW_PROJ = "u_cascadeViewProj";
+    inline constexpr std::string_view CASCADE_SPLITS = "u_cascadeSplits";
+    inline constexpr std::string_view CASCADE_OFFSETS = "u_cascadeOffsets";
     inline constexpr std::string_view SHADOW_PARAMS = "u_shadowParams";
+    inline constexpr std::string_view SHADOW_PARAMS2 = "u_shadowParams2";
 
     inline constexpr std::string_view CUR_VIEW_PROJ_NJ = "u_curViewProjNJ";
     inline constexpr std::string_view PREV_VIEW_PROJ = "u_prevViewProj";
@@ -70,8 +73,11 @@ namespace star::rendering::uniforms {
         graphics::UniformId ibl_params;
 
         graphics::UniformId cam_pos;
-        graphics::UniformId light_view_proj;
+        graphics::UniformId cascade_view_proj;
+        graphics::UniformId cascade_splits;
+        graphics::UniformId cascade_offsets;
         graphics::UniformId shadow_params;
+        graphics::UniformId shadow_params2;
 
         graphics::UniformId cur_view_proj_nj;
         graphics::UniformId prev_view_proj;

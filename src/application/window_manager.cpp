@@ -1,7 +1,6 @@
 #include "star/application/window_manager.hpp"
 
 namespace star::application {
-
     WindowId WindowManager::create_window(const platform::WindowConfiguration& config) {
         auto window = platform::Window::create();
         if (!window) {
@@ -59,7 +58,6 @@ namespace star::application {
         const bool was_main = it->second.is_main;
         m_windows.erase(it);
 
-        // If we destroyed the main window, set another window as main if available
         if (was_main && !m_windows.empty()) {
             m_main_window_id = m_windows.begin()->first;
             m_windows.begin()->second.is_main = true;

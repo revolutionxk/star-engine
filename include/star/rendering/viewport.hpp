@@ -73,6 +73,14 @@ namespace star::rendering {
             return m_camera_position;
         }
 
+        [[nodiscard]] f32 near_plane() const noexcept {
+            return m_near_plane;
+        }
+
+        [[nodiscard]] f32 far_plane() const noexcept {
+            return m_far_plane;
+        }
+
         void set_taa_enabled(const bool enabled) {
             m_taa_enabled = enabled;
         }
@@ -119,6 +127,8 @@ namespace star::rendering {
         Matrix4 m_view_matrix{Matrix4::identity()};
         Matrix4 m_projection_matrix{Matrix4::identity()};
         Vector3 m_camera_position{0.0f, 0.0f, 0.0f};
+        f32 m_near_plane{0.1f};
+        f32 m_far_plane{1000.0f};
         bool m_has_camera{false};
 
         bool m_taa_enabled{false};

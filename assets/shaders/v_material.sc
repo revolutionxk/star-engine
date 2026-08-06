@@ -1,11 +1,10 @@
 $input a_position, a_normal, a_tangent, a_texcoord0
-$output v_position, v_normal, v_tangent, v_texcoord0, v_viewDir, v_shadowCoord, v_curClip, v_prevClip
+$output v_position, v_normal, v_tangent, v_texcoord0, v_viewDir, v_curClip, v_prevClip
 
 #include <bgfx_shader.sh>
 #include "shaderlib.sh"
 
 uniform vec4 u_camPos;
-uniform mat4 u_lightViewProj;
 uniform mat4 u_curViewProjNJ;
 uniform mat4 u_prevViewProj;
 uniform mat4 u_prevModel;
@@ -30,7 +29,6 @@ void main()
     v_tangent = normalize(v_tangent - v_normal * dot(v_normal, v_tangent));
     v_texcoord0 = a_texcoord0;
     v_viewDir = u_camPos.xyz - v_position;
-    v_shadowCoord = mul(u_lightViewProj, vec4(v_position, 1.0));
 
     vec4 curWorld = mul(u_model[0], vec4(a_position, 1.0));
     vec4 prevWorld = mul(u_prevModel, vec4(a_position, 1.0));

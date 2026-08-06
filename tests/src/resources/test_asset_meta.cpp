@@ -43,11 +43,11 @@ TEST_CASE("read_asset_uuid returns invalid when there is no meta", "[resources][
 TEST_CASE("ensure_asset_uuid creates a meta and is stable across calls", "[resources][meta]") {
     const auto asset = test::make_asset("stable.png");
 
-    const Uuid first = ensure_asset_uuid(asset);
+    const UUID first = ensure_asset_uuid(asset);
     REQUIRE(first.is_valid());
     REQUIRE(std::filesystem::exists(meta_path_for(asset)));
 
-    const Uuid second = ensure_asset_uuid(asset);
+    const UUID second = ensure_asset_uuid(asset);
     CHECK(second == first);
 
     test::clean(asset);
@@ -55,7 +55,7 @@ TEST_CASE("ensure_asset_uuid creates a meta and is stable across calls", "[resou
 
 TEST_CASE("uuid survives renaming the asset when the meta follows", "[resources][meta]") {
     const auto original = test::make_asset("before.png");
-    const Uuid id = ensure_asset_uuid(original);
+    const UUID id = ensure_asset_uuid(original);
 
     const auto renamed = test::scratch_dir() / "after.png";
     std::filesystem::rename(original, renamed);
@@ -75,7 +75,7 @@ TEST_CASE("a malformed meta is replaced instead of crashing", "[resources][meta]
 
     CHECK_FALSE(read_asset_uuid(asset).is_valid());
 
-    const Uuid recovered = ensure_asset_uuid(asset);
+    const UUID recovered = ensure_asset_uuid(asset);
     CHECK(recovered.is_valid());
     CHECK(read_asset_uuid(asset) == recovered);
 

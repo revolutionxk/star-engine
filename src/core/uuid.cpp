@@ -39,7 +39,7 @@ namespace star::detail {
 } // namespace star::detail
 
 namespace star {
-    Uuid Uuid::generate() {
+    UUID UUID::generate() {
         std::uniform_int_distribution<u64> distribution;
 
         u64 high = distribution(detail::engine());
@@ -48,10 +48,10 @@ namespace star {
         if (high == 0 && low == 0) {
             high = 1;
         }
-        return Uuid{high, low};
+        return UUID{high, low};
     }
 
-    Uuid Uuid::derive(const Uuid& parent, const std::string_view tag) {
+    UUID UUID::derive(const UUID& parent, const std::string_view tag) {
         u64 high = detail::splitmix64(parent.high() ^ 0x2545f4914f6cdd1dull);
         u64 low = detail::splitmix64(parent.low());
 
@@ -63,10 +63,10 @@ namespace star {
         if (high == 0 && low == 0) {
             high = 1;
         }
-        return Uuid{high, low};
+        return UUID{high, low};
     }
 
-    std::optional<Uuid> Uuid::parse(const std::string_view text) {
+    std::optional<UUID> UUID::parse(const std::string_view text) {
         if (text.size() != 32) {
             return std::nullopt;
         }
@@ -76,10 +76,10 @@ namespace star {
         if (!detail::read_hex(text.substr(0, 16), high) || !detail::read_hex(text.substr(16, 16), low)) {
             return std::nullopt;
         }
-        return Uuid{high, low};
+        return UUID{high, low};
     }
 
-    std::string Uuid::to_string() const {
+    std::string UUID::to_string() const {
         std::array<char, 32> buffer{};
         detail::write_hex(m_high, buffer.data());
         detail::write_hex(m_low, buffer.data() + 16);

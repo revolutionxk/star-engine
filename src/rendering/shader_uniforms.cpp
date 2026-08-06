@@ -32,8 +32,11 @@ namespace star::rendering::uniforms {
         tex_flags = vec4(TEX_FLAGS);
         ibl_params = vec4(IBL_PARAMS);
 
-        light_view_proj = mat4(LIGHT_VIEW_PROJ);
+        cascade_view_proj = context.uniform(CASCADE_VIEW_PROJ, UniformType::Mat4, 4);
+        cascade_splits = vec4(CASCADE_SPLITS);
+        cascade_offsets = vec4(CASCADE_OFFSETS, 4);
         shadow_params = vec4(SHADOW_PARAMS);
+        shadow_params2 = vec4(SHADOW_PARAMS2);
 
         cur_view_proj_nj = mat4(CUR_VIEW_PROJ_NJ);
         prev_view_proj = mat4(PREV_VIEW_PROJ);

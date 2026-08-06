@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <unordered_map>
 
 #include "star/core/job_system.hpp"
@@ -7,6 +8,7 @@
 #include "star/math/matrix.hpp"
 #include "star/rendering/light_environment.hpp"
 #include "star/rendering/render_queue.hpp"
+#include "star/rendering/passes/shadow_pass.hpp"
 #include "star/rendering/shader_uniforms.hpp"
 #include "star/rendering/sky/atmosphere_solver.hpp"
 
@@ -43,13 +45,25 @@ namespace star::systems {
             m_atmospheric.valid = false;
         }
 
+        struct CascadeState {
+            Matrix4 view_proj{Matrix4::identity()};
+            Vector2 atlas_offset{0.0f, 0.0f};
+            f32 split_far{0.0f};
+            f32 texel_world_size{0.0f};
+            f32 depth_range{1.0f};
+        };
+
         struct ShadowState {
             graphics::ResourceHandle<graphics::Texture> map{};
-            Matrix4 light_view_proj{Matrix4::identity()};
+            std::array<CascadeState, rendering::MAX_SHADOW_CASCADES> cascades{};
+            u32 cascade_count{0};
             bool enabled{false};
             f32 bias{0.0025f};
-            f32 texel_size{1.0f / 2048.0f};
+            f32 normal_bias{0.02f};
+            f32 atlas_scale{0.5f};
+            f32 texel_size{1.0f / 4096.0f};
             bool origin_bottom_left{false};
+            bool visualize{false};
         };
 
         void set_shadow(const ShadowState& shadow) {

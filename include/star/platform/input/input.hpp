@@ -140,7 +140,6 @@ namespace star::platform {
         [[nodiscard]] virtual Vector2 mouse_position() const = 0;
         [[nodiscard]] virtual Vector2 mouse_delta() const = 0;
 
-        // Handler types - key/button/scroll handlers return true to consume the event.
         using KeyEventHandler = std::function<bool(const KeyEvent&)>;
         using MouseButtonEventHandler = std::function<bool(const MouseButtonEvent&)>;
         using MouseMoveEventHandler = std::function<void(const MouseMoveEvent&)>;
@@ -166,5 +165,4 @@ namespace star::platform {
       protected:
         Input() = default;
     };
-
 } // namespace star::platform

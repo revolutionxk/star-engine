@@ -22,8 +22,14 @@ uniform vec4 u_lightsCone[MAX_LIGHTS];
 uniform vec4 u_lightsCount;
 
 uniform vec4 u_shadowParams;
+uniform vec4 u_shadowParams2;
 uniform vec4 u_texFlags;
 uniform vec4 u_iblParams;
+
+#define MAX_CASCADES 4
+uniform mat4 u_cascadeViewProj[MAX_CASCADES];
+uniform vec4 u_cascadeOffsets[MAX_CASCADES];
+uniform vec4 u_cascadeSplits;
 
 SAMPLER2D(s_texColor, 0);
 SAMPLER2D(s_texNormal, 1);
@@ -278,35 +284,113 @@ vec3 evaluateLighting(vec3 worldPos, vec3 N, vec3 V, Material mat)
     return evaluateLightingFiltered(worldPos, N, V, mat, -1.0, 3.0);
 }
 
-float computeShadow(vec4 shadowCoord, float NdL)
+vec2 poissonDisk(int i)
 {
-    if (u_shadowParams.x < 0.5)
+    if (i ==  0) return vec2(-0.94201624, -0.39906216);
+    if (i ==  1) return vec2( 0.94558609, -0.76890725);
+    if (i ==  2) return vec2(-0.09418410, -0.92938870);
+    if (i ==  3) return vec2( 0.34495938,  0.29387760);
+    if (i ==  4) return vec2(-0.91588581,  0.45771432);
+    if (i ==  5) return vec2(-0.81544232, -0.87912464);
+    if (i ==  6) return vec2(-0.38277543,  0.27676845);
+    if (i ==  7) return vec2( 0.97484398,  0.75648379);
+    if (i ==  8) return vec2( 0.44323325, -0.97511554);
+    if (i ==  9) return vec2( 0.53742981, -0.47373420);
+    if (i == 10) return vec2(-0.26496911, -0.41893023);
+    if (i == 11) return vec2( 0.79197514,  0.19090188);
+    if (i == 12) return vec2(-0.24188840,  0.99706507);
+    if (i == 13) return vec2(-0.81409955,  0.91437590);
+    if (i == 14) return vec2( 0.19984126,  0.78641367);
+    return vec2( 0.14383161, -0.14100790);
+}
+
+float interleavedGradientNoise(vec2 pixel)
+{
+    return fract(52.9829189 * fract(dot(pixel, vec2(0.06711056, 0.00583715))));
+}
+
+int selectCascade(float viewDepth, int count)
+{
+    if (count > 1 && viewDepth < u_cascadeSplits.x) return 0;
+    if (count > 1 && viewDepth < u_cascadeSplits.y) return 1;
+    if (count > 2 && viewDepth < u_cascadeSplits.z) return 2;
+    if (count > 3 && viewDepth < u_cascadeSplits.w) return 3;
+    return count - 1;
+}
+
+mat4 cascadeMatrix(int index)
+{
+    if (index == 0) return u_cascadeViewProj[0];
+    if (index == 1) return u_cascadeViewProj[1];
+    if (index == 2) return u_cascadeViewProj[2];
+    return u_cascadeViewProj[3];
+}
+
+vec4 cascadeOffset(int index)
+{
+    if (index == 0) return u_cascadeOffsets[0];
+    if (index == 1) return u_cascadeOffsets[1];
+    if (index == 2) return u_cascadeOffsets[2];
+    return u_cascadeOffsets[3];
+}
+
+vec3 cascadeDebugColor(int index)
+{
+    if (index == 0) return vec3(1.0, 0.35, 0.35);
+    if (index == 1) return vec3(0.35, 1.0, 0.35);
+    if (index == 2) return vec3(0.35, 0.55, 1.0);
+    return vec3(1.0, 1.0, 0.35);
+}
+
+float computeShadow(vec3 worldPos, vec3 normal, float viewDepth, float NdL, vec2 pixelCoord)
+{
+    int count = int(u_shadowParams.x);
+    if (count <= 0)
         return 1.0;
 
-    vec3 proj = shadowCoord.xyz / shadowCoord.w;
+    int cascade = selectCascade(viewDepth, count);
+    vec4 offset = cascadeOffset(cascade);
+
+    float slope = clamp(1.0 - NdL, 0.0, 1.0);
+    vec3 biased = worldPos + normal * (offset.z * u_shadowParams2.y * (1.0 + 2.0 * slope));
+
+    vec4 coord = mul(cascadeMatrix(cascade), vec4(biased, 1.0));
+    vec3 proj = coord.xyz / coord.w;
+
     vec2 uv = proj.xy * 0.5 + 0.5;
     if (u_shadowParams.w < 0.5)
         uv.y = 1.0 - uv.y;
 
-    float receiver = proj.z * 0.5 + 0.5;
-    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0 || receiver > 1.0)
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
         return 1.0;
 
-    float bias = u_shadowParams.y * (1.0 + 2.5 * clamp(1.0 - NdL, 0.0, 1.0));
-    float texel = u_shadowParams.z;
+    float receiver = proj.z;
+#if BGFX_SHADER_LANGUAGE_GLSL
+    receiver = receiver * 0.5 + 0.5;
+#endif
+    if (receiver > 1.0)
+        return 1.0;
+
+    float bias = u_shadowParams.y * (1.0 + 2.5 * slope) * offset.w;
+
+    vec2 atlasUV = uv * u_shadowParams2.x + offset.xy;
+    float radius = u_shadowParams.z * 1.5;
+
+    float angle = interleavedGradientNoise(pixelCoord) * 6.2831853;
+    float s = sin(angle);
+    float c = cos(angle);
+    mat2 rotation = mat2(c, -s, s, c);
 
     float shadow = 0.0;
-    for (int x = -1; x <= 1; ++x)
+    for (int i = 0; i < 16; ++i)
     {
-        for (int y = -1; y <= 1; ++y)
-        {
-            vec2 offset = vec2(float(x), float(y)) * texel;
-            float occluder = texture2DLod(s_shadowMap, uv + offset, 0.0).r;
-            shadow += (receiver - bias > occluder) ? 0.0 : 1.0;
-        }
+        vec2 sampleOffset = mul(rotation, poissonDisk(i)) * radius;
+        float occluder = texture2DLod(s_shadowMap, atlasUV + sampleOffset, 0.0).r;
+        shadow += (receiver - bias > occluder) ? 0.0 : 1.0;
     }
-    return shadow / 9.0;
+    return shadow / 16.0;
 }
+
 float acesTonemapScalar(float x)
 {
     x = sanitizeScalar(x, 4096.0);

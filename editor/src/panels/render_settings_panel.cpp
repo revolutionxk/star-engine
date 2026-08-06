@@ -27,8 +27,22 @@ namespace star::editor {
             ImGui::BeginDisabled(!s.enabled);
             ImGui::DragFloat("Depth Bias", &s.depth_bias, 0.0001f, 0.0f, 0.02f, "%.4f");
             ImGui::SetItemTooltip("Raise to remove shadow acne (stripes); lower if shadows detach (peter-panning).");
-            ImGui::DragFloat("Coverage", &s.coverage, 1.0f, 5.0f, 200.0f, "%.0f");
-            ImGui::SetItemTooltip("Orthographic half-size around the camera. Larger = more area but softer/blockier.");
+            ImGui::DragFloat("Normal Bias", &s.normal_bias, 0.002f, 0.0f, 0.5f, "%.3f");
+            ImGui::SetItemTooltip("Offsets the sample along the surface normal. Kills acne on slopes without peter-panning.");
+
+            int cascades = static_cast<int>(s.cascade_count);
+            if (ImGui::SliderInt("Cascades", &cascades, 1, 4))
+                s.cascade_count = static_cast<u32>(cascades);
+            ImGui::SetItemTooltip("More cascades = sharper shadows far away, at one extra shadow draw pass each.");
+
+            ImGui::DragFloat("Max Distance", &s.max_distance, 1.0f, 10.0f, 1000.0f, "%.0f");
+            ImGui::SetItemTooltip("Beyond this view distance nothing receives shadows.");
+
+            ImGui::DragFloat("Split Lambda", &s.split_lambda, 0.01f, 0.0f, 1.0f, "%.2f");
+            ImGui::SetItemTooltip("0 = uniform splits, 1 = logarithmic. Higher packs more resolution near the camera.");
+
+            ImGui::Checkbox("Visualize Cascades", &s.visualize_cascades);
+            ImGui::SetItemTooltip("Tints the scene by which cascade each pixel samples.");
             ImGui::EndDisabled();
         } else {
             ImGui::TextDisabled("Shadow pass unavailable");

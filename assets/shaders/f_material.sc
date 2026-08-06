@@ -1,4 +1,4 @@
-$input v_position, v_normal, v_tangent, v_texcoord0, v_viewDir, v_shadowCoord, v_curClip, v_prevClip
+$input v_position, v_normal, v_tangent, v_texcoord0, v_viewDir, v_curClip, v_prevClip
 
 #include <bgfx_shader.sh>
 #include "material.sc"
@@ -32,7 +32,8 @@ void main()
     vec3 view_dir = safeNormalize(u_camPos.xyz - v_position, vec3(0.0, 0.0, 1.0));
 
     vec3 sun_dir = safeNormalize(u_envSunDir.xyz, vec3(0.0, 1.0, 0.0));
-    float shadow = computeShadow(v_shadowCoord, dot(mat.normal, sun_dir));
+    float view_depth = -mul(u_view, vec4(v_position, 1.0)).z;
+    float shadow = computeShadow(v_position, mat.normal, view_depth, dot(mat.normal, sun_dir), gl_FragCoord.xy);
     vec3 sun_lighting = evaluateLightingFiltered(v_position, mat.normal, view_dir, mat, -1.0, 0.5) * shadow;
     vec3 punctual_lighting = evaluateLightingFiltered(v_position, mat.normal, view_dir, mat, 0.5, 3.0);
     vec3 direct_lighting = sun_lighting + punctual_lighting;
@@ -43,6 +44,10 @@ void main()
     float exposure = u_groundColor.w > 0.0 ? u_groundColor.w : 1.0;
 
     vec3 color = sanitizeColor(ambient_lighting + direct_lighting + mat.emissive, 4096.0) * exposure;
+
+    if (u_shadowParams2.z > 0.5 && int(u_shadowParams.x) > 0) {
+        color *= cascadeDebugColor(selectCascade(view_depth, int(u_shadowParams.x)));
+    }
 
     vec3 viewN = normalize(mul(u_view, vec4(mat.normal, 0.0)).xyz);
     gl_FragData[0] = vec4(color, step(0.5, mat.metallic));

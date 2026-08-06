@@ -93,8 +93,6 @@ namespace star::graphics {
         virtual void set_index_buffer(ResourceHandle<Buffer> handle) = 0;
         virtual void set_texture(UniformId sampler, u8 stage, ResourceHandle<Texture> handle) = 0;
 
-        // Uploads transient (per-frame) geometry from host memory. No ResourceHandle needed —
-        // BGFX owns the lifetime for the duration of the frame.
         virtual void set_transient_vertex_buffer(u8 stream, const void* data, u32 num_vertices,
                                                  VertexLayoutType layout_type) = 0;
         virtual void set_transient_index_buffer(const void* data, u32 num_indices, bool is_32bit = false) = 0;
@@ -108,7 +106,6 @@ namespace star::graphics {
         virtual void set_state(u64 state) = 0;
 
         virtual u32 submit(u32 view_id, ResourceHandle<Shader> program) = 0;
-
 
         virtual void blit(u32 view_id, ResourceHandle<Texture> dst, u16 dst_x, u16 dst_y, ResourceHandle<Texture> src,
                           u16 src_x, u16 src_y, u16 width, u16 height) = 0;

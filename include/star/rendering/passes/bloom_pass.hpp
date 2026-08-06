@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "star/rendering/passes/post_pass.hpp"
 
 namespace star::rendering {
@@ -19,13 +21,16 @@ namespace star::rendering {
         void render(const RenderContext& ctx) override;
 
       private:
+        static constexpr u32 MAX_MIPS = 6;
+        static constexpr u32 MIN_MIP_SIZE = 8;
+
         void resolve_uniforms(graphics::DeviceContext& gpu) override;
 
-        graphics::ResourceHandle<graphics::Shader> m_blur_shader;
+        graphics::ResourceHandle<graphics::Shader> m_upsample_shader;
 
         graphics::UniformId m_bloom_params;
-        graphics::UniformId m_blur_params;
-        graphics::UniformId m_s_hdr;
+        graphics::UniformId m_bloom_texel;
         graphics::UniformId m_s_src;
+        graphics::UniformId m_s_prev;
     };
 } // namespace star::rendering

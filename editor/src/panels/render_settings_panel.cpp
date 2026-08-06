@@ -57,6 +57,12 @@ namespace star::editor {
             ImGui::DragFloat("Exposure", &p.exposure, 0.01f, 0.05f, 8.0f, "%.2f");
             ImGui::SetItemTooltip("Overall scene brightness before tonemapping.");
 
+            int tonemap = static_cast<int>(p.tonemap);
+            if (ImGui::Combo("Tonemap", &tonemap, rendering::TONEMAP_NAMES,
+                             IM_ARRAYSIZE(rendering::TONEMAP_NAMES)))
+                p.tonemap = static_cast<rendering::Tonemap>(tonemap);
+            ImGui::SetItemTooltip("ACES is punchy, AgX keeps highlight hue, Reinhard is flat, GT7 is filmic.");
+
             ImGui::Checkbox("TAA", &p.taa_enabled);
             ImGui::SetItemTooltip("Temporal anti-aliasing: subpixel jitter + reprojection. Cleaner than FXAA and "
                                   "denoises GTAO/SSR over time. Supersedes FXAA when on.");
@@ -100,6 +106,8 @@ namespace star::editor {
             ImGui::SetItemTooltip("Soft-knee width so the glow fades in smoothly around the threshold.");
             ImGui::DragFloat("Intensity", &p.bloom_intensity, 0.01f, 0.0f, 4.0f, "%.2f");
             ImGui::SetItemTooltip("How strongly the bloom is added back onto the image.");
+            ImGui::DragFloat("Radius", &p.bloom_radius, 0.02f, 0.2f, 4.0f, "%.2f");
+            ImGui::SetItemTooltip("Spread of each upsample step. Higher makes a wider, softer glow.");
             ImGui::EndDisabled();
 
             ImGui::EndDisabled();

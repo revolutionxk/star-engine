@@ -5,9 +5,14 @@
 namespace star::rendering {
     enum class Tonemap : u8 {
         Aces,
+        Agx,
         Reinhard,
+        Gt7,
         None,
+        Count,
     };
+
+    inline constexpr const char* TONEMAP_NAMES[] = {"ACES", "AgX", "Reinhard", "GT7", "None"};
 
     struct PostProcessSettings {
         bool enabled = true;
@@ -19,6 +24,7 @@ namespace star::rendering {
         f32 bloom_threshold = 1.1f;
         f32 bloom_knee = 0.5f;
         f32 bloom_intensity = 0.5f;
+        f32 bloom_radius = 1.0f;
 
         bool fxaa_enabled = true;
 

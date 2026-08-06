@@ -7,144 +7,156 @@
 #endif
 
 #include <essl/f_atmosphere.sc.bin.h>
-#include <essl/f_debug.sc.bin.h>
-#include <essl/f_imgui.sc.bin.h>
-#include <essl/f_material.sc.bin.h>
+#include <essl/f_bloom_down.sc.bin.h>
+#include <essl/f_bloom_up.sc.bin.h>
 #include <essl/f_blur.sc.bin.h>
 #include <essl/f_brightpass.sc.bin.h>
+#include <essl/f_debug.sc.bin.h>
 #include <essl/f_fxaa.sc.bin.h>
+#include <essl/f_imgui.sc.bin.h>
+#include <essl/f_material.sc.bin.h>
+#include <essl/f_pick.sc.bin.h>
+#include <essl/f_shadow.sc.bin.h>
+#include <essl/f_simple.sc.bin.h>
 #include <essl/f_ssao.sc.bin.h>
 #include <essl/f_ssaoblur.sc.bin.h>
 #include <essl/f_ssr.sc.bin.h>
 #include <essl/f_taa.sc.bin.h>
-#include <essl/f_pick.sc.bin.h>
-#include <essl/f_shadow.sc.bin.h>
-#include <essl/f_simple.sc.bin.h>
 #include <essl/f_tonemap.sc.bin.h>
 #include <essl/v_atmosphere.sc.bin.h>
 #include <essl/v_debug.sc.bin.h>
+#include <essl/v_fullscreen.sc.bin.h>
 #include <essl/v_imgui.sc.bin.h>
 #include <essl/v_material.sc.bin.h>
-#include <essl/v_fullscreen.sc.bin.h>
 #include <essl/v_pick.sc.bin.h>
 #include <essl/v_shadow.sc.bin.h>
 #include <essl/v_simple.sc.bin.h>
 #include <glsl/f_atmosphere.sc.bin.h>
-#include <glsl/f_debug.sc.bin.h>
-#include <glsl/f_imgui.sc.bin.h>
-#include <glsl/f_material.sc.bin.h>
+#include <glsl/f_bloom_down.sc.bin.h>
+#include <glsl/f_bloom_up.sc.bin.h>
 #include <glsl/f_blur.sc.bin.h>
 #include <glsl/f_brightpass.sc.bin.h>
+#include <glsl/f_debug.sc.bin.h>
 #include <glsl/f_fxaa.sc.bin.h>
+#include <glsl/f_imgui.sc.bin.h>
+#include <glsl/f_material.sc.bin.h>
+#include <glsl/f_pick.sc.bin.h>
+#include <glsl/f_shadow.sc.bin.h>
+#include <glsl/f_simple.sc.bin.h>
 #include <glsl/f_ssao.sc.bin.h>
 #include <glsl/f_ssaoblur.sc.bin.h>
 #include <glsl/f_ssr.sc.bin.h>
 #include <glsl/f_taa.sc.bin.h>
-#include <glsl/f_pick.sc.bin.h>
-#include <glsl/f_shadow.sc.bin.h>
-#include <glsl/f_simple.sc.bin.h>
 #include <glsl/f_tonemap.sc.bin.h>
 #include <glsl/v_atmosphere.sc.bin.h>
 #include <glsl/v_debug.sc.bin.h>
+#include <glsl/v_fullscreen.sc.bin.h>
 #include <glsl/v_imgui.sc.bin.h>
 #include <glsl/v_material.sc.bin.h>
-#include <glsl/v_fullscreen.sc.bin.h>
 #include <glsl/v_pick.sc.bin.h>
 #include <glsl/v_shadow.sc.bin.h>
 #include <glsl/v_simple.sc.bin.h>
 #include <spirv/f_atmosphere.sc.bin.h>
-#include <spirv/f_debug.sc.bin.h>
-#include <spirv/f_imgui.sc.bin.h>
-#include <spirv/f_material.sc.bin.h>
+#include <spirv/f_bloom_down.sc.bin.h>
+#include <spirv/f_bloom_up.sc.bin.h>
 #include <spirv/f_blur.sc.bin.h>
 #include <spirv/f_brightpass.sc.bin.h>
+#include <spirv/f_debug.sc.bin.h>
 #include <spirv/f_fxaa.sc.bin.h>
+#include <spirv/f_imgui.sc.bin.h>
+#include <spirv/f_material.sc.bin.h>
+#include <spirv/f_pick.sc.bin.h>
+#include <spirv/f_shadow.sc.bin.h>
+#include <spirv/f_simple.sc.bin.h>
 #include <spirv/f_ssao.sc.bin.h>
 #include <spirv/f_ssaoblur.sc.bin.h>
 #include <spirv/f_ssr.sc.bin.h>
 #include <spirv/f_taa.sc.bin.h>
-#include <spirv/f_pick.sc.bin.h>
-#include <spirv/f_shadow.sc.bin.h>
-#include <spirv/f_simple.sc.bin.h>
 #include <spirv/f_tonemap.sc.bin.h>
 #include <spirv/v_atmosphere.sc.bin.h>
 #include <spirv/v_debug.sc.bin.h>
+#include <spirv/v_fullscreen.sc.bin.h>
 #include <spirv/v_imgui.sc.bin.h>
 #include <spirv/v_material.sc.bin.h>
-#include <spirv/v_fullscreen.sc.bin.h>
 #include <spirv/v_pick.sc.bin.h>
 #include <spirv/v_shadow.sc.bin.h>
 #include <spirv/v_simple.sc.bin.h>
 
 #ifdef STAR_PLATFORM_WINDOWS
     #include <dx10/f_atmosphere.sc.bin.h>
-    #include <dx10/f_debug.sc.bin.h>
-    #include <dx10/f_imgui.sc.bin.h>
-    #include <dx10/f_material.sc.bin.h>
+    #include <dx10/f_bloom_down.sc.bin.h>
+    #include <dx10/f_bloom_up.sc.bin.h>
     #include <dx10/f_blur.sc.bin.h>
     #include <dx10/f_brightpass.sc.bin.h>
+    #include <dx10/f_debug.sc.bin.h>
     #include <dx10/f_fxaa.sc.bin.h>
+    #include <dx10/f_imgui.sc.bin.h>
+    #include <dx10/f_material.sc.bin.h>
+    #include <dx10/f_pick.sc.bin.h>
+    #include <dx10/f_shadow.sc.bin.h>
+    #include <dx10/f_simple.sc.bin.h>
     #include <dx10/f_ssao.sc.bin.h>
     #include <dx10/f_ssaoblur.sc.bin.h>
     #include <dx10/f_ssr.sc.bin.h>
     #include <dx10/f_taa.sc.bin.h>
-    #include <dx10/f_pick.sc.bin.h>
-    #include <dx10/f_shadow.sc.bin.h>
-    #include <dx10/f_simple.sc.bin.h>
     #include <dx10/f_tonemap.sc.bin.h>
     #include <dx10/v_atmosphere.sc.bin.h>
     #include <dx10/v_debug.sc.bin.h>
+    #include <dx10/v_fullscreen.sc.bin.h>
     #include <dx10/v_imgui.sc.bin.h>
     #include <dx10/v_material.sc.bin.h>
-    #include <dx10/v_fullscreen.sc.bin.h>
     #include <dx10/v_pick.sc.bin.h>
     #include <dx10/v_shadow.sc.bin.h>
     #include <dx10/v_simple.sc.bin.h>
     #include <dx11/f_atmosphere.sc.bin.h>
-    #include <dx11/f_debug.sc.bin.h>
-    #include <dx11/f_imgui.sc.bin.h>
-    #include <dx11/f_material.sc.bin.h>
+    #include <dx11/f_bloom_down.sc.bin.h>
+    #include <dx11/f_bloom_up.sc.bin.h>
     #include <dx11/f_blur.sc.bin.h>
     #include <dx11/f_brightpass.sc.bin.h>
+    #include <dx11/f_debug.sc.bin.h>
     #include <dx11/f_fxaa.sc.bin.h>
+    #include <dx11/f_imgui.sc.bin.h>
+    #include <dx11/f_material.sc.bin.h>
+    #include <dx11/f_pick.sc.bin.h>
+    #include <dx11/f_shadow.sc.bin.h>
+    #include <dx11/f_simple.sc.bin.h>
     #include <dx11/f_ssao.sc.bin.h>
     #include <dx11/f_ssaoblur.sc.bin.h>
     #include <dx11/f_ssr.sc.bin.h>
     #include <dx11/f_taa.sc.bin.h>
-    #include <dx11/f_pick.sc.bin.h>
-    #include <dx11/f_shadow.sc.bin.h>
-    #include <dx11/f_simple.sc.bin.h>
     #include <dx11/f_tonemap.sc.bin.h>
     #include <dx11/v_atmosphere.sc.bin.h>
     #include <dx11/v_debug.sc.bin.h>
+    #include <dx11/v_fullscreen.sc.bin.h>
     #include <dx11/v_imgui.sc.bin.h>
     #include <dx11/v_material.sc.bin.h>
-    #include <dx11/v_fullscreen.sc.bin.h>
     #include <dx11/v_pick.sc.bin.h>
     #include <dx11/v_shadow.sc.bin.h>
     #include <dx11/v_simple.sc.bin.h>
 #endif
 #ifdef STAR_PLATFORM_MACOS
     #include <metal/f_atmosphere.sc.bin.h>
-    #include <metal/f_debug.sc.bin.h>
-    #include <metal/f_imgui.sc.bin.h>
-    #include <metal/f_material.sc.bin.h>
+    #include <metal/f_bloom_down.sc.bin.h>
+    #include <metal/f_bloom_up.sc.bin.h>
     #include <metal/f_blur.sc.bin.h>
     #include <metal/f_brightpass.sc.bin.h>
+    #include <metal/f_debug.sc.bin.h>
     #include <metal/f_fxaa.sc.bin.h>
+    #include <metal/f_imgui.sc.bin.h>
+    #include <metal/f_material.sc.bin.h>
+    #include <metal/f_pick.sc.bin.h>
+    #include <metal/f_shadow.sc.bin.h>
+    #include <metal/f_simple.sc.bin.h>
     #include <metal/f_ssao.sc.bin.h>
     #include <metal/f_ssaoblur.sc.bin.h>
     #include <metal/f_ssr.sc.bin.h>
     #include <metal/f_taa.sc.bin.h>
-    #include <metal/f_pick.sc.bin.h>
-    #include <metal/f_shadow.sc.bin.h>
-    #include <metal/f_simple.sc.bin.h>
     #include <metal/f_tonemap.sc.bin.h>
     #include <metal/v_atmosphere.sc.bin.h>
     #include <metal/v_debug.sc.bin.h>
+    #include <metal/v_fullscreen.sc.bin.h>
     #include <metal/v_imgui.sc.bin.h>
     #include <metal/v_material.sc.bin.h>
-    #include <metal/v_fullscreen.sc.bin.h>
     #include <metal/v_pick.sc.bin.h>
     #include <metal/v_shadow.sc.bin.h>
     #include <metal/v_simple.sc.bin.h>
@@ -170,6 +182,8 @@ namespace star::resources::detail {
     const bgfx::EmbeddedShader k_tonemap_fs = BGFX_EMBEDDED_SHADER(f_tonemap);
     const bgfx::EmbeddedShader k_brightpass_fs = BGFX_EMBEDDED_SHADER(f_brightpass);
     const bgfx::EmbeddedShader k_blur_fs = BGFX_EMBEDDED_SHADER(f_blur);
+    const bgfx::EmbeddedShader k_bloom_down_fs = BGFX_EMBEDDED_SHADER(f_bloom_down);
+    const bgfx::EmbeddedShader k_bloom_up_fs = BGFX_EMBEDDED_SHADER(f_bloom_up);
     const bgfx::EmbeddedShader k_fxaa_fs = BGFX_EMBEDDED_SHADER(f_fxaa);
     const bgfx::EmbeddedShader k_ssao_fs = BGFX_EMBEDDED_SHADER(f_ssao);
     const bgfx::EmbeddedShader k_ssaoblur_fs = BGFX_EMBEDDED_SHADER(f_ssaoblur);
@@ -198,6 +212,10 @@ namespace star::resources::detail {
                 return {&k_fullscreen_vs, &k_brightpass_fs};
             case BuiltinShader::BloomBlur:
                 return {&k_fullscreen_vs, &k_blur_fs};
+            case BuiltinShader::BloomDown:
+                return {&k_fullscreen_vs, &k_bloom_down_fs};
+            case BuiltinShader::BloomUp:
+                return {&k_fullscreen_vs, &k_bloom_up_fs};
             case BuiltinShader::Fxaa:
                 return {&k_fullscreen_vs, &k_fxaa_fs};
             case BuiltinShader::Ssao:

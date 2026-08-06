@@ -12,6 +12,7 @@ namespace star::rendering {
     void TonemapPass::resolve_uniforms(graphics::DeviceContext& gpu) {
         using graphics::UniformType;
 
+        m_tonemap_params = gpu.uniform("u_tonemapParams", UniformType::Vec4);
         m_s_hdr = gpu.uniform("s_hdr", UniformType::Sampler);
         m_s_bloom = gpu.uniform("s_bloom", UniformType::Sampler);
         m_s_ao = gpu.uniform("s_ao", UniformType::Sampler);
@@ -51,6 +52,10 @@ namespace star::rendering {
         const f32 ao_strength = ao.is_valid() ? m_settings.ssao_strength : 0.0f;
         const Vector4 params{flip_v(), m_settings.exposure, bloom_intensity, ao_strength};
         gpu.set_uniform(m_post_params, &params);
+
+        const Vector4 tonemap_params{static_cast<f32>(m_settings.tonemap), 0.0f, 0.0f, 0.0f};
+        gpu.set_uniform(m_tonemap_params, &tonemap_params);
+
         gpu.set_texture(m_s_hdr, 0, lit);
         gpu.set_texture(m_s_bloom, 1, bloom.is_valid() ? bloom : lit);
         gpu.set_texture(m_s_ao, 2, ao.is_valid() ? ao : lit);

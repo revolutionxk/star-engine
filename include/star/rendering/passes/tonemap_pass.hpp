@@ -21,6 +21,7 @@ namespace star::rendering {
       private:
         void resolve_uniforms(graphics::DeviceContext& gpu) override;
 
+        graphics::UniformId m_tonemap_params;
         graphics::UniformId m_s_hdr;
         graphics::UniformId m_s_bloom;
         graphics::UniformId m_s_ao;

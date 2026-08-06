@@ -30,15 +30,17 @@ namespace star::components {
     };
 } // namespace star::components
 
-template<>
-struct reflection::TypeInfo<components::Transform> {
-    static constexpr std::string_view name = "Transform";
-    static constexpr bool is_component = true;
-    static constexpr bool required = true;
-    static constexpr auto fields = std::make_tuple(
-        field("Position", &components::Transform::position) | attr::Speed{0.1f},
-        field("Rotation", &components::Transform::rotation) | attr::Speed{0.5f},
-        field("Scale", &components::Transform::scale) | attr::Speed{0.05f} | attr::Range{0.001f, 1000.f});
-};
+namespace star {
+    template<>
+    struct reflection::TypeInfo<components::Transform> {
+        static constexpr std::string_view name = "Transform";
+        static constexpr bool is_component = true;
+        static constexpr bool required = true;
+        static constexpr auto fields = std::make_tuple(
+            field("Position", &components::Transform::position) | attr::Speed{0.1f},
+            field("Rotation", &components::Transform::rotation) | attr::Speed{0.5f},
+            field("Scale", &components::Transform::scale) | attr::Speed{0.05f} | attr::Range{0.001f, 1000.f});
+    };
+} // namespace star
 
 STAR_REGISTER_COMPONENT(star::components::Transform);

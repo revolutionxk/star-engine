@@ -20,8 +20,6 @@ namespace star::graphics {
             return "BGFX";
         }
 
-        DeviceCaps caps() const override;
-
         ResourceHandle<Buffer> create_buffer(BufferDescriptor& buffer_descriptor) override;
         ResourceHandle<Texture> create_texture(TextureDescriptor& texture_descriptor) override;
         ResourceHandle<Texture> create_readback_texture(u16 width, u16 height) override;

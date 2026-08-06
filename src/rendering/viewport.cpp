@@ -22,11 +22,12 @@ namespace star::rendering {
         return r;
     }
 
-    Viewport::Viewport(graphics::Device& device) : m_device(&device) {
+    Viewport::Viewport(graphics::Device& device) : m_device(&device), m_resources(device) {
         STAR_LOG_INFO(LogCategory::Rendering, "Viewport created ({}x{})", m_width, m_height);
     }
 
     Viewport::~Viewport() {
+        m_resources.clear();
         destroy_render_target();
         STAR_LOG_INFO(LogCategory::Rendering, "Viewport destroyed");
     }
@@ -209,8 +210,8 @@ namespace star::rendering {
         }
     }
 
-    bool Viewport::needs_uv_y_flip() {
-        return bgfx::getCaps()->originBottomLeft;
+    bool Viewport::needs_uv_y_flip() const {
+        return m_device->caps().origin_bottom_left;
     }
 
     void Viewport::update_camera_matrices(const components::Camera& camera, const components::Transform& transform) {
@@ -220,7 +221,8 @@ namespace star::rendering {
         m_view_matrix = Matrix4::inverse(transform_matrix);
 
         const f32 aspect = aspect_ratio();
-        m_projection_matrix = Matrix4::perspective(radians(camera.fov_y), aspect, camera.near_plane, camera.far_plane);
+        m_projection_matrix = Matrix4::perspective(radians(camera.fov_y), aspect, camera.near_plane, camera.far_plane,
+                                                   m_device->caps().homogeneous_depth);
 
         STAR_LOG_TRACE(LogCategory::Rendering, "Viewport camera updated: pos({}, {}, {}), aspect={}",
                        m_camera_position.x, m_camera_position.y, m_camera_position.z, aspect);

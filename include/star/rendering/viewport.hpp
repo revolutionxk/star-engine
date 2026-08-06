@@ -6,6 +6,7 @@
 #include "star/ecs/components/camera.hpp"
 #include "star/ecs/components/transform.hpp"
 #include "star/graphics/resource_handle.hpp"
+#include "star/rendering/view_resources.hpp"
 
 namespace star::graphics {
     class Device;
@@ -42,6 +43,10 @@ namespace star::rendering {
 
         [[nodiscard]] RenderTarget* get_render_target() const {
             return m_render_target.get();
+        }
+
+        [[nodiscard]] ViewResources& resources() noexcept {
+            return m_resources;
         }
 
         [[nodiscard]] u32 width() const {
@@ -82,8 +87,8 @@ namespace star::rendering {
             return m_prev_view_proj;
         }
 
-        [[nodiscard]] Matrix4 cur_view_proj() const {
-            return m_projection_matrix * m_view_matrix;
+        [[nodiscard]] const Matrix4& cur_view_proj() const {
+            return m_cur_view_proj;
         }
 
         [[nodiscard]] bool has_camera() const {
@@ -94,7 +99,7 @@ namespace star::rendering {
             return m_framebuffer_enabled;
         }
 
-        [[nodiscard]] static bool needs_uv_y_flip();
+        [[nodiscard]] bool needs_uv_y_flip() const;
 
       private:
         void create_render_target();
@@ -102,6 +107,7 @@ namespace star::rendering {
         void update_camera_matrices(const components::Camera& camera, const components::Transform& transform);
 
         graphics::Device* m_device;
+        ViewResources m_resources;
 
         u32 m_width{1280};
         u32 m_height{720};

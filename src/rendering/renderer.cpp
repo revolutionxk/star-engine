@@ -187,7 +187,7 @@ namespace star::rendering {
 
         STAR_LOG_INFO(LogCategory::Rendering, "Resetting render passes with size: {}x{}", width, height);
 
-        m_graph.reset(width, height, *m_device->context());
+        m_graph.on_resize(width, height);
 
         STAR_LOG_INFO(LogCategory::Rendering, "All render passes reset successfully");
     }

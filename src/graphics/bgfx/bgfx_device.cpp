@@ -12,8 +12,8 @@
 #include "star/graphics/texture.hpp"
 #include "star/platform/window.hpp"
 
-static bgfx::TextureFormat::Enum to_bgfx_format(const graphics::TextureFormat format) {
-    using Format = graphics::TextureFormat;
+static bgfx::TextureFormat::Enum to_bgfx_format(const star::graphics::TextureFormat format) {
+    using Format = star::graphics::TextureFormat;
     switch (format) {
         case Format::RGBA8:
             return bgfx::TextureFormat::RGBA8;
@@ -89,11 +89,22 @@ namespace star::graphics {
         m_initialized = true;
         m_config = config;
 
+        const auto* caps = bgfx::getCaps();
+        m_caps = DeviceCaps{
+            .renderer_name = bgfx::getRendererName(caps->rendererType),
+            .vendor_name = caps->vendorId == BGFX_PCI_ID_NONE ? "Unknown" : std::to_string(caps->vendorId),
+            .max_texture_size = static_cast<int>(caps->limits.maxTextureSize),
+            .max_texture_units = static_cast<int>(caps->limits.maxTextureSamplers),
+            .supports_compute_shaders = (caps->supported & BGFX_CAPS_COMPUTE) != 0,
+            .origin_bottom_left = caps->originBottomLeft,
+            .homogeneous_depth = caps->homogeneousDepth,
+        };
+
         m_context = std::make_unique<BGFXDeviceContext>(this, config.platform.native_window_handle, reset_flags);
         m_context->resize(static_cast<u32>(size.x), static_cast<u32>(size.y));
 
-        const auto caps = bgfx::getCaps();
-        STAR_LOG_INFO(LogCategory::Graphics, "Graphics API: {}", bgfx::getRendererName(caps->rendererType));
+        STAR_LOG_INFO(LogCategory::Graphics, "Graphics API: {} (origin_bottom_left={}, homogeneous_depth={})",
+                      m_caps.renderer_name, m_caps.origin_bottom_left, m_caps.homogeneous_depth);
     }
 
     BGFXDevice::~BGFXDevice() {
@@ -105,22 +116,6 @@ namespace star::graphics {
 
         bgfx::shutdown();
         m_initialized = false;
-    }
-
-    DeviceCaps BGFXDevice::caps() const {
-        const auto caps = bgfx::getCaps();
-
-        DeviceCaps device_caps{
-            .renderer_name = bgfx::getRendererName(caps->rendererType),
-            .vendor_name = caps->vendorId == BGFX_PCI_ID_NONE ? "Unknown" : std::to_string(caps->vendorId),
-            .max_texture_size = static_cast<int>(caps->limits.maxTextureSize),
-            .max_texture_units = static_cast<int>(caps->limits.maxTextureSamplers),
-            .supports_compute_shaders = (caps->supported & BGFX_CAPS_COMPUTE) != 0,
-            .origin_bottom_left = caps->originBottomLeft,
-            .homogeneous_depth = caps->homogeneousDepth,
-        };
-
-        return device_caps;
     }
 
     ResourceHandle<Buffer> BGFXDevice::create_buffer(BufferDescriptor& buffer_descriptor) {

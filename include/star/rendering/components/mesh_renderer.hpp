@@ -19,15 +19,17 @@ namespace star::components {
     };
 } // namespace star::components
 
-template<>
-struct reflection::TypeInfo<components::MeshRenderer> {
-    static constexpr std::string_view name = "MeshRenderer";
-    static constexpr bool is_component = true;
-    static constexpr auto fields = std::make_tuple(field("Visible", &components::MeshRenderer::visible),
-                                                   field("Layer", &components::MeshRenderer::layer),
-                                                   field("Cast Shadow", &components::MeshRenderer::cast_shadow),
-                                                   field("Receive Shadow", &components::MeshRenderer::receive_shadow));
-};
+namespace star {
+    template<>
+    struct reflection::TypeInfo<components::MeshRenderer> {
+        static constexpr std::string_view name = "MeshRenderer";
+        static constexpr bool is_component = true;
+        static constexpr auto fields = std::make_tuple(field("Visible", &components::MeshRenderer::visible),
+                                                       field("Layer", &components::MeshRenderer::layer),
+                                                       field("Cast Shadow", &components::MeshRenderer::cast_shadow),
+                                                       field("Receive Shadow", &components::MeshRenderer::receive_shadow));
+    };
+} // namespace star
 
 namespace star::components {
     [[nodiscard]] nlohmann::json to_json(const MeshRenderer& value);

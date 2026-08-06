@@ -2,6 +2,8 @@
 
 #include "star/ecs/world.hpp"
 
+using namespace star;
+
 using namespace star::ecs;
 
 namespace {

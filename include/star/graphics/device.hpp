@@ -46,7 +46,10 @@ namespace star::graphics {
         virtual ~Device() = default;
 
         virtual std::string name() const = 0;
-        virtual DeviceCaps caps() const = 0;
+
+        [[nodiscard]] const DeviceCaps& caps() const noexcept {
+            return m_caps;
+        }
 
         virtual ResourceHandle<Buffer> create_buffer(BufferDescriptor& buffer_descriptor) = 0;
         virtual ResourceHandle<Texture> create_texture(TextureDescriptor& buffer_descriptor) = 0;
@@ -77,15 +80,12 @@ namespace star::graphics {
             return m_context.get();
         }
 
-        std::shared_ptr<DeviceContext> create_context() {
-            return m_context;
-        }
-
         static std::shared_ptr<Device> create(const GraphicsDeviceConfig& config);
 
       protected:
         bool m_initialized = false;
         GraphicsDeviceConfig m_config;
+        DeviceCaps m_caps;
         std::shared_ptr<DeviceContext> m_context;
     };
 } // namespace star::graphics

@@ -1,12 +1,12 @@
 #pragma once
 #include "star/core/types.hpp"
+#include "star/graphics/device_context.hpp"
 #include "star/graphics/resource_handle.hpp"
 #include "star/math/math.hpp"
 
 namespace star::graphics {
     struct Shader;
     struct Texture;
-    class DeviceContext;
 } // namespace star::graphics
 
 namespace star::resources {
@@ -54,10 +54,26 @@ namespace star::rendering {
       private:
         static constexpr int GRID = 32;
 
+        struct UniformIds {
+            graphics::UniformId env_sky_mode;
+            graphics::UniformId sun_direction;
+            graphics::UniformId sky_luminance_xyz;
+            graphics::UniformId sun_luminance;
+            graphics::UniformId parameters;
+            graphics::UniformId perez_coeff;
+            graphics::UniformId sampler_env;
+
+            [[nodiscard]] bool is_resolved() const noexcept {
+                return env_sky_mode.is_valid();
+            }
+        };
+
         void build_grid();
+        void resolve_uniforms(graphics::DeviceContext& context) const;
 
         resources::ResourceManager* m_rm = nullptr;
         graphics::ResourceHandle<graphics::Shader> m_shader;
+        mutable UniformIds m_ids;
 
         std::vector<float> m_vertices;
         std::vector<u16> m_indices;

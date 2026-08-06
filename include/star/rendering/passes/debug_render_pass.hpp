@@ -24,7 +24,6 @@ namespace star::rendering {
 
         void pre_render(const FrameContext& frame) override;
         void render(const RenderContext& ctx) override;
-        u32 reset(u32 width = 0, u32 height = 0) override;
 
       private:
         DebugRenderer& m_debug_renderer;

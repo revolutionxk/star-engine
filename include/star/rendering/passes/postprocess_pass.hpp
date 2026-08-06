@@ -1,9 +1,9 @@
 #pragma once
 
 #include <memory>
-#include <unordered_map>
 
 #include "star/core/types.hpp"
+#include "star/graphics/device_context.hpp"
 #include "star/graphics/resource_handle.hpp"
 #include "star/rendering/render_target.hpp"
 #include "star/rendering/renderer.hpp"
@@ -61,51 +61,45 @@ namespace star::rendering {
         }
 
       private:
-        struct BloomTargets {
-            std::unique_ptr<RenderTarget> a;
-            std::unique_ptr<RenderTarget> b;
-            u32 width = 0;
-            u32 height = 0;
-        };
+        struct UniformIds {
+            graphics::UniformId post_params;
+            graphics::UniformId bloom_params;
+            graphics::UniformId blur_params;
+            graphics::UniformId fxaa_params;
+            graphics::UniformId ssao_inv_proj;
+            graphics::UniformId ssao_proj;
+            graphics::UniformId ssao_params;
+            graphics::UniformId ssao_texel;
+            graphics::UniformId ssao_blur_params;
+            graphics::UniformId ssr_proj;
+            graphics::UniformId ssr_inv_proj;
+            graphics::UniformId ssr_params;
+            graphics::UniformId ssr_texel;
+            graphics::UniformId taa_cur_inv_vp;
+            graphics::UniformId taa_prev_vp;
+            graphics::UniformId taa_params;
+            graphics::UniformId taa_texel;
 
-        struct ResolveTarget {
-            std::unique_ptr<RenderTarget> ldr;
-            u32 width = 0;
-            u32 height = 0;
-        };
+            graphics::UniformId s_src;
+            graphics::UniformId s_hdr;
+            graphics::UniformId s_bloom;
+            graphics::UniformId s_ao;
+            graphics::UniformId s_depth;
+            graphics::UniformId s_gbuffer;
+            graphics::UniformId s_scene;
+            graphics::UniformId s_current;
+            graphics::UniformId s_history;
+            graphics::UniformId s_velocity;
 
-        struct SsaoTargets {
-            std::unique_ptr<RenderTarget> a;
-            std::unique_ptr<RenderTarget> b;
-            u32 width = 0;
-            u32 height = 0;
-        };
-
-        struct SsrTarget {
-            std::unique_ptr<RenderTarget> a;
-            std::unique_ptr<RenderTarget> b;
-            u32 width = 0;
-            u32 height = 0;
-        };
-
-        // TAA history ping-pong (RGBA16F). `frames` gates the first frame (no valid history yet).
-        struct TaaTargets {
-            std::unique_ptr<RenderTarget> a;
-            std::unique_ptr<RenderTarget> b;
-            u32 width = 0;
-            u32 height = 0;
-            u64 frames = 0;
+            [[nodiscard]] bool is_resolved() const noexcept {
+                return post_params.is_valid();
+            }
         };
 
         void ensure_shaders();
+        void resolve_uniforms(graphics::DeviceContext& gpu);
         static void draw_fullscreen(graphics::DeviceContext& gpu, u32 view_id,
                                     graphics::ResourceHandle<graphics::Shader> shader);
-
-        BloomTargets* bloom_targets_for(const Viewport& viewport);
-        ResolveTarget* resolve_target_for(const Viewport& viewport);
-        SsaoTargets* ssao_targets_for(const Viewport& viewport);
-        SsrTarget* ssr_target_for(const Viewport& viewport);
-        TaaTargets* taa_targets_for(const Viewport& viewport);
 
         graphics::Device& m_device;
         resources::ResourceManager& m_resources;
@@ -120,11 +114,7 @@ namespace star::rendering {
         graphics::ResourceHandle<graphics::Shader> m_taa_shader;
 
         Settings m_settings;
-        std::unordered_map<const Viewport*, BloomTargets> m_bloom;
-        std::unordered_map<const Viewport*, SsaoTargets> m_ssao;
-        std::unordered_map<const Viewport*, ResolveTarget> m_resolve;
-        std::unordered_map<const Viewport*, SsrTarget> m_ssr;
-        std::unordered_map<const Viewport*, TaaTargets> m_taa;
+        UniformIds m_ids;
 
         u64 m_frame = ~0ull;
         u32 m_view_cursor = 0;

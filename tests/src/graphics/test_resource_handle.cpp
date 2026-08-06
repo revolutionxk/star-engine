@@ -4,6 +4,8 @@
 
 #include "star/graphics/resource_handle.hpp"
 
+using namespace star;
+
 using namespace star::graphics;
 
 struct MockBuffer {};

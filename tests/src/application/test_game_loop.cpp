@@ -6,6 +6,8 @@
 
 #include "star/application/game_loop.hpp"
 
+using namespace star;
+
 using namespace star::application;
 
 TEST_CASE("GameLoopConfig - default values are sensible", "[application][game_loop]") {

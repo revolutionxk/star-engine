@@ -46,7 +46,7 @@ namespace star::rendering {
         void pre_render(const FrameContext& frame) override;
         void render(const RenderContext& ctx) override;
         void post_render(const FrameContext& frame) override;
-        u32 reset(u32 width, u32 height) override;
+        void on_resize(u32 width, u32 height) override;
 
         using ImGuiCallback = std::function<void()>;
 

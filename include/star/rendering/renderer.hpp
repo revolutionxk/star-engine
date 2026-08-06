@@ -61,15 +61,11 @@ namespace star::rendering {
 
         virtual void pre_render(const FrameContext& /*frame*/) {}
 
-        virtual void render(const RenderContext& ctx) {
-            m_view_id = ctx.view_id;
-        }
+        virtual void render(const RenderContext& /*ctx*/) {}
 
         virtual void post_render(const FrameContext& /*frame*/) {}
 
-        virtual u32 reset(u32 width = 0, u32 height = 0) {
-            return m_view_id;
-        }
+        virtual void on_resize(u32 /*width*/, u32 /*height*/) {}
 
         [[nodiscard]] virtual bool is_enabled() const {
             return m_enabled;
@@ -84,7 +80,6 @@ namespace star::rendering {
 
       private:
         bool m_enabled = true;
-        u32 m_view_id = 0;
     };
 
     class Renderer {

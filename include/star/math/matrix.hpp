@@ -234,27 +234,40 @@ namespace star::math {
             return result;
         }
 
-        static Matrix4T perspective(T fov_y, T aspect, T near, T far) {
+        static Matrix4T perspective(T fov_y, T aspect, T near, T far, bool homogeneous_ndc = true) {
             T tan_half_fov = std::tan(fov_y / T(2));
 
             Matrix4T result(0);
             result(0, 0) = T(1) / (aspect * tan_half_fov);
             result(1, 1) = T(1) / tan_half_fov;
-            result(2, 2) = -(far + near) / (far - near);
             result(2, 3) = -T(1);
-            result(3, 2) = -(T(2) * far * near) / (far - near);
+
+            if (homogeneous_ndc) {
+                result(2, 2) = -(far + near) / (far - near);
+                result(3, 2) = -(T(2) * far * near) / (far - near);
+            } else {
+                result(2, 2) = -far / (far - near);
+                result(3, 2) = -(far * near) / (far - near);
+            }
 
             return result;
         }
 
-        static Matrix4T orthographic(T left, T right, T bottom, T top, T near, T far) {
+        static Matrix4T orthographic(T left, T right, T bottom, T top, T near, T far,
+                                     bool homogeneous_ndc = true) {
             Matrix4T result;
             result(0, 0) = T(2) / (right - left);
             result(1, 1) = T(2) / (top - bottom);
-            result(2, 2) = -T(2) / (far - near);
             result(3, 0) = -(right + left) / (right - left);
             result(3, 1) = -(top + bottom) / (top - bottom);
-            result(3, 2) = -(far + near) / (far - near);
+
+            if (homogeneous_ndc) {
+                result(2, 2) = -T(2) / (far - near);
+                result(3, 2) = -(far + near) / (far - near);
+            } else {
+                result(2, 2) = -T(1) / (far - near);
+                result(3, 2) = -near / (far - near);
+            }
 
             return result;
         }

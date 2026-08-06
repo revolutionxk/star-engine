@@ -26,20 +26,22 @@ namespace star::components {
     };
 } // namespace star::components
 
-template<>
-struct reflection::TypeInfo<components::Light> {
-    static constexpr std::string_view name = "Light";
-    static constexpr bool is_component = true;
-    static constexpr auto fields = std::make_tuple(
-        field("Type", &components::Light::type) | attr::EnumOptions{"Directional", "Point", "Spot"},
-        field("Direction", &components::Light::direction) | attr::Speed{0.01f} | attr::Normalized{},
-        field("Color", &components::Light::color) | attr::Color{},
-        field("Intensity", &components::Light::intensity) | attr::Speed{0.01f} | attr::Range{0.f, 100.f},
-        field("Ambient", &components::Light::ambient_intensity) | attr::Speed{0.001f} | attr::Range{0.f, 1.f},
-        field("Range", &components::Light::range) | attr::Speed{0.05f} | attr::Range{0.1f, 1000.f},
-        field("InnerAngleDeg", &components::Light::inner_cone_angle_deg) | attr::Speed{0.25f} | attr::Range{0.f, 89.f},
-        field("OuterAngleDeg", &components::Light::outer_cone_angle_deg) | attr::Speed{0.25f} | attr::Range{0.1f, 89.9f},
-        field("Shadows", &components::Light::cast_shadows));
-};
+namespace star {
+    template<>
+    struct reflection::TypeInfo<components::Light> {
+        static constexpr std::string_view name = "Light";
+        static constexpr bool is_component = true;
+        static constexpr auto fields = std::make_tuple(
+            field("Type", &components::Light::type) | attr::EnumOptions{"Directional", "Point", "Spot"},
+            field("Direction", &components::Light::direction) | attr::Speed{0.01f} | attr::Normalized{},
+            field("Color", &components::Light::color) | attr::Color{},
+            field("Intensity", &components::Light::intensity) | attr::Speed{0.01f} | attr::Range{0.f, 100.f},
+            field("Ambient", &components::Light::ambient_intensity) | attr::Speed{0.001f} | attr::Range{0.f, 1.f},
+            field("Range", &components::Light::range) | attr::Speed{0.05f} | attr::Range{0.1f, 1000.f},
+            field("InnerAngleDeg", &components::Light::inner_cone_angle_deg) | attr::Speed{0.25f} | attr::Range{0.f, 89.f},
+            field("OuterAngleDeg", &components::Light::outer_cone_angle_deg) | attr::Speed{0.25f} | attr::Range{0.1f, 89.9f},
+            field("Shadows", &components::Light::cast_shadows));
+    };
+} // namespace star
 
 STAR_REGISTER_COMPONENT(star::components::Light);

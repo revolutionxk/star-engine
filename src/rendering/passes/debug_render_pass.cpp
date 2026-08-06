@@ -27,8 +27,5 @@ namespace star::rendering {
         Super::render(ctx);
     }
 
-    u32 DebugRenderPass::reset(const u32 width, const u32 height) {
-        return Super::reset(width, height);
-    }
 
 } // namespace star::rendering

@@ -86,7 +86,7 @@ namespace star::editor {
         auto* scene = m_panel_manager.register_panel<ScenePanel>();
         auto* game = m_panel_manager.register_panel<GamePanel>();
         auto* console = m_panel_manager.register_panel<ConsolePanel>();
-        m_panel_manager.register_panel<MetricsPanel>();
+        auto* metrics = m_panel_manager.register_panel<MetricsPanel>();
         m_panel_manager.register_panel<ContentBrowserPanel>(m_editor_window);
         m_panel_manager.register_panel<RenderSettingsPanel>(m_editor_window);
 
@@ -96,6 +96,7 @@ namespace star::editor {
         scene->set_editor_window(m_editor_window);
         scene->set_picking_pass(m_picking_pass);
         game->set_viewport(m_game_viewport.get());
+        metrics->set_device(&m_editor_window->device());
     }
 
     void EditorUILayer::shutdown() {

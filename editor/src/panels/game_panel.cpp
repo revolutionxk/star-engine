@@ -46,7 +46,7 @@ namespace star::editor {
         const ImVec2 avail = ImGui::GetContentRegionAvail();
         const ImVec2 cursor = ImGui::GetCursorPos();
 
-        const bool y_flip = rendering::Viewport::needs_uv_y_flip();
+        const bool y_flip = m_viewport->needs_uv_y_flip();
         const ImVec2 uv0 = y_flip ? ImVec2(0.0f, 1.0f) : ImVec2(0.0f, 0.0f);
         const ImVec2 uv1 = y_flip ? ImVec2(1.0f, 0.0f) : ImVec2(1.0f, 1.0f);
         ImGui::Image(color_texture.id, avail, uv0, uv1);

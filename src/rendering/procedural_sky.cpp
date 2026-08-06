@@ -71,34 +71,49 @@ namespace star::rendering {
         }
     }
 
+    void ProceduralSky::resolve_uniforms(graphics::DeviceContext& context) const {
+        using graphics::UniformType;
+
+        m_ids.sun_direction = context.uniform("u_sunDirection", UniformType::Vec4);
+        m_ids.sky_luminance_xyz = context.uniform("u_skyLuminanceXYZ", UniformType::Vec4);
+        m_ids.sun_luminance = context.uniform("u_sunLuminance", UniformType::Vec4);
+        m_ids.parameters = context.uniform("u_parameters", UniformType::Vec4);
+        m_ids.perez_coeff = context.uniform("u_perezCoeff", UniformType::Vec4, 5);
+        m_ids.sampler_env = context.uniform("s_envMap", UniformType::Sampler);
+        m_ids.env_sky_mode = context.uniform("u_envSkyMode", UniformType::Vec4);
+    }
+
     void ProceduralSky::draw(graphics::DeviceContext& context, const u32 view_id,
                              const graphics::ResourceHandle<graphics::Texture> env_map, const f32 env_intensity) const {
         if (!m_initialized || !m_shader.is_valid())
             return;
-        
+
+        if (!m_ids.is_resolved())
+            resolve_uniforms(context);
+
         const bool use_env = env_map.is_valid();
         const float env_mode[4] = {use_env ? 1.0f : 0.0f, env_intensity, 0.0f, 0.0f};
-        context.set_uniform("u_envSkyMode", env_mode, 1, graphics::UniformType::Vec4);
+        context.set_uniform(m_ids.env_sky_mode, env_mode);
         if (use_env)
-            context.set_texture(0, env_map);
+            context.set_texture(m_ids.sampler_env, 0, env_map);
         else if (m_rm)
             if (const auto* black = m_rm->get_texture(m_rm->black_texture()))
-                context.set_texture(0, black->handle);
+                context.set_texture(m_ids.sampler_env, 0, black->handle);
 
         const float sun_dir[4] = {m_params.sun_direction.x, m_params.sun_direction.y, m_params.sun_direction.z, 0.0f};
-        context.set_uniform("u_sunDirection", sun_dir, 1, graphics::UniformType::Vec4);
+        context.set_uniform(m_ids.sun_direction, sun_dir);
 
         const float sky_xyz[4] = {m_params.sky_luminance_xyz.x, m_params.sky_luminance_xyz.y,
                                   m_params.sky_luminance_xyz.z, 0.0f};
-        context.set_uniform("u_skyLuminanceXYZ", sky_xyz, 1, graphics::UniformType::Vec4);
+        context.set_uniform(m_ids.sky_luminance_xyz, sky_xyz);
 
         const float sun_lum[4] = {m_params.sun_luminance.x, m_params.sun_luminance.y, m_params.sun_luminance.z, 0.0f};
-        context.set_uniform("u_sunLuminance", sun_lum, 1, graphics::UniformType::Vec4);
+        context.set_uniform(m_ids.sun_luminance, sun_lum);
 
         const float params[4] = {m_params.sun_size, m_params.sun_bloom, m_params.exposition, m_params.time};
-        context.set_uniform("u_parameters", params, 1, graphics::UniformType::Vec4);
+        context.set_uniform(m_ids.parameters, params);
 
-        context.set_uniform("u_perezCoeff", m_params.perez_coeff, 5, graphics::UniformType::Vec4);
+        context.set_uniform(m_ids.perez_coeff, m_params.perez_coeff, 5);
 
         constexpr graphics::PipelineState sky_state{
             .blend_mode = graphics::BlendMode::Opaque,

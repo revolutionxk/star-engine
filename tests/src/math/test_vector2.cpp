@@ -3,6 +3,8 @@
 
 #include "star/math/math.hpp"
 
+using namespace star;
+
 using Vector2 = math::Vector2T<float>;
 
 TEST_CASE("Vector2 - default construction is zero", "[math][vector2]") {

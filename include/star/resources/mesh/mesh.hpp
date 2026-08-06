@@ -12,7 +12,7 @@ namespace star::graphics {
 
 namespace star::resources {
     struct Mesh : Resource {
-        std::vector<Vertex> vertices{};
+        std::vector<graphics::Vertex> vertices{};
         std::vector<u32> indices{};
 
         graphics::ResourceHandle<graphics::Buffer> vertex_buffer;

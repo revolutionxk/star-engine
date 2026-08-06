@@ -24,7 +24,6 @@ namespace star::rendering {
         }
 
         void render(const RenderContext& ctx) override;
-        u32 reset(u32 width, u32 height) override;
 
       private:
         systems::RenderSystem& m_render_system;

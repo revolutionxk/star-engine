@@ -15,6 +15,8 @@
 #include "star/resources/resource_manager.hpp"
 #include "star/resources/shader/shader.hpp"
 
+using namespace star;
+
 namespace {
     constexpr f32 MAX_SPOT_INNER_HALF_ANGLE_DEG = 89.0f;
     constexpr f32 MAX_SPOT_OUTER_HALF_ANGLE_DEG = 89.9f;
@@ -24,6 +26,26 @@ namespace {
         return std::cos(radians(angle_deg));
     }
 
+    enum MaterialOverride : u32 {
+        OverrideNone = 0,
+        OverrideBaseColor = 1u << 0,
+        OverrideMaterialParams = 1u << 1,
+        OverrideEmissive = 1u << 2,
+    };
+
+    [[nodiscard]] u32 collect_overrides(const std::vector<rendering::MaterialProperty>& params) {
+        u32 mask = OverrideNone;
+        for (const auto& p : params) {
+            if (p.name == rendering::uniforms::BASE_COLOR)
+                mask |= OverrideBaseColor;
+            else if (p.name == rendering::uniforms::MATERIAL_PARAMS)
+                mask |= OverrideMaterialParams;
+            else if (p.name == rendering::uniforms::EMISSIVE_COLOR)
+                mask |= OverrideEmissive;
+        }
+        return mask;
+    }
+
     void upload_property(graphics::DeviceContext& ctx, const rendering::MaterialProperty& prop) {
         std::visit(
             [&]<typename Value>(const Value& v) {
@@ -31,71 +53,72 @@ namespace {
 
                 if constexpr (std::is_same_v<T, float>) {
                     const Vector4 padded{v, 0.0f, 0.0f, 0.0f};
-                    ctx.set_uniform(prop.name, &padded, 1, graphics::UniformType::Vec4);
+                    ctx.set_uniform(ctx.uniform(prop.name, graphics::UniformType::Vec4), &padded);
 
                 } else if constexpr (std::is_same_v<T, Vector2>) {
                     const Vector4 padded{v.x, v.y, 0.0f, 0.0f};
-                    ctx.set_uniform(prop.name, &padded, 1, graphics::UniformType::Vec4);
+                    ctx.set_uniform(ctx.uniform(prop.name, graphics::UniformType::Vec4), &padded);
 
                 } else if constexpr (std::is_same_v<T, Vector3>) {
                     const Vector4 padded{v.x, v.y, v.z, 0.0f};
-                    ctx.set_uniform(prop.name, &padded, 1, graphics::UniformType::Vec4);
+                    ctx.set_uniform(ctx.uniform(prop.name, graphics::UniformType::Vec4), &padded);
 
                 } else if constexpr (std::is_same_v<T, Vector4>) {
-                    ctx.set_uniform(prop.name, &v, 1, graphics::UniformType::Vec4);
+                    ctx.set_uniform(ctx.uniform(prop.name, graphics::UniformType::Vec4), &v);
 
                 } else if constexpr (std::is_same_v<T, Matrix4>) {
-                    ctx.set_uniform(prop.name, &v, 1, graphics::UniformType::Mat4);
+                    ctx.set_uniform(ctx.uniform(prop.name, graphics::UniformType::Mat4), &v);
 
                 } else if constexpr (std::is_same_v<T, graphics::ResourceHandle<graphics::Texture>>) {
                     if (v.is_valid())
-                        ctx.set_texture(prop.texture_stage, v);
+                        ctx.set_texture(ctx.uniform(prop.name, graphics::UniformType::Sampler), prop.texture_stage, v);
                 }
             },
             prop.value);
     }
 
-    void submit_material(graphics::DeviceContext& ctx, const resources::Material& mat,
-                         const std::vector<rendering::MaterialProperty>& params, resources::ResourceManager& rm) {
+    void submit_material(graphics::DeviceContext& ctx, const rendering::uniforms::SceneUniforms& ids,
+                         const resources::Material& mat, const std::vector<rendering::MaterialProperty>& params,
+                         resources::ResourceManager& rm) {
         ctx.set_pipeline_state(mat.pipeline_state);
 
-        std::unordered_set<std::string_view> overridden;
-        overridden.reserve(params.size());
-        for (const auto& p : params)
-            overridden.insert(p.name);
+        const u32 overridden = collect_overrides(params);
 
-        if (!overridden.contains(rendering::uniforms::BASE_COLOR))
-            ctx.set_uniform(std::string(rendering::uniforms::BASE_COLOR), &mat.albedo_color, 1,
-                            graphics::UniformType::Vec4);
+        if (!(overridden & OverrideBaseColor))
+            ctx.set_uniform(ids.base_color, &mat.albedo_color);
 
-        const Vector4 pbr_params{mat.metallic, mat.roughness, 0.0f, 0.0f};
-        if (!overridden.contains(rendering::uniforms::MATERIAL_PARAMS))
-            ctx.set_uniform(std::string(rendering::uniforms::MATERIAL_PARAMS), &pbr_params, 1,
-                            graphics::UniformType::Vec4);
+        if (!(overridden & OverrideMaterialParams)) {
+            const Vector4 pbr_params{mat.metallic, mat.roughness, 0.0f, 0.0f};
+            ctx.set_uniform(ids.material_params, &pbr_params);
+        }
 
-        if (!overridden.contains(rendering::uniforms::EMISSIVE_COLOR))
-            ctx.set_uniform(std::string(rendering::uniforms::EMISSIVE_COLOR), &mat.emissive_color, 1,
-                            graphics::UniformType::Vec4);
+        if (!(overridden & OverrideEmissive))
+            ctx.set_uniform(ids.emissive_color, &mat.emissive_color);
 
-        const auto bind_stage = [&](const u8 stage, const graphics::ResourceHandle<resources::Texture>& handle) {
+        const auto bind_stage = [&](const graphics::UniformId sampler, const u8 stage,
+                                    const graphics::ResourceHandle<resources::Texture>& handle) {
             if (handle.is_valid())
                 if (const auto* tex = rm.get_texture(handle)) {
-                    ctx.set_texture(stage, tex->handle);
+                    ctx.set_texture(sampler, stage, tex->handle);
                     return true;
                 }
             if (const auto* white = rm.get_texture(rm.white_texture()))
-                ctx.set_texture(stage, white->handle);
+                ctx.set_texture(sampler, stage, white->handle);
             return false;
         };
 
-        const bool has_albedo = bind_stage(rendering::uniforms::STAGE_ALBEDO, mat.albedo_texture);
-        const bool has_normal = bind_stage(rendering::uniforms::STAGE_NORMAL, mat.normal_texture);
-        const bool has_mr = bind_stage(rendering::uniforms::STAGE_MR, mat.metallic_roughness_texture);
-        const bool has_emissive = bind_stage(rendering::uniforms::STAGE_EMISSIVE, mat.emissive_texture);
+        const bool has_albedo =
+            bind_stage(ids.sampler_albedo, rendering::uniforms::STAGE_ALBEDO, mat.albedo_texture);
+        const bool has_normal =
+            bind_stage(ids.sampler_normal, rendering::uniforms::STAGE_NORMAL, mat.normal_texture);
+        const bool has_mr =
+            bind_stage(ids.sampler_mr, rendering::uniforms::STAGE_MR, mat.metallic_roughness_texture);
+        const bool has_emissive =
+            bind_stage(ids.sampler_emissive, rendering::uniforms::STAGE_EMISSIVE, mat.emissive_texture);
 
         const Vector4 tex_flags{has_albedo ? 1.0f : 0.0f, has_normal ? 1.0f : 0.0f, has_mr ? 1.0f : 0.0f,
                                 has_emissive ? 1.0f : 0.0f};
-        ctx.set_uniform(std::string(rendering::uniforms::TEX_FLAGS), &tex_flags, 1, graphics::UniformType::Vec4);
+        ctx.set_uniform(ids.tex_flags, &tex_flags);
 
         for (const auto& prop : params)
             upload_property(ctx, prop);
@@ -213,61 +236,51 @@ namespace star::systems {
 
     void RenderSystem::submit_lighting(graphics::DeviceContext& context) const {
         const auto& packed = m_light_env.lights;
+        const auto& ids = m_uniforms;
         constexpr u16 max = rendering::uniforms::MAX_LIGHTS;
 
-        context.set_uniform(std::string(rendering::uniforms::LIGHTS_POS_TYPE), packed.pos_type.data(), max,
-                            graphics::UniformType::Vec4);
-        context.set_uniform(std::string(rendering::uniforms::LIGHTS_DIR_RANGE), packed.dir_range.data(), max,
-                            graphics::UniformType::Vec4);
-        context.set_uniform(std::string(rendering::uniforms::LIGHTS_COLOR_INT), packed.color_int.data(), max,
-                            graphics::UniformType::Vec4);
-        context.set_uniform(std::string(rendering::uniforms::LIGHTS_CONE), packed.cone.data(), max,
-                            graphics::UniformType::Vec4);
+        context.set_uniform(ids.lights_pos_type, packed.pos_type.data(), max);
+        context.set_uniform(ids.lights_dir_range, packed.dir_range.data(), max);
+        context.set_uniform(ids.lights_color_int, packed.color_int.data(), max);
+        context.set_uniform(ids.lights_cone, packed.cone.data(), max);
 
         const Vector4 count{static_cast<f32>(packed.count), 0.0f, 0.0f, 0.0f};
-        context.set_uniform(std::string(rendering::uniforms::LIGHTS_COUNT), &count, 1, graphics::UniformType::Vec4);
+        context.set_uniform(ids.lights_count, &count);
 
         const Vector4 ambient_color{m_light_env.ambient_color.x, m_light_env.ambient_color.y,
                                     m_light_env.ambient_color.z, m_light_env.ambient_intensity};
-        context.set_uniform(std::string(rendering::uniforms::AMBIENT_COLOR), &ambient_color, 1,
-                            graphics::UniformType::Vec4);
+        context.set_uniform(ids.ambient_color, &ambient_color);
 
         const Vector4 ground_color{m_light_env.ground_color.x, m_light_env.ground_color.y, m_light_env.ground_color.z,
                                    m_light_env.exposure};
-        context.set_uniform(std::string(rendering::uniforms::GROUND_COLOR), &ground_color, 1,
-                            graphics::UniformType::Vec4);
+        context.set_uniform(ids.ground_color, &ground_color);
 
         const Vector4 env_sky_color{m_light_env.sky_luminance_rgb.x, m_light_env.sky_luminance_rgb.y,
                                     m_light_env.sky_luminance_rgb.z, m_light_env.has_sky ? 1.0f : 0.0f};
-        context.set_uniform(std::string(rendering::uniforms::ENV_SKY_COLOR), &env_sky_color, 1,
-                            graphics::UniformType::Vec4);
+        context.set_uniform(ids.env_sky_color, &env_sky_color);
 
         const Vector4 env_sun_dir{m_light_env.sun_direction.x, m_light_env.sun_direction.y, m_light_env.sun_direction.z,
                                   m_light_env.has_sun ? 1.0f : 0.0f};
-        context.set_uniform(std::string(rendering::uniforms::ENV_SUN_DIR), &env_sun_dir, 1,
-                            graphics::UniformType::Vec4);
+        context.set_uniform(ids.env_sun_dir, &env_sun_dir);
 
         const Vector4 env_sun_color{m_light_env.sun_luminance_rgb.x, m_light_env.sun_luminance_rgb.y,
                                     m_light_env.sun_luminance_rgb.z, 0.0f};
-        context.set_uniform(std::string(rendering::uniforms::ENV_SUN_COLOR), &env_sun_color, 1,
-                            graphics::UniformType::Vec4);
+        context.set_uniform(ids.env_sun_color, &env_sun_color);
 
         const Vector4 shadow_params{m_shadow.enabled ? 1.0f : 0.0f, m_shadow.bias, m_shadow.texel_size,
                                     m_shadow.origin_bottom_left ? 1.0f : 0.0f};
-        context.set_uniform(std::string(rendering::uniforms::SHADOW_PARAMS), &shadow_params, 1,
-                            graphics::UniformType::Vec4);
-        context.set_uniform(std::string(rendering::uniforms::LIGHT_VIEW_PROJ), &m_shadow.light_view_proj, 1,
-                            graphics::UniformType::Mat4);
+        context.set_uniform(ids.shadow_params, &shadow_params);
+        context.set_uniform(ids.light_view_proj, &m_shadow.light_view_proj);
         if (m_shadow.map.is_valid())
-            context.set_texture(rendering::uniforms::STAGE_SHADOW, m_shadow.map);
+            context.set_texture(ids.sampler_shadow, rendering::uniforms::STAGE_SHADOW, m_shadow.map);
 
         const bool ibl_enabled = m_environment.map.is_valid();
         const Vector4 ibl_params{ibl_enabled ? 1.0f : 0.0f, m_environment.max_mip, m_environment.intensity, 0.0f};
-        context.set_uniform(std::string(rendering::uniforms::IBL_PARAMS), &ibl_params, 1, graphics::UniformType::Vec4);
+        context.set_uniform(ids.ibl_params, &ibl_params);
         if (ibl_enabled)
-            context.set_texture(rendering::uniforms::STAGE_ENV, m_environment.map);
+            context.set_texture(ids.sampler_env, rendering::uniforms::STAGE_ENV, m_environment.map);
         else if (const auto* black = m_resource_manager.get_texture(m_resource_manager.black_texture()))
-            context.set_texture(rendering::uniforms::STAGE_ENV, black->handle);
+            context.set_texture(ids.sampler_env, rendering::uniforms::STAGE_ENV, black->handle);
     }
 
     void RenderSystem::render(const rendering::RenderScene& scene, graphics::DeviceContext& context, const u32 view_id,
@@ -278,6 +291,10 @@ namespace star::systems {
 
         m_render_queue.clear();
 
+        if (!m_uniforms.is_resolved()) {
+            m_uniforms.resolve(context);
+        }
+
         collect_lights(scene);
 
         if (!viewport || !viewport->has_camera()) {
@@ -285,6 +302,10 @@ namespace star::systems {
             return;
         }
         viewport->update_temporal();
+
+        m_prev_models.swap(m_cur_models);
+        m_cur_models.clear();
+
         collect_renderables(scene, viewport);
 
         m_render_queue.sort();
@@ -328,20 +349,11 @@ namespace star::systems {
 
     void RenderSystem::execute_render_queue(graphics::DeviceContext& context, const u32 view_id,
                                             const rendering::Viewport* viewport) const {
+        Vector4 cam_pos{};
         if (viewport) {
             viewport->bind(context, view_id);
-        }
-
-        Vector4 cam_pos{};
-        const bool has_camera = viewport != nullptr;
-        if (has_camera) {
             const Vector3& cp = viewport->camera_position();
             cam_pos = {cp.x, cp.y, cp.z, 0.0f};
-
-            const Matrix4 cur_vp_nj = viewport->cur_view_proj();
-            const Matrix4 prev_vp = viewport->prev_view_proj();
-            context.set_uniform("u_curViewProjNJ", &cur_vp_nj, 1, graphics::UniformType::Mat4);
-            context.set_uniform("u_prevViewProj", &prev_vp, 1, graphics::UniformType::Mat4);
         }
 
         for (const auto& opaque_commands = m_render_queue.opaque_commands(); const auto& command : opaque_commands) {
@@ -358,9 +370,9 @@ namespace star::systems {
             context.set_transform(command.model_matrix);
 
             const auto pit = m_prev_models.find(command.entity_id);
-            const Matrix4 prev_model = pit != m_prev_models.end() ? pit->second : command.model_matrix;
-            context.set_uniform("u_prevModel", &prev_model, 1, graphics::UniformType::Mat4);
-            m_prev_models[command.entity_id] = command.model_matrix;
+            const Matrix4& prev_model = pit != m_prev_models.end() ? pit->second : command.model_matrix;
+            context.set_uniform(m_uniforms.prev_model, &prev_model);
+            m_cur_models[command.entity_id] = command.model_matrix;
 
             if (mesh->vertex_buffer.is_valid() && mesh->index_buffer.is_valid()) {
                 context.set_vertex_buffer(0, mesh->vertex_buffer);
@@ -373,7 +385,7 @@ namespace star::systems {
             graphics::ResourceHandle<graphics::Shader> shader_handle;
             if (command.material.is_valid()) {
                 if (const auto* material = m_resource_manager.get_material(command.material)) {
-                    submit_material(context, *material, command.parameters, m_resource_manager);
+                    submit_material(context, m_uniforms, *material, command.parameters, m_resource_manager);
 
                     if (material->shader.is_valid()) {
                         if (const auto* shader_res = m_resource_manager.get_shader(material->shader)) {
@@ -393,18 +405,15 @@ namespace star::systems {
 
             if (shader_handle.is_valid()) {
                 submit_lighting(context);
-                if (has_camera) {
-                    context.set_uniform(std::string(rendering::uniforms::CAM_POS), &cam_pos, 1,
-                                        graphics::UniformType::Vec4);
+                if (viewport) {
+                    context.set_uniform(m_uniforms.cam_pos, &cam_pos);
+                    context.set_uniform(m_uniforms.cur_view_proj_nj, &viewport->cur_view_proj());
+                    context.set_uniform(m_uniforms.prev_view_proj, &viewport->prev_view_proj());
                 }
                 context.submit(view_id, shader_handle);
             } else {
                 STAR_LOG_WARN(LogCategory::Rendering, "No valid shader available for rendering");
             }
-
-            STAR_LOG_TRACE(LogCategory::Rendering, "Rendered opaque object (dist_sq: {:.2f})", command.distance_sq);
         }
-
-        // TODO: transparent pass — sort back-to-front, enable blending per pipeline state
     }
 } // namespace star::systems

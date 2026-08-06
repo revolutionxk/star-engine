@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "bgfx/defines.h"
 #include "star/core/common.hpp"
 #include "star/core/logger.hpp"
 #include "star/graphics/device_context.hpp"
@@ -150,17 +149,6 @@ namespace star::rendering {
         }
     }
 
-    void RenderGraph::execute(const FrameContext& frame, graphics::DeviceContext& context) {
-        compile();
-        u32 view_id = 0;
-        for (auto* pass : m_ordered) {
-            if (!pass->is_enabled())
-                continue;
-            const RenderContext ctx{frame, context, view_id++};
-            pass->render(ctx);
-        }
-    }
-
     u32 RenderGraph::execute_scope(const PassScope scope, const FrameContext& frame,
                                    graphics::DeviceContext& context, u32 start_view_id) {
         compile();
@@ -168,6 +156,7 @@ namespace star::rendering {
             if (!pass->is_enabled() || pass->scope() != scope)
                 continue;
             const RenderContext ctx{frame, context, start_view_id++};
+            context.set_view_name(ctx.view_id, pass->get_name());
             pass->render(ctx);
         }
         return start_view_id;
@@ -181,12 +170,10 @@ namespace star::rendering {
         }
     }
 
-    void RenderGraph::reset(const u32 width, const u32 height, graphics::DeviceContext& context) {
+    void RenderGraph::on_resize(const u32 width, const u32 height) {
         compile();
         for (auto* pass : m_ordered) {
-            const auto view_id = pass->reset(width, height);
-            context.set_view_clear(view_id, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
-            context.set_view_rect(view_id, 0, 0, width, height);
+            pass->on_resize(width, height);
         }
     }
 

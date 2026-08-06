@@ -16,11 +16,13 @@ namespace star::components {
     };
 } // namespace star::components
 
-template<>
-struct reflection::TypeInfo<components::MaterialInstance> {
-    static constexpr std::string_view name = "MaterialInstance";
-    static constexpr bool is_component = true;
-    static constexpr auto fields = std::make_tuple();
-};
+namespace star {
+    template<>
+    struct reflection::TypeInfo<components::MaterialInstance> {
+        static constexpr std::string_view name = "MaterialInstance";
+        static constexpr bool is_component = true;
+        static constexpr auto fields = std::make_tuple();
+    };
+} // namespace star
 
 STAR_REGISTER_COMPONENT(star::components::MaterialInstance);

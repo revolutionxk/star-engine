@@ -118,16 +118,14 @@ namespace star::rendering {
         ImGui::SetCurrentContext(m_context);
     }
 
-    u32 ImGuiRenderPass::reset(const u32 width, const u32 height) {
+    void ImGuiRenderPass::on_resize(const u32 width, const u32 height) {
         if (!m_initialized) {
-            return Super::reset(width, height);
+            return;
         }
 
         if (m_renderer) {
             m_renderer->reset(width, height);
         }
-
-        return Super::reset(width, height);
     }
 
     void ImGuiRenderPass::apply_dpi_scale(const f32 density) {

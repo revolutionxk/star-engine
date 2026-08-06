@@ -1,6 +1,9 @@
 #pragma once
+#include <cstddef>
 #include <functional>
 #include <limits>
+
+#include "star/core/types.hpp"
 
 namespace star::graphics {
 
@@ -27,9 +30,9 @@ namespace star::graphics {
 } // namespace star::graphics
 
 template<typename T>
-struct std::hash<graphics::ResourceHandle<T>> {
-    size_t operator()(const graphics::ResourceHandle<T>& h) const noexcept {
-        const u64 packed = static_cast<u64>(h.id) << 32 | h.generation;
-        return std::hash<u64>{}(packed);
+struct std::hash<star::graphics::ResourceHandle<T>> {
+    std::size_t operator()(const star::graphics::ResourceHandle<T>& h) const noexcept {
+        const star::u64 packed = static_cast<star::u64>(h.id) << 32 | h.generation;
+        return std::hash<star::u64>{}(packed);
     }
-}; // namespace std
+};

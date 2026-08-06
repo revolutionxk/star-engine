@@ -23,6 +23,68 @@ namespace star::graphics {
         bgfx::touch(static_cast<bgfx::ViewId>(view_id));
     }
 
+    void BGFXDeviceContext::set_view_name(const u32 view_id, const std::string_view name) {
+        bgfx::setViewName(static_cast<bgfx::ViewId>(view_id), name.data(), static_cast<i32>(name.size()));
+    }
+
+    FrameStats BGFXDeviceContext::frame_stats() const {
+        const bgfx::Stats* s = bgfx::getStats();
+        if (!s) {
+            return {};
+        }
+
+        const f64 to_ms = 1000.0 / static_cast<f64>(s->cpuTimerFreq);
+        const f64 gpu_to_ms = s->gpuTimerFreq > 0 ? 1000.0 / static_cast<f64>(s->gpuTimerFreq) : 0.0;
+
+        u64 triangles = 0;
+        for (const u32 count : s->numPrims) {
+            triangles += count;
+        }
+
+        return FrameStats{
+            .draw_calls = s->numDraw,
+            .compute_calls = s->numCompute,
+            .blit_calls = s->numBlit,
+            .triangles = triangles,
+            .cpu_frame_ms = static_cast<f64>(s->cpuTimeEnd - s->cpuTimeBegin) * to_ms,
+            .gpu_frame_ms = static_cast<f64>(s->gpuTimeEnd - s->gpuTimeBegin) * gpu_to_ms,
+            .wait_submit_ms = static_cast<f64>(s->waitSubmit) * to_ms,
+            .wait_render_ms = static_cast<f64>(s->waitRender) * to_ms,
+            .textures = s->numTextures,
+            .framebuffers = s->numFrameBuffers,
+            .programs = s->numPrograms,
+            .uniform_count = s->numUniforms,
+            .texture_memory = static_cast<u64>(s->textureMemoryUsed),
+            .render_target_memory = static_cast<u64>(s->rtMemoryUsed),
+            .transient_vb_used = static_cast<u64>(s->transientVbUsed),
+            .transient_ib_used = static_cast<u64>(s->transientIbUsed),
+        };
+    }
+
+    void BGFXDeviceContext::collect_view_stats(std::vector<ViewStats>& out) const {
+        out.clear();
+
+        const bgfx::Stats* s = bgfx::getStats();
+        if (!s) {
+            return;
+        }
+
+        const f64 cpu_to_ms = 1000.0 / static_cast<f64>(s->cpuTimerFreq);
+        const f64 gpu_to_ms = s->gpuTimerFreq > 0 ? 1000.0 / static_cast<f64>(s->gpuTimerFreq) : 0.0;
+
+        out.reserve(s->numViews);
+        for (u16 i = 0; i < s->numViews; ++i) {
+            const bgfx::ViewStats& v = s->viewStats[i];
+
+            ViewStats entry{};
+            entry.view_id = v.view;
+            entry.cpu_ms = static_cast<f64>(v.cpuTimeEnd - v.cpuTimeBegin) * cpu_to_ms;
+            entry.gpu_ms = static_cast<f64>(v.gpuTimeEnd - v.gpuTimeBegin) * gpu_to_ms;
+            std::snprintf(entry.name, sizeof(entry.name), "%s", v.name);
+            out.push_back(entry);
+        }
+    }
+
     void BGFXDeviceContext::present() {}
 
     void BGFXDeviceContext::end_frame() {
@@ -124,22 +186,20 @@ namespace star::graphics {
         }
     }
 
-    void BGFXDeviceContext::set_texture(const u8 stage, const ResourceHandle<Texture> handle) {
-        if (!handle.is_valid()) {
+    void BGFXDeviceContext::set_texture(const UniformId sampler, const u8 stage,
+                                        const ResourceHandle<Texture> handle) {
+        if (!handle.is_valid() || !sampler.is_valid()) {
             return;
         }
 
         if (const bgfx::TextureHandle texture{static_cast<u16>(handle.id)}; bgfx::isValid(texture)) {
-            const std::string sampler_name = "s_texStage" + std::to_string(stage);
-            const bgfx::UniformHandle sampler = get_or_create_uniform(sampler_name, UniformType::Sampler, 1);
-            bgfx::setTexture(stage, sampler, texture);
+            bgfx::setTexture(stage, bgfx::UniformHandle{sampler.index}, texture);
         }
     }
 
-    bgfx::UniformHandle BGFXDeviceContext::get_or_create_uniform(const std::string& name, const UniformType type,
-                                                                 const u16 num) {
+    UniformId BGFXDeviceContext::uniform(const std::string_view name, const UniformType type, const u16 num) {
         if (const auto it = m_uniform_cache.find(name); it != m_uniform_cache.end()) {
-            return it->second;
+            return UniformId{it->second.idx};
         }
 
         bgfx::UniformType::Enum bgfx_type;
@@ -159,15 +219,22 @@ namespace star::graphics {
                 break;
         }
 
-        const bgfx::UniformHandle handle = bgfx::createUniform(name.c_str(), bgfx_type, num);
-        m_uniform_cache.emplace(name, handle);
-        return handle;
+        const std::string key{name};
+        const bgfx::UniformHandle handle = bgfx::createUniform(key.c_str(), bgfx_type, num);
+        if (!bgfx::isValid(handle)) {
+            STAR_LOG_WARN(LogCategory::Graphics, "Failed to create uniform '{}'", name);
+            return {};
+        }
+
+        m_uniform_cache.emplace(key, handle);
+        return UniformId{handle.idx};
     }
 
-    void BGFXDeviceContext::set_uniform(const std::string& name, const void* data, const u16 num,
-                                        const UniformType type) {
-        const bgfx::UniformHandle handle = get_or_create_uniform(name, type, num);
-        bgfx::setUniform(handle, data, num);
+    void BGFXDeviceContext::set_uniform(const UniformId id, const void* data, const u16 num) {
+        if (!id.is_valid()) {
+            return;
+        }
+        bgfx::setUniform(bgfx::UniformHandle{id.index}, data, num);
     }
 
     void BGFXDeviceContext::set_transform(const Matrix4& model) {
@@ -247,7 +314,8 @@ namespace star::graphics {
         m_next_state = flags;
     }
 
-    u32 BGFXDeviceContext::submit(const u32 view_id, const ResourceHandle<Shader> program) {
+    u32 BGFXDeviceContext::submit_internal(const u32 view_id, const ResourceHandle<Shader> program,
+                                           const u8 discard_flags) {
         if (!program.is_valid()) {
             STAR_LOG_WARN(LogCategory::Graphics, "Attempted to submit with invalid shader program");
             return 0;
@@ -264,10 +332,15 @@ namespace star::graphics {
         m_next_state = 0;
 
         bgfx::setState(state);
-        bgfx::submit(static_cast<bgfx::ViewId>(view_id), prog);
+        bgfx::submit(static_cast<bgfx::ViewId>(view_id), prog, 0, discard_flags);
 
         return 1;
     }
+
+    u32 BGFXDeviceContext::submit(const u32 view_id, const ResourceHandle<Shader> program) {
+        return submit_internal(view_id, program, BGFX_DISCARD_ALL);
+    }
+
 
     void BGFXDeviceContext::set_transient_vertex_buffer(const u8 stream, const void* data, const u32 num_vertices,
                                                         const VertexLayoutType layout_type) {

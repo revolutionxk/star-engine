@@ -2,6 +2,7 @@
 #include <string_view>
 
 #include "star/core/types.hpp"
+#include "star/graphics/device_context.hpp"
 
 namespace star::rendering::uniforms {
     inline constexpr std::string_view LIGHT_DIR = "u_lightDir";
@@ -31,10 +32,62 @@ namespace star::rendering::uniforms {
     inline constexpr std::string_view LIGHT_VIEW_PROJ = "u_lightViewProj";
     inline constexpr std::string_view SHADOW_PARAMS = "u_shadowParams";
 
+    inline constexpr std::string_view CUR_VIEW_PROJ_NJ = "u_curViewProjNJ";
+    inline constexpr std::string_view PREV_VIEW_PROJ = "u_prevViewProj";
+    inline constexpr std::string_view PREV_MODEL = "u_prevModel";
+
+    inline constexpr std::string_view SAMPLER_ALBEDO = "s_texColor";
+    inline constexpr std::string_view SAMPLER_NORMAL = "s_texNormal";
+    inline constexpr std::string_view SAMPLER_MR = "s_texMetallicRoughness";
+    inline constexpr std::string_view SAMPLER_EMISSIVE = "s_texEmissive";
+    inline constexpr std::string_view SAMPLER_SHADOW = "s_shadowMap";
+    inline constexpr std::string_view SAMPLER_ENV = "s_envMap";
+
     inline constexpr u8 STAGE_ALBEDO = 0;
     inline constexpr u8 STAGE_NORMAL = 1;
     inline constexpr u8 STAGE_MR = 2;
     inline constexpr u8 STAGE_EMISSIVE = 3;
     inline constexpr u8 STAGE_SHADOW = 4;
     inline constexpr u8 STAGE_ENV = 5;
+
+    struct SceneUniforms {
+        graphics::UniformId ambient_color;
+        graphics::UniformId ground_color;
+        graphics::UniformId env_sky_color;
+        graphics::UniformId env_sun_dir;
+        graphics::UniformId env_sun_color;
+
+        graphics::UniformId lights_pos_type;
+        graphics::UniformId lights_dir_range;
+        graphics::UniformId lights_color_int;
+        graphics::UniformId lights_cone;
+        graphics::UniformId lights_count;
+
+        graphics::UniformId base_color;
+        graphics::UniformId material_params;
+        graphics::UniformId emissive_color;
+        graphics::UniformId tex_flags;
+        graphics::UniformId ibl_params;
+
+        graphics::UniformId cam_pos;
+        graphics::UniformId light_view_proj;
+        graphics::UniformId shadow_params;
+
+        graphics::UniformId cur_view_proj_nj;
+        graphics::UniformId prev_view_proj;
+        graphics::UniformId prev_model;
+
+        graphics::UniformId sampler_albedo;
+        graphics::UniformId sampler_normal;
+        graphics::UniformId sampler_mr;
+        graphics::UniformId sampler_emissive;
+        graphics::UniformId sampler_shadow;
+        graphics::UniformId sampler_env;
+
+        void resolve(graphics::DeviceContext& context);
+
+        [[nodiscard]] bool is_resolved() const noexcept {
+            return cam_pos.is_valid();
+        }
+    };
 } // namespace star::rendering::uniforms

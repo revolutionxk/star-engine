@@ -61,6 +61,9 @@ namespace star::rendering {
 
         auto& gpu = ctx.gpu;
 
+        if (!m_pick_id_uniform.is_valid())
+            m_pick_id_uniform = gpu.uniform("u_pickId", graphics::UniformType::Vec4);
+
         constexpr u32 view = 240;
         gpu.set_view_framebuffer(view, m_target.framebuffer());
         gpu.set_view_rect(view, 0, 0, static_cast<u16>(width), static_cast<u16>(height));
@@ -81,7 +84,7 @@ namespace star::rendering {
             gpu.set_index_buffer(mesh->index_buffer);
 
             const Vector4 id_color = encode_id(index);
-            gpu.set_uniform("u_pickId", &id_color, 1, graphics::UniformType::Vec4);
+            gpu.set_uniform(m_pick_id_uniform, &id_color);
             gpu.submit(view, m_pick_shader);
 
             m_ids.push_back(renderable.entity_id);

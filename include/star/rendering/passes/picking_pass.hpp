@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "star/core/types.hpp"
+#include "star/graphics/device_context.hpp"
 #include "star/graphics/resource_handle.hpp"
 #include "star/rendering/render_target.hpp"
 #include "star/rendering/renderer.hpp"
@@ -51,6 +52,7 @@ namespace star::rendering {
         graphics::Device& m_device;
         resources::ResourceManager& m_resources;
         graphics::ResourceHandle<graphics::Shader> m_pick_shader;
+        graphics::UniformId m_pick_id_uniform;
         RenderTarget m_target;
         graphics::ResourceHandle<graphics::Texture> m_readback;
 

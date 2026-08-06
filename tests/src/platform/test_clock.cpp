@@ -5,6 +5,8 @@
 
 #include "star/platform/time/clock.hpp"
 
+using namespace star;
+
 using namespace star::platform;
 
 TEST_CASE("Clock - elapsed is near zero immediately after construction", "[platform][clock]") {

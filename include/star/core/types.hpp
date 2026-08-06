@@ -14,5 +14,3 @@ namespace star {
     using f64 = double;
     using byte = u8;
 } // namespace star
-
-using namespace star;

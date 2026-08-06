@@ -45,15 +45,8 @@ namespace star::rendering {
         const Vector3 eye = center - light_dir * distance;
         out_view = Matrix4::look_at(eye, center, up);
 
-        if (homogeneous_depth) {
-            out_proj = Matrix4::orthographic(-coverage, coverage, -coverage, coverage, near_plane, far_plane);
-        } else {
-            out_proj = Matrix4::identity();
-            out_proj(0, 0) = 1.0f / coverage;
-            out_proj(1, 1) = 1.0f / coverage;
-            out_proj(2, 2) = -1.0f / (far_plane - near_plane);
-            out_proj(3, 2) = -near_plane / (far_plane - near_plane);
-        }
+        out_proj = Matrix4::orthographic(-coverage, coverage, -coverage, coverage, near_plane, far_plane,
+                                         homogeneous_depth);
 
         const Matrix4 light_vp = out_proj * out_view;
         const Vector4 origin = light_vp * Vector4{center.x, center.y, center.z, 1.0f};

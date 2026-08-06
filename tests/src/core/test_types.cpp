@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "star/core/types.hpp"
 
+using namespace star;
+
 TEST_CASE("Type aliases have correct byte sizes", "[core][types]") {
     REQUIRE(sizeof(i8)   == 1);
     REQUIRE(sizeof(i16)  == 2);

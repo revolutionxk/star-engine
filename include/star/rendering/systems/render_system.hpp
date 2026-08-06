@@ -6,6 +6,7 @@
 #include "star/math/matrix.hpp"
 #include "star/rendering/light_environment.hpp"
 #include "star/rendering/render_queue.hpp"
+#include "star/rendering/shader_uniforms.hpp"
 #include "star/rendering/sky/atmosphere_solver.hpp"
 
 namespace star::graphics {
@@ -86,6 +87,8 @@ namespace star::systems {
         rendering::AtmosphericLighting m_atmospheric;
         ShadowState m_shadow;
         EnvironmentState m_environment;
+        rendering::uniforms::SceneUniforms m_uniforms;
         mutable std::unordered_map<u64, Matrix4> m_prev_models;
+        mutable std::unordered_map<u64, Matrix4> m_cur_models;
     };
 } // namespace star::systems

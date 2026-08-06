@@ -107,44 +107,39 @@ namespace star {
     }
 } // namespace star
 
-#define STAR_CORE_TRACE(...)                                                                                           \
-    ::star::Logger::get_core_logger()->trace(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
-#define STAR_CORE_DEBUG(...)                                                                                           \
-    ::star::Logger::get_core_logger()->debug(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
-#define STAR_CORE_INFO(...)                                                                                            \
-    ::star::Logger::get_core_logger()->info(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
-#define STAR_CORE_WARN(...)                                                                                            \
-    ::star::Logger::get_core_logger()->warn(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
-#define STAR_CORE_ERROR(...)                                                                                           \
-    ::star::Logger::get_core_logger()->error(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
-#define STAR_CORE_CRITICAL(...)                                                                                        \
-    ::star::Logger::get_core_logger()->critical(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
+#define STAR_LOG_EMIT(logger_expr, level, ...)                                                                         \
+    do {                                                                                                               \
+        if (const auto& _star_logger = (logger_expr); _star_logger->should_log(level)) {                               \
+            _star_logger->log(level, ::star::Logger::get_indent() + fmt::format(__VA_ARGS__));                          \
+        }                                                                                                              \
+    } while (0)
 
-#define STAR_TRACE(...)                                                                                                \
-    ::star::Logger::get_client_logger()->trace(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
-#define STAR_DEBUG(...)                                                                                                \
-    ::star::Logger::get_client_logger()->debug(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
-#define STAR_INFO(...)                                                                                                 \
-    ::star::Logger::get_client_logger()->info(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
-#define STAR_WARN(...)                                                                                                 \
-    ::star::Logger::get_client_logger()->warn(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
-#define STAR_ERROR(...)                                                                                                \
-    ::star::Logger::get_client_logger()->error(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
-#define STAR_CRITICAL(...)                                                                                             \
-    ::star::Logger::get_client_logger()->critical(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
+#define STAR_CORE_TRACE(...) STAR_LOG_EMIT(::star::Logger::get_core_logger(), spdlog::level::trace, __VA_ARGS__)
+#define STAR_CORE_DEBUG(...) STAR_LOG_EMIT(::star::Logger::get_core_logger(), spdlog::level::debug, __VA_ARGS__)
+#define STAR_CORE_INFO(...) STAR_LOG_EMIT(::star::Logger::get_core_logger(), spdlog::level::info, __VA_ARGS__)
+#define STAR_CORE_WARN(...) STAR_LOG_EMIT(::star::Logger::get_core_logger(), spdlog::level::warn, __VA_ARGS__)
+#define STAR_CORE_ERROR(...) STAR_LOG_EMIT(::star::Logger::get_core_logger(), spdlog::level::err, __VA_ARGS__)
+#define STAR_CORE_CRITICAL(...) STAR_LOG_EMIT(::star::Logger::get_core_logger(), spdlog::level::critical, __VA_ARGS__)
+
+#define STAR_TRACE(...) STAR_LOG_EMIT(::star::Logger::get_client_logger(), spdlog::level::trace, __VA_ARGS__)
+#define STAR_DEBUG(...) STAR_LOG_EMIT(::star::Logger::get_client_logger(), spdlog::level::debug, __VA_ARGS__)
+#define STAR_INFO(...) STAR_LOG_EMIT(::star::Logger::get_client_logger(), spdlog::level::info, __VA_ARGS__)
+#define STAR_WARN(...) STAR_LOG_EMIT(::star::Logger::get_client_logger(), spdlog::level::warn, __VA_ARGS__)
+#define STAR_ERROR(...) STAR_LOG_EMIT(::star::Logger::get_client_logger(), spdlog::level::err, __VA_ARGS__)
+#define STAR_CRITICAL(...) STAR_LOG_EMIT(::star::Logger::get_client_logger(), spdlog::level::critical, __VA_ARGS__)
 
 #define STAR_LOG_TRACE(category, ...)                                                                                  \
-    ::star::Logger::get_category_logger(category)->trace(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
+    STAR_LOG_EMIT(::star::Logger::get_category_logger(category), spdlog::level::trace, __VA_ARGS__)
 #define STAR_LOG_DEBUG(category, ...)                                                                                  \
-    ::star::Logger::get_category_logger(category)->debug(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
+    STAR_LOG_EMIT(::star::Logger::get_category_logger(category), spdlog::level::debug, __VA_ARGS__)
 #define STAR_LOG_INFO(category, ...)                                                                                   \
-    ::star::Logger::get_category_logger(category)->info(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
+    STAR_LOG_EMIT(::star::Logger::get_category_logger(category), spdlog::level::info, __VA_ARGS__)
 #define STAR_LOG_WARN(category, ...)                                                                                   \
-    ::star::Logger::get_category_logger(category)->warn(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
+    STAR_LOG_EMIT(::star::Logger::get_category_logger(category), spdlog::level::warn, __VA_ARGS__)
 #define STAR_LOG_ERROR(category, ...)                                                                                  \
-    ::star::Logger::get_category_logger(category)->error(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
+    STAR_LOG_EMIT(::star::Logger::get_category_logger(category), spdlog::level::err, __VA_ARGS__)
 #define STAR_LOG_CRITICAL(category, ...)                                                                               \
-    ::star::Logger::get_category_logger(category)->critical(::star::Logger::get_indent() + fmt::format(__VA_ARGS__))
+    STAR_LOG_EMIT(::star::Logger::get_category_logger(category), spdlog::level::critical, __VA_ARGS__)
 
 #define STAR_LOG_SCOPE(name) ::star::LogScope STAR_CONCAT(__log_scope_, __LINE__)(name)
 #define STAR_CONCAT(a, b) STAR_CONCAT_IMPL(a, b)

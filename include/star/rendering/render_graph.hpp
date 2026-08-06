@@ -48,13 +48,12 @@ namespace star::rendering {
         void compile();
 
         void pre_render(const FrameContext& frame);
-        void execute(const FrameContext& frame, graphics::DeviceContext& context);
         u32 execute_scope(PassScope scope, const FrameContext& frame, graphics::DeviceContext& context,
                           u32 start_view_id);
 
         void post_render(const FrameContext& frame) const;
 
-        void reset(u32 width, u32 height, graphics::DeviceContext& context);
+        void on_resize(u32 width, u32 height);
 
         [[nodiscard]] const std::vector<IRenderPass*>& ordered_view() const noexcept {
             return m_ordered;

@@ -2,8 +2,6 @@
 
 #include <algorithm>
 
-#include <bgfx/bgfx.h>
-
 #include "star/core/logger.hpp"
 #include "star/graphics/device.hpp"
 #include "star/graphics/device_context.hpp"
@@ -67,7 +65,7 @@ namespace star::rendering {
         constexpr u32 view = 240;
         gpu.set_view_framebuffer(view, m_target.framebuffer());
         gpu.set_view_rect(view, 0, 0, static_cast<u16>(width), static_cast<u16>(height));
-        gpu.set_view_clear(view, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x00000000, 1.0f, 0);
+        gpu.set_view_clear(view, graphics::ClearFlags::ColorDepth, 0x00000000, 1.0f, 0);
         gpu.set_view_transform(view, viewport->view_matrix(), viewport->projection_matrix());
 
         m_ids.clear();

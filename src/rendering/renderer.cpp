@@ -6,12 +6,16 @@
 #include "star/graphics/device.hpp"
 #include "star/platform/window.hpp"
 #include "star/rendering/debug_renderer.hpp"
+#include "star/rendering/passes/bloom_pass.hpp"
 #include "star/rendering/passes/debug_render_pass.hpp"
 #include "star/rendering/passes/picking_pass.hpp"
-#include "star/rendering/passes/postprocess_pass.hpp"
 #include "star/rendering/passes/scene_render_pass.hpp"
 #include "star/rendering/passes/shadow_pass.hpp"
 #include "star/rendering/passes/sky_render_pass.hpp"
+#include "star/rendering/passes/ssao_pass.hpp"
+#include "star/rendering/passes/ssr_pass.hpp"
+#include "star/rendering/passes/taa_pass.hpp"
+#include "star/rendering/passes/tonemap_pass.hpp"
 #include "star/rendering/render_scene.hpp"
 #include "star/rendering/systems/render_system.hpp"
 #include "star/rendering/viewport.hpp"
@@ -23,6 +27,7 @@ namespace star::rendering {
             STAR_LOG_WARN(LogCategory::Rendering, "Renderer already initialized");
         }
 
+        m_view_allocator = std::make_unique<ViewAllocator>(*m_device->context());
         m_render_system = std::make_unique<systems::RenderSystem>(*m_device, *m_resource_manager);
         m_debug_renderer = std::make_unique<DebugRenderer>(*m_resource_manager);
 
@@ -30,7 +35,12 @@ namespace star::rendering {
         add_render_pass(std::make_unique<SceneRenderPass>(*m_render_system));
         add_render_pass(std::make_unique<SkyRenderPass>(*m_render_system, *m_resource_manager));
         add_render_pass(std::make_unique<DebugRenderPass>(*m_debug_renderer));
-        add_render_pass(std::make_unique<PostProcessPass>(*m_device, *m_resource_manager));
+        add_render_pass(std::make_unique<SsaoPass>(*m_device, *m_resource_manager, m_post_settings));
+        add_render_pass(std::make_unique<SsrPass>(*m_device, *m_resource_manager, m_post_settings));
+        add_render_pass(std::make_unique<TaaPass>(*m_device, *m_resource_manager, m_post_settings));
+        add_render_pass(std::make_unique<BloomPass>(*m_device, *m_resource_manager, m_post_settings));
+        add_render_pass(std::make_unique<TonemapPass>(*m_device, *m_resource_manager, m_post_settings));
+        add_render_pass(std::make_unique<FxaaPass>(*m_device, *m_resource_manager, m_post_settings));
         add_render_pass(std::make_unique<PickingPass>(*m_device, *m_resource_manager));
 
         STAR_LOG_INFO(LogCategory::Rendering, "Window rendering setup complete");
@@ -46,7 +56,8 @@ namespace star::rendering {
 
         STAR_LOG_INFO(LogCategory::Rendering, "Shutting down Renderer");
 
-        const FrameContext empty{*m_device, *m_resource_manager, nullptr, nullptr, nullptr, 0.0f, m_frame_index};
+        const FrameContext empty{*m_device, *m_resource_manager, *m_view_allocator, nullptr,
+                                 nullptr,   nullptr,             0.0f,              m_frame_index};
         for (auto* pass : m_graph.ordered_view()) {
             pass->post_render(empty);
         }
@@ -66,7 +77,6 @@ namespace star::rendering {
         const auto context = m_device->context();
         context->begin_frame();
 
-        u32 view_id = 0;
         Viewport* primary = nullptr;
 
         if (!m_views.empty()) {
@@ -76,54 +86,65 @@ namespace star::rendering {
                 if (!primary)
                     primary = view.viewport;
 
-                resolve_view_camera(view, frame.scene);
+                prepare_view(view, frame.scene);
 
                 FrameContext view_frame = frame;
                 view_frame.viewport = view.viewport;
                 view_frame.view = &view;
-                view_id = m_graph.execute_scope(PassScope::PerView, view_frame, *context, view_id);
+                m_graph.execute_scope(PassScope::PerView, view_frame, *context);
             }
         } else if (m_active_viewport) {
             const RenderView default_view{m_active_viewport, nullptr, nullptr, true, true};
             primary = m_active_viewport;
 
-            resolve_view_camera(default_view, frame.scene);
+            prepare_view(default_view, frame.scene);
 
             FrameContext view_frame = frame;
             view_frame.viewport = m_active_viewport;
             view_frame.view = &default_view;
-            view_id = m_graph.execute_scope(PassScope::PerView, view_frame, *context, view_id);
+            m_graph.execute_scope(PassScope::PerView, view_frame, *context);
         }
 
         FrameContext global_frame = frame;
         global_frame.viewport = primary ? primary : m_active_viewport;
         global_frame.view = nullptr;
-        m_graph.execute_scope(PassScope::Global, global_frame, *context, view_id);
+        m_graph.execute_scope(PassScope::Global, global_frame, *context);
 
         context->end_frame();
     }
 
-    void Renderer::resolve_view_camera(const RenderView& view, const RenderScene* scene) {
+    void Renderer::prepare_view(const RenderView& view, const RenderScene* scene) const {
+        Viewport& viewport = *view.viewport;
+
         if (view.camera && view.camera_transform) {
-            view.viewport->set_camera(*view.camera, *view.camera_transform);
-            return;
+            viewport.set_camera(*view.camera, *view.camera_transform);
+        } else if (scene && scene->primary_camera.has_value()) {
+            const auto& snapshot = *scene->primary_camera;
+
+            components::Camera cam;
+            cam.fov_y = snapshot.fov_y;
+            cam.near_plane = snapshot.near_plane;
+            cam.far_plane = snapshot.far_plane;
+            cam.aspect_ratio = snapshot.aspect_ratio;
+
+            components::Transform xf;
+            xf.position = snapshot.position;
+            xf.rotation = snapshot.rotation;
+            xf.scale = snapshot.scale;
+
+            viewport.set_camera(cam, xf);
         }
-        if (!scene || !scene->primary_camera.has_value())
-            return;
 
-        const auto& snapshot = *scene->primary_camera;
-        components::Camera cam;
-        cam.fov_y = snapshot.fov_y;
-        cam.near_plane = snapshot.near_plane;
-        cam.far_plane = snapshot.far_plane;
-        cam.aspect_ratio = snapshot.aspect_ratio;
+        viewport.set_taa_enabled(m_post_settings.enabled && m_post_settings.taa_enabled);
+        viewport.update_temporal();
 
-        components::Transform xf;
-        xf.position = snapshot.position;
-        xf.rotation = snapshot.rotation;
-        xf.scale = snapshot.scale;
-
-        view.viewport->set_camera(cam, xf);
+        auto& res = viewport.resources();
+        res.begin_frame();
+        res.publish(resource_names::HDR, viewport.hdr_color_texture());
+        res.publish(resource_names::LIT, viewport.hdr_color_texture());
+        res.publish(resource_names::NORMAL, viewport.hdr_normal_texture());
+        res.publish(resource_names::VELOCITY, viewport.hdr_velocity_texture());
+        res.publish(resource_names::DEPTH, viewport.hdr_depth_texture());
     }
 
     ViewId Renderer::add_view(const RenderView& view) {
@@ -166,8 +187,10 @@ namespace star::rendering {
 
     FrameContext Renderer::make_frame_context(const f32 delta_time) {
         ++m_frame_index;
+        m_view_allocator->begin_frame();
         return FrameContext{
-            *m_device, *m_resource_manager, m_active_scene, m_active_viewport, nullptr, delta_time, m_frame_index,
+            *m_device,   *m_resource_manager, *m_view_allocator, m_active_scene,
+            m_active_viewport, nullptr,       delta_time,        m_frame_index,
         };
     }
 

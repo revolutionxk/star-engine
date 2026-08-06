@@ -79,6 +79,9 @@ namespace star::systems {
         void submit_lighting(graphics::DeviceContext& context) const;
         void execute_render_queue(graphics::DeviceContext& context, u32 view_id,
                                   const rendering::Viewport* viewport) const;
+        void submit_draw_calls(graphics::DeviceContext& context, u32 view_id, const rendering::Viewport* viewport,
+                               const Vector4& cam_pos, const std::vector<rendering::DrawCall>& commands,
+                               bool transparent) const;
 
         graphics::Device& m_device;
         resources::ResourceManager& m_resource_manager;

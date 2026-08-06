@@ -118,16 +118,16 @@ namespace star::graphics {
         STAR_LOG_DEBUG(LogCategory::Graphics, "Device context resized to {}x{}", width, height);
     }
 
-    void BGFXDeviceContext::set_view_clear(const u32 view_id, const u32 clear_flags, const u32 rgba, const f32 depth,
+    void BGFXDeviceContext::set_view_clear(const u32 view_id, const ClearFlags flags, const u32 rgba, const f32 depth,
                                            const u8 stencil) {
         m_current_view = view_id;
 
-        u16 bgfx_flags = 0;
-        if (clear_flags & 0x1)
+        u16 bgfx_flags = BGFX_CLEAR_NONE;
+        if (has_flag(flags, ClearFlags::Color))
             bgfx_flags |= BGFX_CLEAR_COLOR;
-        if (clear_flags & 0x2)
+        if (has_flag(flags, ClearFlags::Depth))
             bgfx_flags |= BGFX_CLEAR_DEPTH;
-        if (clear_flags & 0x4)
+        if (has_flag(flags, ClearFlags::Stencil))
             bgfx_flags |= BGFX_CLEAR_STENCIL;
 
         bgfx::setViewClear(static_cast<bgfx::ViewId>(view_id), bgfx_flags, rgba, depth, stencil);

@@ -48,8 +48,7 @@ namespace star::rendering {
         void compile();
 
         void pre_render(const FrameContext& frame);
-        u32 execute_scope(PassScope scope, const FrameContext& frame, graphics::DeviceContext& context,
-                          u32 start_view_id);
+        void execute_scope(PassScope scope, const FrameContext& frame, graphics::DeviceContext& context);
 
         void post_render(const FrameContext& frame) const;
 

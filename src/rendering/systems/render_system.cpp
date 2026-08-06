@@ -79,8 +79,15 @@ namespace {
 
     void submit_material(graphics::DeviceContext& ctx, const rendering::uniforms::SceneUniforms& ids,
                          const resources::Material& mat, const std::vector<rendering::MaterialProperty>& params,
-                         resources::ResourceManager& rm) {
-        ctx.set_pipeline_state(mat.pipeline_state);
+                         resources::ResourceManager& rm, const bool transparent) {
+        graphics::PipelineState state = mat.pipeline_state;
+        if (transparent) {
+            state.depth_write = false;
+            if (state.blend_mode == graphics::BlendMode::Opaque) {
+                state.blend_mode = graphics::BlendMode::AlphaBlend;
+            }
+        }
+        ctx.set_pipeline_state(state);
 
         const u32 overridden = collect_overrides(params);
 
@@ -301,7 +308,6 @@ namespace star::systems {
             STAR_LOG_WARN(LogCategory::Rendering, "No active camera found in scene '{}'", scene.name);
             return;
         }
-        viewport->update_temporal();
 
         m_prev_models.swap(m_cur_models);
         m_cur_models.clear();
@@ -341,7 +347,14 @@ namespace star::systems {
             }
 
             draw_call.distance_sq = camera_position.distance_squared_to(item.world_position);
+
             draw_call.is_transparent = item.is_transparent;
+            if (!draw_call.is_transparent && item.material.is_valid()) {
+                if (const auto* material = m_resource_manager.get_material(item.material)) {
+                    draw_call.is_transparent =
+                        material->pipeline_state.blend_mode != graphics::BlendMode::Opaque;
+                }
+            }
 
             m_render_queue.submit(draw_call);
         }
@@ -356,7 +369,15 @@ namespace star::systems {
             cam_pos = {cp.x, cp.y, cp.z, 0.0f};
         }
 
-        for (const auto& opaque_commands = m_render_queue.opaque_commands(); const auto& command : opaque_commands) {
+        submit_draw_calls(context, view_id, viewport, cam_pos, m_render_queue.opaque_commands(), false);
+        submit_draw_calls(context, view_id, viewport, cam_pos, m_render_queue.transparent_commands(), true);
+    }
+
+    void RenderSystem::submit_draw_calls(graphics::DeviceContext& context, const u32 view_id,
+                                         const rendering::Viewport* viewport, const Vector4& cam_pos,
+                                         const std::vector<rendering::DrawCall>& commands,
+                                         const bool transparent) const {
+        for (const auto& command : commands) {
             if (!command.mesh.is_valid()) {
                 continue;
             }
@@ -385,7 +406,8 @@ namespace star::systems {
             graphics::ResourceHandle<graphics::Shader> shader_handle;
             if (command.material.is_valid()) {
                 if (const auto* material = m_resource_manager.get_material(command.material)) {
-                    submit_material(context, m_uniforms, *material, command.parameters, m_resource_manager);
+                    submit_material(context, m_uniforms, *material, command.parameters, m_resource_manager,
+                                    transparent);
 
                     if (material->shader.is_valid()) {
                         if (const auto* shader_res = m_resource_manager.get_shader(material->shader)) {

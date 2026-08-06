@@ -84,7 +84,7 @@ namespace star::graphics {
 
         virtual void touch(u32 view_id) = 0;
         virtual void set_view_name(u32 view_id, std::string_view name) = 0;
-        virtual void set_view_clear(u32 view_id, u32 clear_flags, u32 rgba, f32 depth, u8 stencil) = 0;
+        virtual void set_view_clear(u32 view_id, ClearFlags flags, u32 rgba, f32 depth, u8 stencil) = 0;
         virtual void set_view_rect(u32 view_id, u16 x, u16 y, u16 width, u16 height) = 0;
         virtual void set_view_transform(u32 view_id, const Matrix4& view, const Matrix4& projection) = 0;
         virtual void set_view_framebuffer(u32 view_id, ResourceHandle<Framebuffer> handle) = 0;

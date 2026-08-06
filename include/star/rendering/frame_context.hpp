@@ -13,12 +13,14 @@ namespace star::resources {
 
 namespace star::rendering {
     class Viewport;
+    class ViewAllocator;
     struct RenderScene;
     struct RenderView;
 
     struct FrameContext {
         graphics::Device& device;
         resources::ResourceManager& resources;
+        ViewAllocator& views;
 
         const RenderScene* scene{nullptr};
 

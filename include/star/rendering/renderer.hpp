@@ -7,8 +7,10 @@
 
 #include "star/core/types.hpp"
 #include "star/rendering/frame_context.hpp"
+#include "star/rendering/post_process_settings.hpp"
 #include "star/rendering/render_graph.hpp"
 #include "star/rendering/render_view.hpp"
+#include "star/rendering/view_allocator.hpp"
 
 namespace star::graphics {
     class Device;
@@ -118,6 +120,14 @@ namespace star::rendering {
             return m_graph;
         }
 
+        [[nodiscard]] PostProcessSettings& post_settings() noexcept {
+            return m_post_settings;
+        }
+
+        [[nodiscard]] const PostProcessSettings& post_settings() const noexcept {
+            return m_post_settings;
+        }
+
         void set_render_scene(const RenderScene* scene) noexcept {
             m_active_scene = scene;
         }
@@ -146,13 +156,15 @@ namespace star::rendering {
             ViewId id;
             RenderView view;
         };
-        
-        static void resolve_view_camera(const RenderView& view, const RenderScene* scene);
+
+        void prepare_view(const RenderView& view, const RenderScene* scene) const;
 
         graphics::Device* m_device;
         platform::Window* m_window;
         resources::ResourceManager* m_resource_manager;
 
+        PostProcessSettings m_post_settings;
+        std::unique_ptr<ViewAllocator> m_view_allocator;
         RenderGraph m_graph;
         std::unique_ptr<systems::RenderSystem> m_render_system;
         std::unique_ptr<DebugRenderer> m_debug_renderer;

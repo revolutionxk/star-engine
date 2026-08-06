@@ -2,8 +2,6 @@
 
 #include <cmath>
 
-#include <bgfx/bgfx.h>
-
 #include "star/graphics/device.hpp"
 #include "star/graphics/device_context.hpp"
 #include "star/rendering/render_scene.hpp"
@@ -104,7 +102,7 @@ namespace star::rendering {
         const u32 view = ctx.view_id;
         gpu.set_view_framebuffer(view, m_target.framebuffer());
         gpu.set_view_rect(view, 0, 0, static_cast<u16>(SHADOW_MAP_SIZE), static_cast<u16>(SHADOW_MAP_SIZE));
-        gpu.set_view_clear(view, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0xFFFFFFFF, 1.0f, 0);
+        gpu.set_view_clear(view, graphics::ClearFlags::ColorDepth, 0xFFFFFFFF, 1.0f, 0);
         gpu.set_view_transform(view, light_view, light_proj);
 
         for (const auto& renderable : scene->renderables) {

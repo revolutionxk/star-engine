@@ -4,7 +4,6 @@
 
 #include "../core/gltf_import.hpp"
 #include "../editor_window.hpp"
-#include "star/rendering/passes/postprocess_pass.hpp"
 #include "star/rendering/passes/shadow_pass.hpp"
 #include "star/rendering/renderer.hpp"
 #include "star/rendering/systems/render_system.hpp"
@@ -35,10 +34,12 @@ namespace star::editor {
             ImGui::TextDisabled("Shadow pass unavailable");
         }
 
-        if (auto* post = m_editor_window->renderer().get_render_pass<rendering::PostProcessPass>()) {
+        {
             ImGui::SeparatorText("Post-Processing");
 
-            auto& p = post->settings();
+            auto& p = m_editor_window->renderer().post_settings();
+            ImGui::Checkbox("Post-Processing Enabled", &p.enabled);
+            ImGui::BeginDisabled(!p.enabled);
             ImGui::DragFloat("Exposure", &p.exposure, 0.01f, 0.05f, 8.0f, "%.2f");
             ImGui::SetItemTooltip("Overall scene brightness before tonemapping.");
 
@@ -85,6 +86,8 @@ namespace star::editor {
             ImGui::SetItemTooltip("Soft-knee width so the glow fades in smoothly around the threshold.");
             ImGui::DragFloat("Intensity", &p.bloom_intensity, 0.01f, 0.0f, 4.0f, "%.2f");
             ImGui::SetItemTooltip("How strongly the bloom is added back onto the image.");
+            ImGui::EndDisabled();
+
             ImGui::EndDisabled();
         }
 

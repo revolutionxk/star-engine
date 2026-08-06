@@ -22,10 +22,16 @@ namespace star::rendering {
         ViewResources(const ViewResources&) = delete;
         ViewResources& operator=(const ViewResources&) = delete;
 
+        void begin_frame();
+
         RenderTarget* target(std::string_view id, u32 width, u32 height, graphics::TextureFormat format,
                              bool with_depth = false);
 
         [[nodiscard]] RenderTarget* find(std::string_view id) const;
+
+        void publish(std::string_view id, graphics::ResourceHandle<graphics::Texture> handle);
+
+        [[nodiscard]] graphics::ResourceHandle<graphics::Texture> texture(std::string_view id) const;
 
         u64& counter(std::string_view id, u64 initial = 0);
 
@@ -46,6 +52,7 @@ namespace star::rendering {
 
         graphics::Device* m_device;
         std::map<std::string, Entry, std::less<>> m_targets;
+        std::map<std::string, graphics::ResourceHandle<graphics::Texture>, std::less<>> m_published;
         std::map<std::string, u64, std::less<>> m_counters;
     };
 } // namespace star::rendering

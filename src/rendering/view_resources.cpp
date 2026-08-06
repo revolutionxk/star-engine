@@ -6,6 +6,23 @@
 #include "star/graphics/device.hpp"
 
 namespace star::rendering {
+    void ViewResources::begin_frame() {
+        m_published.clear();
+    }
+
+    void ViewResources::publish(const std::string_view id, const graphics::ResourceHandle<graphics::Texture> handle) {
+        if (const auto it = m_published.find(id); it != m_published.end()) {
+            it->second = handle;
+            return;
+        }
+        m_published.emplace(std::string(id), handle);
+    }
+
+    graphics::ResourceHandle<graphics::Texture> ViewResources::texture(const std::string_view id) const {
+        const auto it = m_published.find(id);
+        return it != m_published.end() ? it->second : graphics::ResourceHandle<graphics::Texture>{};
+    }
+
     RenderTarget* ViewResources::target(const std::string_view id, const u32 width, const u32 height,
                                         const graphics::TextureFormat format, const bool with_depth) {
         const u32 w = std::max(1u, width);
@@ -60,6 +77,7 @@ namespace star::rendering {
             }
         }
         m_targets.clear();
+        m_published.clear();
         m_counters.clear();
     }
 } // namespace star::rendering

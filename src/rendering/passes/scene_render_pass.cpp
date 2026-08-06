@@ -11,18 +11,16 @@ namespace star::rendering {
 
     void SceneRenderPass::render(const RenderContext& ctx) {
         Viewport* viewport = ctx.frame.viewport;
-        if (viewport) {
-            viewport->bind(ctx.gpu, ctx.view_id);
-        }
 
         const RenderScene* scene = ctx.frame.scene;
         if (!scene || !scene->active) {
+            if (viewport) {
+                viewport->bind(ctx.gpu, ctx.view_id);
+            }
             return;
         }
 
         m_render_system.render(*scene, ctx.gpu, ctx.view_id, viewport);
-
-        Super::render(ctx);
     }
 
 

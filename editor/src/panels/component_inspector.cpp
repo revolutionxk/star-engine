@@ -77,23 +77,23 @@ namespace star::editor {
 
             ImGui::PushID(type_info.name.data());
             if (void* ptr = ecs->get_mut_ptr(entity)) {
-                std::any before_candidate = clone_component(entity, type_info.type);
                 const ui::FieldsResult result = ui::fields(type_info, ptr);
 
                 if (result.activated) {
                     m_edit_entity = entity;
                     m_edit_type = type_info.type;
-                    m_edit_before = std::move(before_candidate);
+                    m_edit_before = clone_component(entity, type_info.type);
                 }
 
-                if (result.committed) {
-                    if (m_edit_before.has_value() && m_edit_entity == entity && m_edit_type == type_info.type) {
-                        std::any after = clone_component(entity, type_info.type);
-                        if (after.has_value() && m_command_stack)
-                            m_command_stack->push(std::make_unique<SetComponentCommand>(
-                                entity, type_info.type, std::move(m_edit_before), std::move(after),
-                                std::string{type_info.name}));
-                    }
+                const bool tracking =
+                    m_edit_before.has_value() && m_edit_entity == entity && m_edit_type == type_info.type;
+
+                if (tracking && (result.committed || result.changed)) {
+                    std::any after = clone_component(entity, type_info.type);
+                    if (after.has_value() && m_command_stack)
+                        m_command_stack->push(std::make_unique<SetComponentCommand>(
+                            entity, type_info.type, std::move(m_edit_before), std::move(after),
+                            std::string{type_info.name}));
                     m_edit_entity.reset();
                     m_edit_before.reset();
                 }

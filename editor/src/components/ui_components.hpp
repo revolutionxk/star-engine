@@ -152,7 +152,30 @@ namespace star::editor::ui {
         return pressed;
     }
 
-    inline bool vector3_control(const char* label, float values[3], float reset_value = 0.f, float speed = 0.1f) {
+    struct FieldsResult {
+        bool changed{false};
+        bool committed{false};
+        bool activated{false};
+
+        void merge(const FieldsResult& other) noexcept {
+            changed = changed || other.changed;
+            committed = committed || other.committed;
+            activated = activated || other.activated;
+        }
+    };
+
+    inline FieldsResult capture_item_status() {
+        return {ImGui::IsItemEdited() && !ImGui::IsItemActive(), ImGui::IsItemDeactivatedAfterEdit(),
+                ImGui::IsItemActivated()};
+    }
+
+    inline void capture_item_status_into(FieldsResult* status) {
+        if (status)
+            status->merge(capture_item_status());
+    }
+
+    inline bool vector3_control(const char* label, float values[3], float reset_value = 0.f, float speed = 0.1f,
+                                FieldsResult* status = nullptr) {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems)
             return false;
@@ -194,6 +217,8 @@ namespace star::editor::ui {
             if (ImGui::DragFloat("##value", &values[i], speed, 0.0f, 0.0f, "%.2f")) {
                 value_changed = true;
             }
+
+            capture_item_status_into(status);
 
             if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
                 values[i] = reset_value;
@@ -241,25 +266,28 @@ namespace star::editor::ui {
     }
 
     inline bool float_control(const char* label, float* value, const float speed = 0.1f, const float min = 0.0f,
-                              const float max = 0.0f, const char* format = "%.3f") {
+                              const float max = 0.0f, const char* format = "%.3f", FieldsResult* status = nullptr) {
         if (!begin_property_row(label))
             return false;
 
         const bool changed = ImGui::DragFloat("##value", value, speed, min, max, format);
+        capture_item_status_into(status);
 
         end_property_row();
         return changed;
     }
 
-    inline void field_runtime(const star::reflection::RuntimeField& field, void* comp) {
+    inline FieldsResult field_runtime(const star::reflection::RuntimeField& field, void* comp) {
+        FieldsResult status;
+
         auto ref = field.get_mut(comp);
         if (!ref.is_valid())
-            return;
+            return status;
 
         const char* label = field.name.data();
 
         if (field.has_attr<star::reflection::attr::HideInEditor>())
-            return;
+            return status;
 
         const bool is_ro = field.has_attr<star::reflection::attr::ReadOnly>();
         if (is_ro)
@@ -272,51 +300,61 @@ namespace star::editor::ui {
         const bool color = field.has_attr<star::reflection::attr::Color>();
 
         if (const auto ty = field.value_type; ty == typeid(f32)) {
-            float_control(label, ref.as<f32>(), sp, min, max, "%.3f");
+            float_control(label, ref.as<f32>(), sp, min, max, "%.3f", &status);
         } else if (ty == typeid(f64)) {
             float fv = static_cast<float>(*ref.as<f64>());
             if (ImGui::DragFloat(label, &fv, sp, min, max, "%.4f"))
                 *ref.as<f64>() = static_cast<f64>(fv);
+            status.merge(capture_item_status());
         } else if (ty == typeid(i32)) {
             ImGui::DragInt(label, ref.as<i32>(), sp, static_cast<int>(min), static_cast<int>(max));
+            status.merge(capture_item_status());
         } else if (ty == typeid(u32)) {
             int iv = static_cast<int>(*ref.as<u32>());
             if (ImGui::DragInt(label, &iv, sp, 0, static_cast<int>(max)))
                 *ref.as<u32>() = static_cast<u32>(iv);
+            status.merge(capture_item_status());
         } else if (ty == typeid(u8)) {
             int iv = *ref.as<u8>();
             const auto r2 =
                 field.find_attr<star::reflection::attr::Range>().value_or(star::reflection::attr::Range{0.f, 255.f});
             if (ImGui::SliderInt(label, &iv, static_cast<int>(r2.min), static_cast<int>(r2.max)))
                 *ref.as<u8>() = static_cast<u8>(iv);
+            status.merge(capture_item_status());
         } else if (ty == typeid(bool)) {
             ImGui::Checkbox(label, ref.as<bool>());
+            status.merge(capture_item_status());
         } else if (ty == typeid(std::string)) {
             char buf[512]{};
             std::strncpy(buf, ref.as<std::string>()->c_str(), sizeof(buf) - 1);
             if (ImGui::InputText(label, buf, sizeof(buf)))
                 *ref.as<std::string>() = buf;
+            status.merge(capture_item_status());
         } else if (ty == typeid(Vector2)) {
             auto* v = ref.as<Vector2>();
             ImGui::DragFloat2(label, &v->x, sp, min, max, "%.3f");
+            status.merge(capture_item_status());
         } else if (ty == typeid(Vector3)) {
             auto* v = ref.as<Vector3>();
-            if (color)
+            if (color) {
                 ImGui::ColorEdit3(label, v->data);
-            else
-                vector3_control(label, v->data, 0.f, sp);
+                status.merge(capture_item_status());
+            } else {
+                vector3_control(label, v->data, 0.f, sp, &status);
+            }
         } else if (ty == typeid(Vector4)) {
             auto* v = ref.as<Vector4>();
             if (color)
                 ImGui::ColorEdit4(label, v->data);
             else
                 ImGui::DragFloat4(label, v->data, sp, min, max, "%.3f");
+            status.merge(capture_item_status());
         } else if (ty == typeid(Quaternion)) {
             auto* q = ref.as<Quaternion>();
             auto euler = q->to_euler() * math::Constants<f32>::rad_to_deg;
             const auto sp2 =
                 field.find_attr<star::reflection::attr::Speed>().value_or(star::reflection::attr::Speed{0.5f}).value;
-            if (vector3_control(label, euler.data, 0.f, sp2))
+            if (vector3_control(label, euler.data, 0.f, sp2, &status))
                 *q = Quaternion::from_euler(radians(euler.x), radians(euler.y), radians(euler.z));
         } else if (!field.enum_labels.empty()) {
             int current = 0;
@@ -327,11 +365,13 @@ namespace star::editor::ui {
                 ptrs.push_back(lbl.data());
             if (ImGui::Combo(label, &current, ptrs.data(), static_cast<int>(ptrs.size())))
                 std::memcpy(ref.data, &current, sizeof(int));
+            status.merge(capture_item_status());
         } else {
             int iv = 0;
             std::memcpy(&iv, ref.data, sizeof(int));
             if (ImGui::DragInt(label, &iv, 1))
                 std::memcpy(ref.data, &iv, sizeof(int));
+            status.merge(capture_item_status());
         }
 
         if (is_ro)
@@ -341,23 +381,15 @@ namespace star::editor::ui {
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort))
                 ImGui::SetTooltip("%s", tt->text.data());
         }
-    }
 
-    struct FieldsResult {
-        bool changed{false};
-        bool committed{false};
-        bool activated{false};
-    };
+        return status;
+    }
 
     inline FieldsResult fields(const star::reflection::RuntimeTypeInfo& type_info, void* comp) {
         FieldsResult result;
         ImGui::PushItemWidth(-140.0f);
-        for (const auto& field : type_info.fields) {
-            field_runtime(field, comp);
-            result.changed = result.changed || ImGui::IsItemEdited();
-            result.committed = result.committed || ImGui::IsItemDeactivatedAfterEdit();
-            result.activated = result.activated || ImGui::IsItemActivated();
-        }
+        for (const auto& field : type_info.fields)
+            result.merge(field_runtime(field, comp));
         ImGui::PopItemWidth();
         return result;
     }

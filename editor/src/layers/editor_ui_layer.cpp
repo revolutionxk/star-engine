@@ -90,6 +90,7 @@ namespace star::editor {
         m_panel_manager.register_panel<ContentBrowserPanel>(m_editor_window);
         m_panel_manager.register_panel<RenderSettingsPanel>(m_editor_window);
 
+        hierarchy->set_command_stack(&m_command_stack);
         scene->set_viewport(m_scene_viewport.get());
         scene->set_input_manager(&m_input_manager);
         scene->set_gizmo_system(&m_gizmo_system);

@@ -4,6 +4,9 @@
 
 #include <imgui.h>
 
+#include <memory>
+
+#include "../core/commands/entity_commands.hpp"
 #include "../core/icon_registry.hpp"
 #include "core/gltf_import.hpp"
 #include "star/ecs/components/camera.hpp"
@@ -96,8 +99,8 @@ namespace star::editor {
         }
 
         if (ImGui::BeginPopupContextItem()) {
-            if (ImGui::MenuItem("Delete Entity"))
-                entity.destruct();
+            if (ImGui::MenuItem("Delete Entity") && m_command_stack)
+                m_command_stack->push(std::make_unique<DestroyEntityCommand>(entity, "Delete Entity"));
             ImGui::EndPopup();
         }
 
@@ -129,26 +132,24 @@ namespace star::editor {
         // TODO: filter when scene integration is complete
     }
 
-    void HierarchyPanel::create_empty_entity() const {
-        if (!m_editor_window)
+    void HierarchyPanel::create_empty_entity() {
+        if (!m_editor_window || !m_command_stack)
             return;
         auto* scene = m_editor_window->scene_manager().get_active_scene();
         if (!scene)
             return;
-        auto entity = scene->world().native().entity();
-        entity.child_of(scene->root());
-        STAR_LOG_INFO(LogCategory::Editor, "Created empty entity '{}'", entity.name().c_str());
+        m_command_stack->push(std::make_unique<CreateEntityCommand>(scene->world().native(), std::string{},
+                                                                     scene->root(), "Create Entity"));
     }
 
-    void HierarchyPanel::create_camera_entity() const {
-        if (!m_editor_window)
+    void HierarchyPanel::create_camera_entity() {
+        if (!m_editor_window || !m_command_stack)
             return;
         auto* scene = m_editor_window->scene_manager().get_active_scene();
         if (!scene)
             return;
-        auto entity = scene->world().native().entity("Camera");
-        entity.child_of(scene->root());
-        STAR_LOG_INFO(LogCategory::Editor, "Created camera entity");
+        m_command_stack->push(std::make_unique<CreateEntityCommand>(scene->world().native(), "Camera", scene->root(),
+                                                                     "Create Camera"));
     }
 
     void HierarchyPanel::import_gltf_model() const {

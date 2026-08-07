@@ -346,6 +346,7 @@ namespace star::editor::ui {
     struct FieldsResult {
         bool changed{false};
         bool committed{false};
+        bool activated{false};
     };
 
     inline FieldsResult fields(const star::reflection::RuntimeTypeInfo& type_info, void* comp) {
@@ -355,6 +356,7 @@ namespace star::editor::ui {
             field_runtime(field, comp);
             result.changed = result.changed || ImGui::IsItemEdited();
             result.committed = result.committed || ImGui::IsItemDeactivatedAfterEdit();
+            result.activated = result.activated || ImGui::IsItemActivated();
         }
         ImGui::PopItemWidth();
         return result;

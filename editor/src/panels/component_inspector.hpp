@@ -1,5 +1,9 @@
 #pragma once
 
+#include <any>
+#include <optional>
+#include <typeindex>
+
 #include <flecs.h>
 
 #include "../core/commands/command_stack.hpp"
@@ -30,7 +34,7 @@ namespace star::editor {
             return m_resource_manager;
         }
 
-        void draw_components(flecs::entity entity) const;
+        void draw_components(flecs::entity entity);
         void draw_add_popup(flecs::entity entity) const;
 
       private:
@@ -40,5 +44,8 @@ namespace star::editor {
         resources::ResourceManager* m_resource_manager = nullptr;
         IconRegistry* m_icons = nullptr;
         CommandStack* m_command_stack{nullptr};
+        std::optional<flecs::entity> m_edit_entity;
+        std::type_index m_edit_type{typeid(void)};
+        std::any m_edit_before;
     };
 } // namespace star::editor

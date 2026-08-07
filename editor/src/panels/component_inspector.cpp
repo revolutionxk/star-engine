@@ -32,7 +32,12 @@ namespace star::editor {
         return {"component", ImVec4(0.78f, 0.78f, 0.82f, 1.0f)};
     }
 
-    void ComponentInspector::draw_components(const flecs::entity entity) const {
+    void ComponentInspector::draw_components(const flecs::entity entity) {
+        if (m_edit_entity.has_value() && *m_edit_entity != entity) {
+            m_edit_entity.reset();
+            m_edit_before.reset();
+        }
+
         const auto& type_registry = star::reflection::TypeRegistry::instance();
         for (const auto& type_info : type_registry.all_types()) {
             const auto* ecs = type_registry.get_extension<ecs::EcsComponentInfo>(type_info.type);
@@ -72,15 +77,25 @@ namespace star::editor {
 
             ImGui::PushID(type_info.name.data());
             if (void* ptr = ecs->get_mut_ptr(entity)) {
-                std::any before = clone_component(entity, type_info.type);
+                std::any before_candidate = clone_component(entity, type_info.type);
                 const ui::FieldsResult result = ui::fields(type_info, ptr);
 
-                if (result.committed && before.has_value()) {
-                    std::any after = clone_component(entity, type_info.type);
-                    if (after.has_value() && m_command_stack)
-                        m_command_stack->push(std::make_unique<SetComponentCommand>(
-                            entity, type_info.type, std::move(before), std::move(after),
-                            std::string{type_info.name}));
+                if (result.activated) {
+                    m_edit_entity = entity;
+                    m_edit_type = type_info.type;
+                    m_edit_before = std::move(before_candidate);
+                }
+
+                if (result.committed) {
+                    if (m_edit_before.has_value() && m_edit_entity == entity && m_edit_type == type_info.type) {
+                        std::any after = clone_component(entity, type_info.type);
+                        if (after.has_value() && m_command_stack)
+                            m_command_stack->push(std::make_unique<SetComponentCommand>(
+                                entity, type_info.type, std::move(m_edit_before), std::move(after),
+                                std::string{type_info.name}));
+                    }
+                    m_edit_entity.reset();
+                    m_edit_before.reset();
                 }
 
                 if (type_info.name == "MaterialInstance") {

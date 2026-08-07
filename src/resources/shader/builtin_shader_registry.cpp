@@ -17,6 +17,8 @@
 #include <essl/f_ibl_irradiance.sc.bin.h>
 #include <essl/f_ibl_prefilter.sc.bin.h>
 #include <essl/f_imgui.sc.bin.h>
+#include <essl/f_exposure.sc.bin.h>
+#include <essl/f_lum_reduce.sc.bin.h>
 #include <essl/f_material.sc.bin.h>
 #include <essl/f_pick.sc.bin.h>
 #include <essl/f_shadow.sc.bin.h>
@@ -45,6 +47,8 @@
 #include <glsl/f_ibl_irradiance.sc.bin.h>
 #include <glsl/f_ibl_prefilter.sc.bin.h>
 #include <glsl/f_imgui.sc.bin.h>
+#include <glsl/f_exposure.sc.bin.h>
+#include <glsl/f_lum_reduce.sc.bin.h>
 #include <glsl/f_material.sc.bin.h>
 #include <glsl/f_pick.sc.bin.h>
 #include <glsl/f_shadow.sc.bin.h>
@@ -73,6 +77,8 @@
 #include <spirv/f_ibl_irradiance.sc.bin.h>
 #include <spirv/f_ibl_prefilter.sc.bin.h>
 #include <spirv/f_imgui.sc.bin.h>
+#include <spirv/f_exposure.sc.bin.h>
+#include <spirv/f_lum_reduce.sc.bin.h>
 #include <spirv/f_material.sc.bin.h>
 #include <spirv/f_pick.sc.bin.h>
 #include <spirv/f_shadow.sc.bin.h>
@@ -103,6 +109,8 @@
     #include <dx10/f_ibl_irradiance.sc.bin.h>
     #include <dx10/f_ibl_prefilter.sc.bin.h>
     #include <dx10/f_imgui.sc.bin.h>
+    #include <dx10/f_exposure.sc.bin.h>
+    #include <dx10/f_lum_reduce.sc.bin.h>
     #include <dx10/f_material.sc.bin.h>
     #include <dx10/f_pick.sc.bin.h>
     #include <dx10/f_shadow.sc.bin.h>
@@ -131,6 +139,8 @@
     #include <dx11/f_ibl_irradiance.sc.bin.h>
     #include <dx11/f_ibl_prefilter.sc.bin.h>
     #include <dx11/f_imgui.sc.bin.h>
+    #include <dx11/f_exposure.sc.bin.h>
+    #include <dx11/f_lum_reduce.sc.bin.h>
     #include <dx11/f_material.sc.bin.h>
     #include <dx11/f_pick.sc.bin.h>
     #include <dx11/f_shadow.sc.bin.h>
@@ -161,6 +171,8 @@
     #include <metal/f_ibl_irradiance.sc.bin.h>
     #include <metal/f_ibl_prefilter.sc.bin.h>
     #include <metal/f_imgui.sc.bin.h>
+    #include <metal/f_exposure.sc.bin.h>
+    #include <metal/f_lum_reduce.sc.bin.h>
     #include <metal/f_material.sc.bin.h>
     #include <metal/f_pick.sc.bin.h>
     #include <metal/f_shadow.sc.bin.h>
@@ -210,6 +222,8 @@ namespace star::resources::detail {
     const bgfx::EmbeddedShader k_ibl_brdf_fs = BGFX_EMBEDDED_SHADER(f_ibl_brdf);
     const bgfx::EmbeddedShader k_ibl_irradiance_fs = BGFX_EMBEDDED_SHADER(f_ibl_irradiance);
     const bgfx::EmbeddedShader k_ibl_prefilter_fs = BGFX_EMBEDDED_SHADER(f_ibl_prefilter);
+    const bgfx::EmbeddedShader k_lum_reduce_fs = BGFX_EMBEDDED_SHADER(f_lum_reduce);
+    const bgfx::EmbeddedShader k_exposure_fs = BGFX_EMBEDDED_SHADER(f_exposure);
 
     EmbeddedShaderPair embedded_pair_for(const BuiltinShader id) noexcept {
         switch (id) {
@@ -253,6 +267,10 @@ namespace star::resources::detail {
                 return {&k_fullscreen_vs, &k_ibl_irradiance_fs};
             case BuiltinShader::IblPrefilter:
                 return {&k_fullscreen_vs, &k_ibl_prefilter_fs};
+            case BuiltinShader::LumReduce:
+                return {&k_fullscreen_vs, &k_lum_reduce_fs};
+            case BuiltinShader::Exposure:
+                return {&k_fullscreen_vs, &k_exposure_fs};
         }
         return {nullptr, nullptr};
     }

@@ -19,7 +19,6 @@ namespace star::rendering {
         m_bloom_params = gpu.uniform("u_bloomParams", UniformType::Vec4);
         m_bloom_texel = gpu.uniform("u_bloomTexel", UniformType::Vec4);
         m_s_src = gpu.uniform("s_src", UniformType::Sampler);
-        m_s_prev = gpu.uniform("s_prev", UniformType::Sampler);
     }
 
     void BloomPass::render(const RenderContext& ctx) {
@@ -103,8 +102,7 @@ namespace star::rendering {
             gpu.set_uniform(m_bloom_texel, &texel);
 
             gpu.set_texture(m_s_src, 0, chain[i]->color_texture(0));
-            gpu.set_texture(m_s_prev, 1, chain[i - 1]->color_texture(0));
-            draw_fullscreen(gpu, view, m_upsample_shader);
+            draw_fullscreen(gpu, view, m_upsample_shader, graphics::BlendMode::Additive);
         }
 
         res.publish(resource_names::BLOOM, chain[0]->color_texture(0));

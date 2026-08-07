@@ -24,5 +24,7 @@ namespace star::resources {
         IblBrdf,
         IblIrradiance,
         IblPrefilter,
+        LumReduce,
+        Exposure,
     };
 } // namespace star::resources

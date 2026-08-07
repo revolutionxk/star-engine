@@ -4,6 +4,7 @@
 
 #include "star/core/types.hpp"
 #include "star/graphics/device_context.hpp"
+#include "star/graphics/pipeline_state.hpp"
 #include "star/graphics/resource_handle.hpp"
 #include "star/rendering/post_process_settings.hpp"
 #include "star/rendering/renderer.hpp"
@@ -31,6 +32,7 @@ namespace star::rendering {
         inline constexpr std::string_view AO = "ao";
         inline constexpr std::string_view BLOOM = "bloom";
         inline constexpr std::string_view LDR = "ldr";
+        inline constexpr std::string_view EXPOSURE = "exposure";
     } // namespace resource_names
 
     class PostPass : public IRenderPass {
@@ -53,7 +55,8 @@ namespace star::rendering {
 
         void draw_fullscreen(graphics::DeviceContext& gpu, u32 view_id) const;
         static void draw_fullscreen(graphics::DeviceContext& gpu, u32 view_id,
-                                    graphics::ResourceHandle<graphics::Shader> shader);
+                                    graphics::ResourceHandle<graphics::Shader> shader,
+                                    graphics::BlendMode blend = graphics::BlendMode::Opaque);
 
         [[nodiscard]] f32 flip_v() const;
 

@@ -7,6 +7,7 @@
 #include "star/graphics/device.hpp"
 #include "star/platform/window.hpp"
 #include "star/rendering/debug_renderer.hpp"
+#include "star/rendering/passes/auto_exposure_pass.hpp"
 #include "star/rendering/passes/bloom_pass.hpp"
 #include "star/rendering/passes/debug_render_pass.hpp"
 #include "star/rendering/passes/ibl_pass.hpp"
@@ -44,6 +45,7 @@ namespace star::rendering {
         add_render_pass(std::make_unique<SsaoPass>(*m_device, *m_resource_manager, m_post_settings));
         add_render_pass(std::make_unique<SsrPass>(*m_device, *m_resource_manager, m_post_settings));
         add_render_pass(std::make_unique<TaaPass>(*m_device, *m_resource_manager, m_post_settings));
+        add_render_pass(std::make_unique<AutoExposurePass>(*m_device, *m_resource_manager, m_post_settings));
         add_render_pass(std::make_unique<BloomPass>(*m_device, *m_resource_manager, m_post_settings));
         add_render_pass(std::make_unique<TonemapPass>(*m_device, *m_resource_manager, m_post_settings));
         add_render_pass(std::make_unique<FxaaPass>(*m_device, *m_resource_manager, m_post_settings));

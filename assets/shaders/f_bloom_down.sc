@@ -9,7 +9,8 @@ uniform vec4 u_bloomTexel;
 
 vec3 fetch(vec2 uv)
 {
-    return texture2D(s_src, uv).rgb;
+    vec2 halfTexel = u_bloomTexel.xy * 0.5;
+    return texture2D(s_src, clamp(uv, halfTexel, vec2(1.0, 1.0) - halfTexel)).rgb;
 }
 
 vec3 prefilter(vec3 c)

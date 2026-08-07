@@ -93,7 +93,7 @@ namespace star::rendering {
         const f32 height = static_cast<f32>(std::max(source_height, 1u));
         const f32 max_lod = std::log2(std::max(width, height));
         const f32 sa_texel = 4.0f * 3.14159265359f / (width * height);
-        const f32 irradiance_lod = std::max(std::log2(width / 64.0f), 0.0f);
+        const f32 irradiance_lod = std::max(std::log2(width / 16.0f), 0.0f);
 
         {
             const u32 view = ctx.frame.views.acquire("IblIrradiance");

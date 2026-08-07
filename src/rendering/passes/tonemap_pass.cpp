@@ -16,6 +16,7 @@ namespace star::rendering {
         m_s_hdr = gpu.uniform("s_hdr", UniformType::Sampler);
         m_s_bloom = gpu.uniform("s_bloom", UniformType::Sampler);
         m_s_ao = gpu.uniform("s_ao", UniformType::Sampler);
+        m_s_exposure = gpu.uniform("s_exposure", UniformType::Sampler);
     }
 
     void TonemapPass::render(const RenderContext& ctx) {
@@ -53,12 +54,16 @@ namespace star::rendering {
         const Vector4 params{flip_v(), m_settings.exposure, bloom_intensity, ao_strength};
         gpu.set_uniform(m_post_params, &params);
 
-        const Vector4 tonemap_params{static_cast<f32>(m_settings.tonemap), 0.0f, 0.0f, 0.0f};
+        const auto exposure = res.texture(resource_names::EXPOSURE);
+        const bool auto_exposure = m_settings.auto_exposure_enabled && exposure.is_valid();
+
+        const Vector4 tonemap_params{static_cast<f32>(m_settings.tonemap), auto_exposure ? 1.0f : 0.0f, 0.0f, 0.0f};
         gpu.set_uniform(m_tonemap_params, &tonemap_params);
 
         gpu.set_texture(m_s_hdr, 0, lit);
         gpu.set_texture(m_s_bloom, 1, bloom.is_valid() ? bloom : lit);
         gpu.set_texture(m_s_ao, 2, ao.is_valid() ? ao : lit);
+        gpu.set_texture(m_s_exposure, 3, auto_exposure ? exposure : lit);
         draw_fullscreen(gpu, ctx.view_id);
 
         if (ldr) {

@@ -51,10 +51,11 @@ namespace star::rendering {
     }
 
     void PostPass::draw_fullscreen(graphics::DeviceContext& gpu, const u32 view_id,
-                                   const graphics::ResourceHandle<graphics::Shader> shader) {
+                                   const graphics::ResourceHandle<graphics::Shader> shader,
+                                   const graphics::BlendMode blend) {
         static constexpr f32 k_tri[6] = {-1.0f, -1.0f, 3.0f, -1.0f, -1.0f, 3.0f};
-        constexpr graphics::PipelineState state{
-            .blend_mode = graphics::BlendMode::Opaque,
+        const graphics::PipelineState state{
+            .blend_mode = blend,
             .cull = graphics::CullMode::None,
             .depth_test = graphics::DepthTest::None,
             .depth_write = false,

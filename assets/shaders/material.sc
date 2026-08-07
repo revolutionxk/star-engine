@@ -485,13 +485,15 @@ vec3 sampleSpecularEnv(vec3 dir, float roughness)
 
 vec3 evaluateIBLSpecular(vec3 N, vec3 V, Material mat)
 {
+    float roughness = sqrt(saturate(specularAntiAliasing(N, mat.a)));
+
     vec3 R = reflect(-V, N);
-    vec3 dominant_R = dominantSpecularDirection(N, R, mat.roughness);
-    vec3 prefiltered = sampleSpecularEnv(dominant_R, mat.roughness);
+    vec3 dominant_R = dominantSpecularDirection(N, R, roughness);
+    vec3 prefiltered = sampleSpecularEnv(dominant_R, roughness);
 
     float NdV = saturate(dot(N, V));
     vec2 dfg = texture2DLod(s_brdfLut, vec2(clamp(NdV, 0.002, 0.998),
-                                            clamp(mat.roughness, 0.002, 0.998)), 0.0).xy;
+                                            clamp(roughness, 0.002, 0.998)), 0.0).xy;
     vec3 env_brdf = mat.F0 * dfg.x + vec3(dfg.y, dfg.y, dfg.y);
 
     return sanitizeColor(prefiltered * env_brdf * mat.occlusion, 4096.0);

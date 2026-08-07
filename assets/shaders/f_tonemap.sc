@@ -5,6 +5,7 @@ $input v_texcoord0
 SAMPLER2D(s_hdr, 0);
 SAMPLER2D(s_bloom, 1);
 SAMPLER2D(s_ao, 2);
+SAMPLER2D(s_exposure, 3);
 
 uniform vec4 u_postParams;
 uniform vec4 u_tonemapParams;
@@ -137,7 +138,11 @@ void main()
     vec3 bloom = texture2D(s_bloom, v_texcoord0).rgb;
     hdr += bloom * u_postParams.z;
 
-    hdr = sanitizeColor(hdr * u_postParams.y, 4096.0);
+    float exposure = u_postParams.y;
+    if (u_tonemapParams.y > 0.5)
+        exposure *= texture2D(s_exposure, vec2(0.5, 0.5)).g;
+
+    hdr = sanitizeColor(hdr * exposure, 4096.0);
 
     vec3 color = applyTonemap(hdr, int(u_tonemapParams.x));
     color = pow(max(color, vec3_splat(0.0)), vec3_splat(1.0 / 2.2));

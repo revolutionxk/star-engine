@@ -7,7 +7,7 @@ SAMPLER2D(s_src, 0);
 
 uniform vec4 u_iblBake;
 
-#define IRRADIANCE_SAMPLES 128
+#define IRRADIANCE_SAMPLES 512
 
 void main()
 {

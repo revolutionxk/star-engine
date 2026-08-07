@@ -31,6 +31,5 @@ namespace star::rendering {
         graphics::UniformId m_bloom_params;
         graphics::UniformId m_bloom_texel;
         graphics::UniformId m_s_src;
-        graphics::UniformId m_s_prev;
     };
 } // namespace star::rendering

@@ -20,6 +20,11 @@ namespace star::rendering {
         f32 exposure = 1.0f;
         Tonemap tonemap = Tonemap::Aces;
 
+        bool auto_exposure_enabled = true;
+        f32 exposure_min_ev = -4.0f;
+        f32 exposure_max_ev = 16.0f;
+        f32 exposure_speed = 2.0f;
+
         bool bloom_enabled = true;
         f32 bloom_threshold = 1.1f;
         f32 bloom_knee = 0.5f;

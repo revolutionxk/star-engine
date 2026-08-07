@@ -55,7 +55,16 @@ namespace star::editor {
             ImGui::Checkbox("Post-Processing Enabled", &p.enabled);
             ImGui::BeginDisabled(!p.enabled);
             ImGui::DragFloat("Exposure", &p.exposure, 0.01f, 0.05f, 8.0f, "%.2f");
-            ImGui::SetItemTooltip("Overall scene brightness before tonemapping.");
+            ImGui::SetItemTooltip("Manual brightness before tonemapping. Multiplies auto-exposure when it is on.");
+
+            ImGui::Checkbox("Auto Exposure", &p.auto_exposure_enabled);
+            ImGui::SetItemTooltip("Adapts brightness to the scene from its average log-luminance, like an eye.");
+            ImGui::BeginDisabled(!p.auto_exposure_enabled);
+            ImGui::DragFloat("Adapt Speed", &p.exposure_speed, 0.05f, 0.1f, 16.0f, "%.2f");
+            ImGui::SetItemTooltip("How fast the eye adapts. Higher reacts sooner but can pump on quick cuts.");
+            ImGui::DragFloatRange2("EV Range", &p.exposure_min_ev, &p.exposure_max_ev, 0.1f, -16.0f, 24.0f, "%.1f");
+            ImGui::SetItemTooltip("Clamps adaptation so a dark corner or the sun cannot drive it to an extreme.");
+            ImGui::EndDisabled();
 
             int tonemap = static_cast<int>(p.tonemap);
             if (ImGui::Combo("Tonemap", &tonemap, rendering::TONEMAP_NAMES,

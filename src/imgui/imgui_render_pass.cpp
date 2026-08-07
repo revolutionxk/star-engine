@@ -105,6 +105,8 @@ namespace star::rendering {
             return;
         }
 
+        ctx.gpu.set_view_framebuffer(ctx.view_id, {});
+
         if (m_renderer) {
             m_renderer->render(ctx.view_id);
         }

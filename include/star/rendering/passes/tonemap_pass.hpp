@@ -25,6 +25,7 @@ namespace star::rendering {
         graphics::UniformId m_s_hdr;
         graphics::UniformId m_s_bloom;
         graphics::UniformId m_s_ao;
+        graphics::UniformId m_s_exposure;
     };
 
     class FxaaPass final : public PostPass {

@@ -197,6 +197,37 @@ TEST_CASE("ReparentCommand moves the entity and puts it back", "[editor][command
     REQUIRE(entity.parent() == first);
 }
 
+TEST_CASE("ReparentCommand moves an entity to no parent and back", "[editor][commands]") {
+    flecs::world world;
+
+    const auto first = world.entity("First");
+    auto entity = world.entity("Child");
+    entity.child_of(first);
+
+    ReparentCommand command{entity, flecs::entity{}, "Reparent"};
+
+    command.execute();
+    REQUIRE_FALSE(entity.parent());
+
+    command.undo();
+    REQUIRE(entity.parent() == first);
+}
+
+TEST_CASE("ReparentCommand adopts a root entity and releases it", "[editor][commands]") {
+    flecs::world world;
+
+    const auto first = world.entity("First");
+    auto entity = world.entity("Child");
+
+    ReparentCommand command{entity, first, "Reparent"};
+
+    command.execute();
+    REQUIRE(entity.parent() == first);
+
+    command.undo();
+    REQUIRE_FALSE(entity.parent());
+}
+
 TEST_CASE("RenameEntityCommand renames and reverts", "[editor][commands]") {
     flecs::world world;
     auto entity = world.entity("Before");

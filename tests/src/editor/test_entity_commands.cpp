@@ -1,6 +1,10 @@
+#include <memory>
+
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/commands/command_stack.hpp"
 #include "core/commands/entity_commands.hpp"
+#include "star/ecs/components/camera.hpp"
 #include "star/ecs/components/transform.hpp"
 
 using namespace star;
@@ -162,6 +166,160 @@ TEST_CASE("DestroyEntityCommand restores id, name, parent and components", "[edi
     REQUIRE(restored.get<components::Transform>().position.x == 5.0f);
 }
 
+TEST_CASE("DestroyEntityCommand restores an entire subtree", "[editor][commands]") {
+    flecs::world world;
+    ecs::register_component<components::Transform>();
+
+    const auto root = world.entity("Root");
+
+    auto parent = world.entity("Parent");
+    parent.child_of(root);
+
+    auto child_a = world.entity("ChildA");
+    child_a.child_of(parent);
+    components::Transform child_transform;
+    child_transform.position = {1.0f, 2.0f, 3.0f};
+    child_a.set<components::Transform>(child_transform);
+
+    auto child_b = world.entity("ChildB");
+    child_b.child_of(parent);
+
+    auto grandchild = world.entity("Grandchild");
+    grandchild.child_of(child_a);
+    components::Transform grandchild_transform;
+    grandchild_transform.position = {4.0f, 5.0f, 6.0f};
+    grandchild.set<components::Transform>(grandchild_transform);
+
+    const flecs::entity_t parent_id = parent.id();
+    const flecs::entity_t child_a_id = child_a.id();
+    const flecs::entity_t child_b_id = child_b.id();
+    const flecs::entity_t grandchild_id = grandchild.id();
+
+    DestroyEntityCommand command{parent, "Delete Parent"};
+
+    command.execute();
+    REQUIRE_FALSE(world.entity(parent_id).is_alive());
+    REQUIRE_FALSE(world.entity(child_a_id).is_alive());
+    REQUIRE_FALSE(world.entity(child_b_id).is_alive());
+    REQUIRE_FALSE(world.entity(grandchild_id).is_alive());
+
+    REQUIRE(command.is_valid());
+    command.undo();
+
+    const auto restored_parent = world.entity(parent_id);
+    const auto restored_a = world.entity(child_a_id);
+    const auto restored_b = world.entity(child_b_id);
+    const auto restored_grandchild = world.entity(grandchild_id);
+
+    REQUIRE(restored_parent.is_alive());
+    REQUIRE(restored_a.is_alive());
+    REQUIRE(restored_b.is_alive());
+    REQUIRE(restored_grandchild.is_alive());
+
+    REQUIRE(std::string_view{restored_parent.name().c_str()} == "Parent");
+    REQUIRE(std::string_view{restored_a.name().c_str()} == "ChildA");
+    REQUIRE(std::string_view{restored_b.name().c_str()} == "ChildB");
+    REQUIRE(std::string_view{restored_grandchild.name().c_str()} == "Grandchild");
+
+    REQUIRE(restored_parent.parent() == root);
+    REQUIRE(restored_a.parent() == restored_parent);
+    REQUIRE(restored_b.parent() == restored_parent);
+    REQUIRE(restored_grandchild.parent() == restored_a);
+
+    REQUIRE(restored_a.get<components::Transform>().position.x == 1.0f);
+    REQUIRE(restored_a.get<components::Transform>().position.y == 2.0f);
+    REQUIRE(restored_grandchild.get<components::Transform>().position.x == 4.0f);
+    REQUIRE(restored_grandchild.get<components::Transform>().position.z == 6.0f);
+}
+
+TEST_CASE("DestroyEntityCommand refuses to revive a reused index", "[editor][commands]") {
+    flecs::world world;
+    ecs::register_component<components::Transform>();
+
+    auto entity = world.entity("Subject");
+    entity.set<components::Transform>({});
+    const flecs::entity_t id = entity.id();
+
+    DestroyEntityCommand command{entity, "Delete Subject"};
+    command.execute();
+    REQUIRE_FALSE(world.entity(id).is_alive());
+
+    const auto squatter = world.entity("Squatter");
+    REQUIRE(ecs_strip_generation(squatter.id()) == ecs_strip_generation(id));
+    REQUIRE(squatter.id() != id);
+
+    REQUIRE_FALSE(command.is_valid());
+
+    command.undo();
+    REQUIRE(world.entity(squatter.id()).is_alive());
+    REQUIRE(std::string_view{squatter.name().c_str()} == "Squatter");
+    REQUIRE_FALSE(world.entity(id).is_alive());
+}
+
+TEST_CASE("CommandStack clears rather than reviving a reused index", "[editor][commands]") {
+    flecs::world world;
+    ecs::register_component<components::Transform>();
+
+    auto entity = world.entity("Subject");
+    entity.set<components::Transform>({});
+
+    CommandStack stack;
+    stack.push(std::make_unique<DestroyEntityCommand>(entity, "Delete Subject"));
+    REQUIRE(stack.can_undo());
+
+    const auto squatter = world.entity("Squatter");
+    REQUIRE(squatter.is_alive());
+
+    stack.undo();
+    REQUIRE_FALSE(stack.can_undo());
+    REQUIRE_FALSE(stack.can_redo());
+    REQUIRE(squatter.is_alive());
+}
+
+TEST_CASE("DestroyEntityCommand restores tag components", "[editor][commands]") {
+    flecs::world world;
+    ecs::register_component<components::Transform>();
+    ecs::register_component<components::PrimaryCamera>(ecs::RegistrationFlags::Hidden);
+
+    auto entity = world.entity("Camera");
+    entity.set<components::Transform>({});
+    entity.add<components::PrimaryCamera>();
+
+    const flecs::entity_t id = entity.id();
+    DestroyEntityCommand command{entity, "Delete Camera"};
+
+    command.execute();
+    REQUIRE_FALSE(world.entity(id).is_alive());
+
+    command.undo();
+    const auto restored = world.entity(id);
+    REQUIRE(restored.is_alive());
+    REQUIRE(restored.has<components::PrimaryCamera>());
+    REQUIRE(restored.has<components::Transform>());
+}
+
+TEST_CASE("RemoveComponentCommand restores a tag without wiping the stack", "[editor][commands]") {
+    flecs::world world;
+    ecs::register_component<components::PrimaryCamera>(ecs::RegistrationFlags::Hidden);
+
+    auto entity = world.entity("Camera");
+    entity.add<components::PrimaryCamera>();
+
+    const std::type_index type{typeid(components::PrimaryCamera)};
+    CommandStack stack;
+    stack.push(std::make_unique<RemoveComponentCommand>(entity, type, "PrimaryCamera"));
+    REQUIRE_FALSE(entity.has<components::PrimaryCamera>());
+
+    stack.undo();
+    REQUIRE(entity.has<components::PrimaryCamera>());
+    REQUIRE(stack.can_redo());
+    REQUIRE_FALSE(stack.can_undo());
+
+    stack.redo();
+    REQUIRE_FALSE(entity.has<components::PrimaryCamera>());
+    REQUIRE(stack.can_undo());
+}
+
 TEST_CASE("CreateEntityCommand creates and removes the same id", "[editor][commands]") {
     flecs::world world;
 
@@ -178,6 +336,62 @@ TEST_CASE("CreateEntityCommand creates and removes the same id", "[editor][comma
     command.execute();
     REQUIRE(world.entity(id).is_alive());
     REQUIRE(command.created_id() == id);
+}
+
+TEST_CASE("CreateEntityCommand uniquifies a name already used in the scope", "[editor][commands]") {
+    flecs::world world;
+
+    const auto parent = world.entity("Parent");
+
+    CreateEntityCommand first{world, "Camera", parent, "Create Camera"};
+    CreateEntityCommand second{world, "Camera", parent, "Create Camera"};
+
+    first.execute();
+    second.execute();
+
+    REQUIRE(first.created_id() != second.created_id());
+    REQUIRE(std::string_view{world.entity(first.created_id()).name().c_str()} == "Camera");
+    REQUIRE(std::string_view{world.entity(second.created_id()).name().c_str()} == "Camera (1)");
+}
+
+TEST_CASE("CreateEntityCommand never adopts a pre-existing entity", "[editor][commands]") {
+    flecs::world world;
+
+    const auto parent = world.entity("Parent");
+    const auto existing = world.entity("Camera");
+    existing.child_of(parent);
+    const flecs::entity_t existing_id = existing.id();
+
+    CreateEntityCommand command{world, "Camera", parent, "Create Camera"};
+    command.execute();
+    REQUIRE(command.created_id() != existing_id);
+
+    command.undo();
+    REQUIRE(world.entity(existing_id).is_alive());
+    REQUIRE(std::string_view{world.entity(existing_id).name().c_str()} == "Camera");
+    REQUIRE_FALSE(world.entity(command.created_id()).is_alive());
+}
+
+TEST_CASE("CreateEntityCommand is invalid once its index is reused", "[editor][commands]") {
+    flecs::world world;
+
+    const auto parent = world.entity("Parent");
+    CreateEntityCommand command{world, "Fresh", parent, "Create Entity"};
+
+    command.execute();
+    const flecs::entity_t id = command.created_id();
+    REQUIRE(command.is_valid());
+
+    command.undo();
+    const auto squatter = world.entity("Squatter");
+    REQUIRE(ecs_strip_generation(squatter.id()) == ecs_strip_generation(id));
+
+    REQUIRE_FALSE(command.is_valid());
+
+    command.execute();
+    REQUIRE(world.entity(squatter.id()).is_alive());
+    REQUIRE(std::string_view{squatter.name().c_str()} == "Squatter");
+    REQUIRE(command.created_id() != squatter.id());
 }
 
 TEST_CASE("ReparentCommand moves the entity and puts it back", "[editor][commands]") {

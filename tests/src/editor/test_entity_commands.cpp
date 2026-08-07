@@ -114,8 +114,15 @@ TEST_CASE("RemoveComponentCommand restores the component values", "[editor][comm
 TEST_CASE("flecs revives an id after it was destroyed", "[editor][commands]") {
     flecs::world world;
 
+    const auto churn = world.entity();
+    const flecs::entity_t churn_id = churn.id();
+    churn.destruct();
+
     const auto entity = world.entity("Subject");
     const flecs::entity_t id = entity.id();
+    REQUIRE(ecs_strip_generation(id) == ecs_strip_generation(churn_id));
+    REQUIRE(id != ecs_strip_generation(id));
+
     entity.mut(world).destruct();
     REQUIRE_FALSE(world.entity(id).is_alive());
 
@@ -129,6 +136,10 @@ TEST_CASE("DestroyEntityCommand restores id, name, parent and components", "[edi
     ecs::register_component<components::Transform>();
 
     const auto parent = world.entity("Parent");
+
+    const auto churn = world.entity();
+    churn.destruct();
+
     auto entity = world.entity("Child");
     entity.child_of(parent);
     components::Transform transform;
@@ -136,6 +147,7 @@ TEST_CASE("DestroyEntityCommand restores id, name, parent and components", "[edi
     entity.set<components::Transform>(transform);
 
     const flecs::entity_t id = entity.id();
+    REQUIRE(id != ecs_strip_generation(id));
     DestroyEntityCommand command{entity, "Delete Child"};
 
     command.execute();

@@ -10,12 +10,18 @@
 namespace star::editor {
     bool GizmoSystem::draw_and_process(const ImVec2& image_pos, const ImVec2& image_size,
                                        const rendering::Viewport& vp, CommandStack& stack) {
-        if (!m_entity || !m_entity->is_valid())
+        if (!m_entity || !m_entity->is_valid()) {
+            m_dragging = false;
+            m_drag_before.reset();
             return false;
+        }
 
         auto* transform = m_entity->try_get_mut<components::Transform>();
-        if (!transform || image_size.x <= 0.0f || image_size.y <= 0.0f)
+        if (!transform || image_size.x <= 0.0f || image_size.y <= 0.0f) {
+            m_dragging = false;
+            m_drag_before.reset();
             return false;
+        }
 
         ImGuizmo::SetOrthographic(false);
         ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());

@@ -27,6 +27,10 @@ namespace star::editor {
         };
 
         void set_entity(const std::optional<flecs::entity>& e) noexcept {
+            if (m_entity != e) {
+                m_dragging = false;
+                m_drag_before.reset();
+            }
             m_entity = e;
         }
 

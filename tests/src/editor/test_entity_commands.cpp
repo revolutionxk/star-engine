@@ -74,3 +74,39 @@ TEST_CASE("clone_component returns an empty box for a missing component", "[edit
     const std::any boxed = clone_component(entity, std::type_index{typeid(components::Transform)});
     REQUIRE_FALSE(boxed.has_value());
 }
+
+TEST_CASE("AddComponentCommand adds and removes", "[editor][commands]") {
+    flecs::world world;
+    ecs::register_component<components::Transform>();
+
+    auto entity = world.entity();
+    const std::type_index type{typeid(components::Transform)};
+
+    AddComponentCommand command{entity, type, "Add Transform"};
+
+    command.execute();
+    REQUIRE(entity.has<components::Transform>());
+
+    command.undo();
+    REQUIRE_FALSE(entity.has<components::Transform>());
+}
+
+TEST_CASE("RemoveComponentCommand restores the component values", "[editor][commands]") {
+    flecs::world world;
+    ecs::register_component<components::Transform>();
+
+    auto entity = world.entity();
+    components::Transform transform;
+    transform.position = {3.0f, 0.0f, 0.0f};
+    entity.set<components::Transform>(transform);
+
+    const std::type_index type{typeid(components::Transform)};
+    RemoveComponentCommand command{entity, type, "Remove Transform"};
+
+    command.execute();
+    REQUIRE_FALSE(entity.has<components::Transform>());
+
+    command.undo();
+    REQUIRE(entity.has<components::Transform>());
+    REQUIRE(entity.get<components::Transform>().position.x == 3.0f);
+}

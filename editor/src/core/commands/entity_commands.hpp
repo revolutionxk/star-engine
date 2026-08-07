@@ -85,4 +85,62 @@ namespace star::editor {
         std::any m_after;
         std::string m_label;
     };
+
+    class AddComponentCommand final : public ICommand {
+      public:
+        AddComponentCommand(const flecs::entity entity, const std::type_index type, std::string label)
+            : m_entity(entity), m_type(type), m_label(std::move(label)) {}
+
+        void execute() override {
+            if (const auto* info = component_info(m_type))
+                info->add(m_entity);
+        }
+
+        void undo() override {
+            if (const auto* info = component_info(m_type))
+                info->remove(m_entity);
+        }
+
+        [[nodiscard]] std::string_view label() const override {
+            return m_label;
+        }
+
+        [[nodiscard]] bool is_valid() const override {
+            return m_entity.is_alive() && component_info(m_type) != nullptr;
+        }
+
+      private:
+        flecs::entity m_entity;
+        std::type_index m_type;
+        std::string m_label;
+    };
+
+    class RemoveComponentCommand final : public ICommand {
+      public:
+        RemoveComponentCommand(const flecs::entity entity, const std::type_index type, std::string label)
+            : m_entity(entity), m_type(type), m_saved(clone_component(entity, type)), m_label(std::move(label)) {}
+
+        void execute() override {
+            if (const auto* info = component_info(m_type))
+                info->remove(m_entity);
+        }
+
+        void undo() override {
+            restore_component(m_entity, m_type, m_saved);
+        }
+
+        [[nodiscard]] std::string_view label() const override {
+            return m_label;
+        }
+
+        [[nodiscard]] bool is_valid() const override {
+            return m_entity.is_alive() && component_info(m_type) != nullptr && m_saved.has_value();
+        }
+
+      private:
+        flecs::entity m_entity;
+        std::type_index m_type;
+        std::any m_saved;
+        std::string m_label;
+    };
 } // namespace star::editor

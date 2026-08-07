@@ -179,3 +179,33 @@ TEST_CASE("CreateEntityCommand creates and removes the same id", "[editor][comma
     REQUIRE(world.entity(id).is_alive());
     REQUIRE(command.created_id() == id);
 }
+
+TEST_CASE("ReparentCommand moves the entity and puts it back", "[editor][commands]") {
+    flecs::world world;
+
+    const auto first = world.entity("First");
+    const auto second = world.entity("Second");
+    auto entity = world.entity("Child");
+    entity.child_of(first);
+
+    ReparentCommand command{entity, second, "Reparent"};
+
+    command.execute();
+    REQUIRE(entity.parent() == second);
+
+    command.undo();
+    REQUIRE(entity.parent() == first);
+}
+
+TEST_CASE("RenameEntityCommand renames and reverts", "[editor][commands]") {
+    flecs::world world;
+    auto entity = world.entity("Before");
+
+    RenameEntityCommand command{entity, "After", "Rename"};
+
+    command.execute();
+    REQUIRE(std::string_view{entity.name().c_str()} == "After");
+
+    command.undo();
+    REQUIRE(std::string_view{entity.name().c_str()} == "Before");
+}

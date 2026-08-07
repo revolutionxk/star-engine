@@ -236,4 +236,69 @@ namespace star::editor {
         flecs::entity_t m_id{0};
         std::string m_label;
     };
+
+    class ReparentCommand final : public ICommand {
+      public:
+        ReparentCommand(const flecs::entity entity, const flecs::entity new_parent, std::string label)
+            : m_entity(entity), m_old_parent(entity.parent().id()), m_new_parent(new_parent.id()),
+              m_label(std::move(label)) {}
+
+        void execute() override {
+            apply(m_new_parent);
+        }
+
+        void undo() override {
+            apply(m_old_parent);
+        }
+
+        [[nodiscard]] std::string_view label() const override {
+            return m_label;
+        }
+
+        [[nodiscard]] bool is_valid() const override {
+            return m_entity.is_alive();
+        }
+
+      private:
+        void apply(const flecs::entity_t parent) const {
+            if (parent == 0)
+                m_entity.mut(m_entity.world()).remove(flecs::ChildOf, flecs::Wildcard);
+            else
+                m_entity.mut(m_entity.world()).child_of(m_entity.world().entity(parent));
+        }
+
+        flecs::entity m_entity;
+        flecs::entity_t m_old_parent;
+        flecs::entity_t m_new_parent;
+        std::string m_label;
+    };
+
+    class RenameEntityCommand final : public ICommand {
+      public:
+        RenameEntityCommand(const flecs::entity entity, std::string new_name, std::string label)
+            : m_entity(entity), m_old_name(entity.name().c_str()), m_new_name(std::move(new_name)),
+              m_label(std::move(label)) {}
+
+        void execute() override {
+            m_entity.mut(m_entity.world()).set_name(m_new_name.c_str());
+        }
+
+        void undo() override {
+            m_entity.mut(m_entity.world()).set_name(m_old_name.c_str());
+        }
+
+        [[nodiscard]] std::string_view label() const override {
+            return m_label;
+        }
+
+        [[nodiscard]] bool is_valid() const override {
+            return m_entity.is_alive();
+        }
+
+      private:
+        flecs::entity m_entity;
+        std::string m_old_name;
+        std::string m_new_name;
+        std::string m_label;
+    };
 } // namespace star::editor

@@ -276,6 +276,31 @@ TEST_CASE("CommandStack clears rather than reviving a reused index", "[editor][c
     REQUIRE(squatter.is_alive());
 }
 
+TEST_CASE("DestroyEntityCommand reports invalid when the recorded parent has died", "[editor][commands]") {
+    flecs::world world;
+    ecs::register_component<components::Transform>();
+
+    auto parent = world.entity("Parent");
+    auto child = world.entity("Child");
+    child.child_of(parent);
+    child.set<components::Transform>({});
+
+    const flecs::entity_t child_id = child.id();
+
+    DestroyEntityCommand command{child, "Delete Child"};
+    command.execute();
+    REQUIRE_FALSE(world.entity(child_id).is_alive());
+
+    parent.destruct();
+
+    REQUIRE_FALSE(command.is_valid());
+    command.undo();
+
+    const auto restored = world.entity(child_id);
+    REQUIRE(restored.is_alive());
+    REQUIRE(restored.parent() == 0);
+}
+
 TEST_CASE("DestroyEntityCommand restores tag components", "[editor][commands]") {
     flecs::world world;
     ecs::register_component<components::Transform>();

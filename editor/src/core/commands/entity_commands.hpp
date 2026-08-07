@@ -36,7 +36,7 @@ namespace star::editor {
     }
 
     inline flecs::entity_t lookup_in_scope(const flecs::world& world, const flecs::entity_t parent, const char* name) {
-        if (parent != 0)
+        if (parent != 0 && world.entity(parent).is_alive())
             return world.entity(parent).lookup(name).id();
         return world.lookup(name).id();
     }
@@ -276,7 +276,9 @@ namespace star::editor {
             for (const auto& saved : m_saved)
                 if (!index_is_revivable(m_world, saved.id))
                     return false;
-            return true;
+
+            const auto& root = m_saved.front();
+            return root.parent == 0 || m_world.entity(root.parent).is_alive();
         }
 
       private:
@@ -293,7 +295,7 @@ namespace star::editor {
         void execute() override {
             auto entity = index_is_revivable(m_world, m_id) ? m_world.make_alive(m_id) : m_world.entity();
 
-            if (m_parent != 0)
+            if (m_parent != 0 && m_world.entity(m_parent).is_alive())
                 entity.child_of(m_world.entity(m_parent));
 
             if (!m_base_name.empty()) {
@@ -323,7 +325,8 @@ namespace star::editor {
         }
 
         [[nodiscard]] bool is_valid() const override {
-            return m_id == 0 || index_is_revivable(m_world, m_id);
+            return (m_id == 0 || index_is_revivable(m_world, m_id)) &&
+                   (m_parent == 0 || m_world.entity(m_parent).is_alive());
         }
 
       private:

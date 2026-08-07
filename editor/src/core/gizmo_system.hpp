@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <optional>
 
 // clang-format off
@@ -8,6 +9,7 @@
 #include <flecs.h>
 // clang-format on
 
+#include "commands/command_stack.hpp"
 #include "star/ecs/components/transform.hpp"
 #include "star/rendering/viewport.hpp"
 
@@ -56,7 +58,8 @@ namespace star::editor {
             return ImGuizmo::IsOver();
         }
 
-        bool draw_and_process(const ImVec2& image_pos, const ImVec2& image_size, const rendering::Viewport& vp) const;
+        bool draw_and_process(const ImVec2& image_pos, const ImVec2& image_size, const rendering::Viewport& vp,
+                              CommandStack& stack);
 
       private:
         static ImGuizmo::OPERATION to_imguizmo_op(Operation op);
@@ -66,5 +69,7 @@ namespace star::editor {
         std::optional<flecs::entity> m_entity;
         Operation m_operation = Operation::Translate;
         Space m_space = Space::World;
+        std::any m_drag_before;
+        bool m_dragging{false};
     };
 } // namespace star::editor

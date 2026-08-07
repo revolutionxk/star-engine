@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../core/commands/command_stack.hpp"
 #include "../core/editor_input_manager.hpp"
 #include "../core/gizmo_system.hpp"
 #include "panel.hpp"
@@ -26,6 +27,10 @@ namespace star::editor {
 
         void set_gizmo_system(GizmoSystem* gizmo) noexcept {
             m_gizmo = gizmo;
+        }
+
+        void set_command_stack(CommandStack* stack) noexcept {
+            m_command_stack = stack;
         }
 
         void set_editor_window(EditorWindow* editor_window) noexcept {
@@ -59,6 +64,7 @@ namespace star::editor {
         rendering::Viewport* m_viewport = nullptr;
         EditorInputManager* m_input_manager = nullptr;
         GizmoSystem* m_gizmo = nullptr;
+        CommandStack* m_command_stack = nullptr;
         EditorWindow* m_editor_window = nullptr;
         rendering::PickingPass* m_picking_pass = nullptr;
         ImVec2 m_image_pos{};

@@ -1,10 +1,15 @@
 #include "gizmo_system.hpp"
 
+#include <memory>
+#include <typeindex>
+#include <utility>
+
+#include "commands/entity_commands.hpp"
 #include "star/math/math.hpp"
 
 namespace star::editor {
     bool GizmoSystem::draw_and_process(const ImVec2& image_pos, const ImVec2& image_size,
-                                       const rendering::Viewport& vp) const {
+                                       const rendering::Viewport& vp, CommandStack& stack) {
         if (!m_entity || !m_entity->is_valid())
             return false;
 
@@ -16,13 +21,29 @@ namespace star::editor {
         ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
         ImGuizmo::SetRect(image_pos.x, image_pos.y, image_size.x, image_size.y);
 
+        const std::type_index type{typeid(components::Transform)};
+
         Matrix4 model = transform->to_matrix();
         if (ImGuizmo::Manipulate(vp.view_matrix().data(), vp.projection_matrix().data(), to_imguizmo_op(m_operation),
                                  to_imguizmo_mode(m_space), model.m)) {
             decompose(model, *transform);
         }
 
-        return ImGuizmo::IsUsing();
+        const bool using_now = ImGuizmo::IsUsing();
+
+        if (using_now && !m_dragging) {
+            m_dragging = true;
+            m_drag_before = clone_component(*m_entity, type);
+        } else if (!using_now && m_dragging) {
+            m_dragging = false;
+            std::any after = clone_component(*m_entity, type);
+            if (m_drag_before.has_value() && after.has_value())
+                stack.push(std::make_unique<SetComponentCommand>(*m_entity, type, std::move(m_drag_before),
+                                                                 std::move(after), "Transform"));
+            m_drag_before.reset();
+        }
+
+        return using_now;
     }
 
     ImGuizmo::OPERATION GizmoSystem::to_imguizmo_op(const Operation op) {

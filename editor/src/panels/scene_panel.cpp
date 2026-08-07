@@ -36,7 +36,8 @@ namespace star::editor {
         render_scene_texture();
 
         const bool gizmo_used =
-            m_gizmo && m_viewport && m_gizmo->draw_and_process(m_image_pos, m_image_size, *m_viewport);
+            m_gizmo && m_viewport && m_command_stack &&
+                m_gizmo->draw_and_process(m_image_pos, m_image_size, *m_viewport, *m_command_stack);
         update_focus_state(gizmo_used);
 
         render_entity_icons();

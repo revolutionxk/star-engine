@@ -93,6 +93,7 @@ namespace star::editor {
         scene->set_viewport(m_scene_viewport.get());
         scene->set_input_manager(&m_input_manager);
         scene->set_gizmo_system(&m_gizmo_system);
+        scene->set_command_stack(&m_command_stack);
         scene->set_editor_window(m_editor_window);
         EditorEventBus::instance().subscribe(EditorEventType::SceneLoaded,
                                              [this](const EditorEvent&) { m_command_stack.clear(); });

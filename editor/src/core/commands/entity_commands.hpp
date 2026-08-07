@@ -4,6 +4,8 @@
 #include <string>
 #include <string_view>
 #include <typeindex>
+#include <utility>
+#include <vector>
 
 #include <flecs.h>
 
@@ -141,6 +143,97 @@ namespace star::editor {
         flecs::entity m_entity;
         std::type_index m_type;
         std::any m_saved;
+        std::string m_label;
+    };
+
+    struct SavedComponent {
+        std::type_index type;
+        std::any value;
+    };
+
+    inline std::vector<SavedComponent> clone_all_components(const flecs::entity entity) {
+        std::vector<SavedComponent> saved;
+        for (const auto& type_info : reflection::TypeRegistry::instance().all_types()) {
+            std::any boxed = clone_component(entity, type_info.type);
+            if (boxed.has_value())
+                saved.push_back({type_info.type, std::move(boxed)});
+        }
+        return saved;
+    }
+
+    class DestroyEntityCommand final : public ICommand {
+      public:
+        DestroyEntityCommand(const flecs::entity entity, std::string label)
+            : m_world(entity.world()), m_id(entity.id()), m_name(entity.name().c_str()),
+              m_parent(entity.parent().id()), m_saved(clone_all_components(entity)), m_label(std::move(label)) {}
+
+        void execute() override {
+            m_world.entity(m_id).destruct();
+        }
+
+        void undo() override {
+            auto entity = m_world.make_alive(m_id);
+            if (!m_name.empty())
+                entity.set_name(m_name.c_str());
+            if (m_parent != 0)
+                entity.child_of(m_world.entity(m_parent));
+            for (const auto& [type, value] : m_saved)
+                restore_component(entity, type, value);
+        }
+
+        [[nodiscard]] std::string_view label() const override {
+            return m_label;
+        }
+
+        [[nodiscard]] bool is_valid() const override {
+            return m_id != 0;
+        }
+
+      private:
+        flecs::world m_world;
+        flecs::entity_t m_id;
+        std::string m_name;
+        flecs::entity_t m_parent;
+        std::vector<SavedComponent> m_saved;
+        std::string m_label;
+    };
+
+    class CreateEntityCommand final : public ICommand {
+      public:
+        CreateEntityCommand(const flecs::world world, std::string name, const flecs::entity parent, std::string label)
+            : m_world(world), m_name(std::move(name)), m_parent(parent.id()), m_label(std::move(label)) {}
+
+        void execute() override {
+            auto entity = m_id == 0 ? (m_name.empty() ? m_world.entity() : m_world.entity(m_name.c_str()))
+                                    : m_world.make_alive(m_id);
+            if (m_id != 0 && !m_name.empty())
+                entity.set_name(m_name.c_str());
+            if (m_parent != 0)
+                entity.child_of(m_world.entity(m_parent));
+            m_id = entity.id();
+        }
+
+        void undo() override {
+            m_world.entity(m_id).destruct();
+        }
+
+        [[nodiscard]] flecs::entity_t created_id() const noexcept {
+            return m_id;
+        }
+
+        [[nodiscard]] std::string_view label() const override {
+            return m_label;
+        }
+
+        [[nodiscard]] bool is_valid() const override {
+            return true;
+        }
+
+      private:
+        flecs::world m_world;
+        std::string m_name;
+        flecs::entity_t m_parent;
+        flecs::entity_t m_id{0};
         std::string m_label;
     };
 } // namespace star::editor

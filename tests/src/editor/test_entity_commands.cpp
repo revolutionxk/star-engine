@@ -110,3 +110,60 @@ TEST_CASE("RemoveComponentCommand restores the component values", "[editor][comm
     REQUIRE(entity.has<components::Transform>());
     REQUIRE(entity.get<components::Transform>().position.x == 3.0f);
 }
+
+TEST_CASE("flecs revives an id after it was destroyed", "[editor][commands]") {
+    flecs::world world;
+
+    const auto entity = world.entity("Subject");
+    const flecs::entity_t id = entity.id();
+    entity.mut(world).destruct();
+    REQUIRE_FALSE(world.entity(id).is_alive());
+
+    const auto revived = world.make_alive(id);
+    REQUIRE(revived.is_alive());
+    REQUIRE(revived.id() == id);
+}
+
+TEST_CASE("DestroyEntityCommand restores id, name, parent and components", "[editor][commands]") {
+    flecs::world world;
+    ecs::register_component<components::Transform>();
+
+    const auto parent = world.entity("Parent");
+    auto entity = world.entity("Child");
+    entity.child_of(parent);
+    components::Transform transform;
+    transform.position = {5.0f, 0.0f, 0.0f};
+    entity.set<components::Transform>(transform);
+
+    const flecs::entity_t id = entity.id();
+    DestroyEntityCommand command{entity, "Delete Child"};
+
+    command.execute();
+    REQUIRE_FALSE(world.entity(id).is_alive());
+
+    command.undo();
+    const auto restored = world.entity(id);
+    REQUIRE(restored.is_alive());
+    REQUIRE(restored.id() == id);
+    REQUIRE(std::string_view{restored.name().c_str()} == "Child");
+    REQUIRE(restored.parent() == parent);
+    REQUIRE(restored.get<components::Transform>().position.x == 5.0f);
+}
+
+TEST_CASE("CreateEntityCommand creates and removes the same id", "[editor][commands]") {
+    flecs::world world;
+
+    const auto parent = world.entity("Parent");
+    CreateEntityCommand command{world, "Fresh", parent, "Create Entity"};
+
+    command.execute();
+    const flecs::entity_t id = command.created_id();
+    REQUIRE(world.entity(id).is_alive());
+
+    command.undo();
+    REQUIRE_FALSE(world.entity(id).is_alive());
+
+    command.execute();
+    REQUIRE(world.entity(id).is_alive());
+    REQUIRE(command.created_id() == id);
+}

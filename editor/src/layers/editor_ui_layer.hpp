@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "../core/commands/command_stack.hpp"
 #include "../core/editor_input_manager.hpp"
 #include "../core/entity_gizmos.hpp"
 #include "../core/gizmo_system.hpp"
@@ -72,6 +73,7 @@ namespace star::editor {
         EditorInputManager m_input_manager;
         ViewportCameraSystem m_camera_system;
         GizmoSystem m_gizmo_system;
+        CommandStack m_command_stack;
         EntityGizmos m_entity_gizmos;
     };
 } // namespace star::editor

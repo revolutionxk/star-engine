@@ -94,6 +94,8 @@ namespace star::editor {
         scene->set_input_manager(&m_input_manager);
         scene->set_gizmo_system(&m_gizmo_system);
         scene->set_editor_window(m_editor_window);
+        EditorEventBus::instance().subscribe(EditorEventType::SceneLoaded,
+                                             [this](const EditorEvent&) { m_command_stack.clear(); });
         scene->set_picking_pass(m_picking_pass);
         game->set_viewport(m_game_viewport.get());
         metrics->set_device(&m_editor_window->device());
@@ -248,6 +250,14 @@ namespace star::editor {
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         }
 
+        if (!GizmoSystem::is_using() && !ImGui::GetIO().WantTextInput) {
+            if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, ImGuiInputFlags_RouteGlobal))
+                m_command_stack.undo();
+            if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Y, ImGuiInputFlags_RouteGlobal) ||
+                ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z, ImGuiInputFlags_RouteGlobal))
+                m_command_stack.redo();
+        }
+
         ImGui::End();
     }
 
@@ -305,10 +315,15 @@ namespace star::editor {
             }
 
             if (ImGui::BeginMenu("Edit")) {
-                if (ImGui::MenuItem("Undo", "CTRL+Z")) {
-                }
-                if (ImGui::MenuItem("Redo", "CTRL+Y")) {
-                }
+                const std::string undo_text =
+                    m_command_stack.can_undo() ? "Undo " + std::string{m_command_stack.undo_label()} : "Undo";
+                const std::string redo_text =
+                    m_command_stack.can_redo() ? "Redo " + std::string{m_command_stack.redo_label()} : "Redo";
+
+                if (ImGui::MenuItem(undo_text.c_str(), "CTRL+Z", false, m_command_stack.can_undo()))
+                    m_command_stack.undo();
+                if (ImGui::MenuItem(redo_text.c_str(), "CTRL+Y", false, m_command_stack.can_redo()))
+                    m_command_stack.redo();
                 ImGui::EndMenu();
             }
 

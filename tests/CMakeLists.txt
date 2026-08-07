@@ -26,6 +26,7 @@ target_include_directories(${TEST_TARGET} PRIVATE
     "${SRC_DIR}"
     "${INCLUDE_DIR}"
     "${TEST_DIR}/src"
+    "${CMAKE_SOURCE_DIR}/editor/src"
 )
 
 target_compile_definitions(${TEST_TARGET} PRIVATE

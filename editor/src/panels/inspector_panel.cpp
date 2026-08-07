@@ -1,9 +1,11 @@
 #include "inspector_panel.hpp"
 
 #include <filesystem>
+#include <memory>
 
 #include <imgui.h>
 
+#include "../core/commands/entity_commands.hpp"
 #include "star/core/logger.hpp"
 #include "star/resources/material/material.hpp"
 #include "star/resources/resource_manager.hpp"
@@ -96,15 +98,18 @@ namespace star::editor {
         }
     }
 
-    void InspectorPanel::render_entity_header(const flecs::entity entity) {
+    void InspectorPanel::render_entity_header(const flecs::entity entity) const {
         ImGui::TextDisabled("Entity  ");
         ImGui::SameLine();
 
         static char name_buf[256]{};
-        std::strncpy(name_buf, entity.name().c_str(), sizeof(name_buf) - 1);
+        std::strncpy(name_buf, entity_name(entity).c_str(), sizeof(name_buf) - 1);
         ImGui::SetNextItemWidth(-1.0f);
         if (ImGui::InputText("##name", name_buf, sizeof(name_buf), ImGuiInputTextFlags_EnterReturnsTrue)) {
-            entity.set_name(name_buf);
+            if (m_command_stack)
+                m_command_stack->push(std::make_unique<RenameEntityCommand>(entity, name_buf, "Rename Entity"));
+            else
+                entity.set_name(name_buf);
             STAR_LOG_INFO(LogCategory::Editor, "Renamed entity to '{}'", name_buf);
         }
     }

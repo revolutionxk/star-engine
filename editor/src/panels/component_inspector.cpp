@@ -77,12 +77,20 @@ namespace star::editor {
 
             ImGui::PushID(type_info.name.data());
             if (void* ptr = ecs->get_mut_ptr(entity)) {
+                const bool tracking_before =
+                    m_edit_before.has_value() && m_edit_entity == entity && m_edit_type == type_info.type;
+
+                std::any before_candidate;
+                if (!tracking_before && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                    before_candidate = clone_component(entity, type_info.type);
+
                 const ui::FieldsResult result = ui::fields(type_info, ptr);
 
                 if (result.activated) {
                     m_edit_entity = entity;
                     m_edit_type = type_info.type;
-                    m_edit_before = clone_component(entity, type_info.type);
+                    m_edit_before = before_candidate.has_value() ? std::move(before_candidate)
+                                                                  : clone_component(entity, type_info.type);
                 }
 
                 const bool tracking =

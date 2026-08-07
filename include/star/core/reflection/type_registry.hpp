@@ -98,6 +98,9 @@ namespace star::reflection {
         std::vector<RuntimeField> fields;
         std::unordered_map<std::type_index, std::any> extensions;
 
+        std::function<std::any(const void*)> clone;
+        std::function<bool(void*, const std::any&)> restore;
+
         [[nodiscard]] const RuntimeField* find_field(const std::string_view field_name) const noexcept {
             const auto it = std::ranges::find_if(fields, [&](const RuntimeField& f) { return f.name == field_name; });
             return it != fields.end() ? &*it : nullptr;
@@ -167,6 +170,17 @@ namespace star::reflection {
 
                 info.fields.emplace_back(std::move(rf));
             });
+
+            info.clone = [](const void* obj) -> std::any {
+                return std::any{*static_cast<const T*>(obj)};
+            };
+            info.restore = [](void* obj, const std::any& boxed) -> bool {
+                const T* source = std::any_cast<T>(&boxed);
+                if (!source)
+                    return false;
+                *static_cast<T*>(obj) = *source;
+                return true;
+            };
 
             const std::string name_key{info.name};
             RuntimeTypeInfo& stored = (m_by_id[id] = std::move(info));

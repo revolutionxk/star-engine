@@ -5,6 +5,7 @@
 
 #include <imgui.h>
 
+#include "../core/commands/entity_commands.hpp"
 #include "../core/icon_registry.hpp"
 
 namespace star::editor {
@@ -60,8 +61,9 @@ namespace star::editor {
             }
 
             if (can_remove && ImGui::BeginPopupContextItem()) {
-                if (ImGui::MenuItem("Remove Component"))
-                    ecs->remove(entity);
+                if (ImGui::MenuItem("Remove Component") && m_command_stack)
+                    m_command_stack->push(std::make_unique<RemoveComponentCommand>(entity, type_info.type,
+                                                                                    std::string{type_info.name}));
                 ImGui::EndPopup();
             }
 
@@ -70,7 +72,16 @@ namespace star::editor {
 
             ImGui::PushID(type_info.name.data());
             if (void* ptr = ecs->get_mut_ptr(entity)) {
-                ui::fields(type_info, ptr);
+                std::any before = clone_component(entity, type_info.type);
+                const ui::FieldsResult result = ui::fields(type_info, ptr);
+
+                if (result.committed && before.has_value()) {
+                    std::any after = clone_component(entity, type_info.type);
+                    if (after.has_value() && m_command_stack)
+                        m_command_stack->push(std::make_unique<SetComponentCommand>(
+                            entity, type_info.type, std::move(before), std::move(after),
+                            std::string{type_info.name}));
+                }
 
                 if (type_info.name == "MaterialInstance") {
                     auto* inst = static_cast<components::MaterialInstance*>(ptr);
@@ -83,7 +94,7 @@ namespace star::editor {
         }
     }
 
-    void ComponentInspector::draw_add_popup(const flecs::entity entity) {
+    void ComponentInspector::draw_add_popup(const flecs::entity entity) const {
         if (ImGui::Button("Add Component", {-1.0f, 0.0f}))
             ImGui::OpenPopup("##AddComponent");
 
@@ -103,7 +114,9 @@ namespace star::editor {
                 continue;
 
             if (ImGui::MenuItem(type_info.name.data())) {
-                ecs->add(entity);
+                if (m_command_stack)
+                    m_command_stack->push(std::make_unique<AddComponentCommand>(entity, type_info.type,
+                                                                                 std::string{type_info.name}));
                 ImGui::CloseCurrentPopup();
             }
             any = true;

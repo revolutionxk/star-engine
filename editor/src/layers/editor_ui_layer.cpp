@@ -95,6 +95,7 @@ namespace star::editor {
         scene->set_gizmo_system(&m_gizmo_system);
         scene->set_command_stack(&m_command_stack);
         scene->set_editor_window(m_editor_window);
+        m_component_inspector.set_command_stack(&m_command_stack);
         EditorEventBus::instance().subscribe(EditorEventType::SceneLoaded,
                                              [this](const EditorEvent&) { m_command_stack.clear(); });
         scene->set_picking_pass(m_picking_pass);

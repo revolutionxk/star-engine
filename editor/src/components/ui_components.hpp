@@ -343,11 +343,21 @@ namespace star::editor::ui {
         }
     }
 
-    inline void fields(const star::reflection::RuntimeTypeInfo& type_info, void* comp) {
+    struct FieldsResult {
+        bool changed{false};
+        bool committed{false};
+    };
+
+    inline FieldsResult fields(const star::reflection::RuntimeTypeInfo& type_info, void* comp) {
+        FieldsResult result;
         ImGui::PushItemWidth(-140.0f);
-        for (const auto& field : type_info.fields)
+        for (const auto& field : type_info.fields) {
             field_runtime(field, comp);
+            result.changed = result.changed || ImGui::IsItemEdited();
+            result.committed = result.committed || ImGui::IsItemDeactivatedAfterEdit();
+        }
         ImGui::PopItemWidth();
+        return result;
     }
 
     inline void material_instance(components::MaterialInstance& inst, const resources::Material* mat) {

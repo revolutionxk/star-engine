@@ -74,7 +74,7 @@ namespace star::editor {
         }
 
         [[nodiscard]] bool is_valid() const override {
-            return m_entity.is_alive() && runtime_type(m_type) != nullptr && m_before.has_value() &&
+            return m_entity.is_alive() && component_info(m_type) != nullptr && m_before.has_value() &&
                    m_after.has_value();
         }
 

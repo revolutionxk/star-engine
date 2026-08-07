@@ -45,6 +45,27 @@ TEST_CASE("SetComponentCommand is invalid once the entity dies", "[editor][comma
     REQUIRE_FALSE(command.is_valid());
 }
 
+TEST_CASE("SetComponentCommand adds the component when the entity lacks it", "[editor][commands]") {
+    flecs::world world;
+    ecs::register_component<components::Transform>();
+
+    auto entity = world.entity();
+
+    components::Transform before;
+    components::Transform after;
+    after.position = {1.0f, 2.0f, 3.0f};
+
+    SetComponentCommand command{entity, std::type_index{typeid(components::Transform)}, std::any{before},
+                                std::any{after}, "Add"};
+
+    command.execute();
+
+    REQUIRE(entity.has<components::Transform>());
+    REQUIRE(entity.get<components::Transform>().position.x == 1.0f);
+    REQUIRE(entity.get<components::Transform>().position.y == 2.0f);
+    REQUIRE(entity.get<components::Transform>().position.z == 3.0f);
+}
+
 TEST_CASE("clone_component returns an empty box for a missing component", "[editor][commands]") {
     flecs::world world;
     ecs::register_component<components::Transform>();

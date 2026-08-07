@@ -27,6 +27,7 @@ namespace star::ecs {
 
     struct EcsComponentInfo {
         RegistrationFlags flags{RegistrationFlags::None};
+        bool is_empty{false};
 
         std::function<bool(flecs::entity)> has;
         std::function<void(flecs::entity)> add;
@@ -47,6 +48,7 @@ namespace star::ecs {
 
         EcsComponentInfo info;
         info.flags = flags;
+        info.is_empty = std::is_empty_v<T>;
         info.has = [](flecs::entity e) { return e.has<T>(); };
         info.add = [](flecs::entity e) { e.add<T>(); };
         info.remove = [](flecs::entity e) { e.remove<T>(); };
